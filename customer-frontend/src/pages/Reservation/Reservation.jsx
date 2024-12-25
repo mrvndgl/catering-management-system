@@ -179,13 +179,40 @@ const Reservation = () => {
     };
 
     try {
+      // Get the authentication token
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        // Redirect to login if no token is found
+        navigate("/login", {
+          state: {
+            message: "Please log in to make a reservation",
+            returnTo: "/reservation",
+          },
+        });
+        return;
+      }
+
       const response = await fetch("/api/reservations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Add the auth token
         },
         body: JSON.stringify(reservationData),
       });
+
+      if (response.status === 401) {
+        // Handle unauthorized error
+        localStorage.removeItem("token"); // Clear invalid token
+        navigate("/login", {
+          state: {
+            message: "Your session has expired. Please log in again.",
+            returnTo: "/reservation",
+          },
+        });
+        return;
+      }
 
       const data = await response.json();
 
@@ -199,7 +226,8 @@ const Reservation = () => {
       setTimeout(() => {
         navigate("/dashboard", {
           state: {
-            notification: "Reservation created successfully!",
+            notification:
+              "Reservation created successfully! Please wait for admin approval.",
           },
         });
       }, 1500);
@@ -212,6 +240,19 @@ const Reservation = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Add authentication check on component mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login", {
+        state: {
+          message: "Please log in to make a reservation",
+          returnTo: "/reservation",
+        },
+      });
+    }
+  }, [navigate]);
 
   return (
     <div className="reservation-container">
@@ -393,6 +434,40 @@ const Reservation = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {showAdditionalItemModal && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Select Additional Items</h3>
+                <div className="menu-categories">
+                  {Object.entries(MENU_ITEMS).map(([category, items]) => (
+                    <div key={category} className="category-section">
+                      <h4>{category}</h4>
+                      <div className="items-grid">
+                        {items.map((item) => (
+                          <button
+                            key={item.product_id}
+                            onClick={() =>
+                              handleAdditionalItemSelect(category, item)
+                            }
+                            className="item-select-btn"
+                          >
+                            {item.product_name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  className="close-modal-btn"
+                  onClick={() => setShowAdditionalItemModal(false)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
         </div>

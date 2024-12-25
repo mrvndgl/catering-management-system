@@ -15,13 +15,13 @@ const Sidebar = ({ onLogout }) => {
               <Link to="/reservation">Create Reservation</Link>
             </li>
             <li>
-              <Link to="/view-notifications">Manage Payment</Link>
+              <Link to="/payment">Manage Payment</Link>
             </li>
             <li>
-              <Link to="#contact">Scheduled Reservations</Link>
+              <Link to="/schedules">Scheduled Reservations</Link>
             </li>
             <li>
-              <Link to="#contact">Send Feedback</Link>
+              <Link to="/feedback">Send Feedback</Link>
             </li>
           </ul>
         </nav>

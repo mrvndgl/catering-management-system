@@ -1,0 +1,245 @@
+.payments-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.payments-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.card-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.card-content {
+  padding: 20px;
+}
+
+.error-alert {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.success-alert {
+  background-color: #dcfce7;
+  color: #16a34a;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.no-payments-message {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.reservations-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.reservation-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  background: white;
+}
+
+.reservation-header {
+  margin-bottom: 16px;
+}
+
+.reservation-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.reservation-date {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.reservation-details {
+  margin-bottom: 16px;
+}
+
+.reservation-details p {
+  margin: 8px 0;
+}
+
+.label {
+  font-weight: 600;
+  color: #555;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.payment-button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.payment-button.gcash {
+  background-color: #007bff;
+  color: white;
+}
+
+.payment-button.gcash:hover {
+  background-color: #0056b3;
+}
+
+.payment-button.cash {
+  background-color: #28a745;
+  color: white;
+}
+
+.payment-button.cash:hover {
+  background-color: #218838;
+}
+
+.payment-instructions {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.payment-instructions h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.payment-instructions p {
+  margin: 12px 0;
+  color: #555;
+}
+
+.contact-numbers {
+  font-weight: 500;
+  color: #333;
+  margin-top: 12px;
+}
+
+.file-upload {
+  margin: 16px 0;
+}
+
+.file-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.submit-button,
+.close-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.submit-button {
+  background-color: #007bff;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+.close-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.close-button:hover {
+  background-color: #5a6268;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.contact-info-form {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.file-upload {
+  margin: 16px 0;
+}
+
+.file-upload label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.file-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}

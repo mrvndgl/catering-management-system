@@ -130,6 +130,7 @@ export const createReservation = async (req, res) => {
     // Create new reservation
     const newReservation = new Reservation({
       reservation_id,
+      customer_id: req.user.userId, // Add this line to store the customer ID
       name,
       phoneNumber,
       numberOfPax,
@@ -285,52 +286,77 @@ export const getReservationByCustomerId = async (req, res) => {
 export const updateReservation = async (req, res) => {
   try {
     const { reservation_id } = req.params;
-    const updateData = req.body;
+    const { reservation_status, paymentRedirect } = req.body;
 
-    // Validate and convert numeric fields if present
-    if (updateData.customer_id) {
-      updateData.customer_id = Number(updateData.customer_id);
-    }
-    if (updateData.employee_id) {
-      updateData.employee_id = Number(updateData.employee_id);
-    }
-    if (updateData.reservation_time) {
-      updateData.reservation_time = Number(updateData.reservation_time);
-    }
-    if (updateData.total_amount) {
-      updateData.total_amount = Number(updateData.total_amount);
-    }
+    console.log(
+      `Updating reservation ${reservation_id} to status: ${reservation_status}`
+    );
 
-    // Validate products if provided
-    if (updateData.products) {
-      const validatedProducts = [];
-      for (const productId of updateData.products) {
-        const product = await Product.findOne({ product_id: productId });
-        if (!product) {
-          return res
-            .status(400)
-            .json({ message: `Product with ID ${productId} not found` });
-        }
-        validatedProducts.push(product._id);
-      }
-      updateData.products = validatedProducts;
-    }
+    const statusLower = reservation_status.toLowerCase();
+
+    const updateData = {
+      reservation_status: statusLower,
+      status: statusLower, // Make sure both fields are updated
+      ...(paymentRedirect && { payment_required: true }),
+    };
 
     const updatedReservation = await Reservation.findOneAndUpdate(
       { reservation_id: parseInt(reservation_id) },
       updateData,
       { new: true, runValidators: true }
-    ).populate("products");
+    );
+
+    // Log the result for debugging
+    console.log("Updated reservation:", updatedReservation);
 
     if (!updatedReservation) {
-      return res.status(404).json({ message: "Reservation not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
     }
 
-    res.status(200).json(updatedReservation);
+    res.status(200).json({
+      success: true,
+      data: updatedReservation,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating reservation", error: error.message });
+    console.error("Update reservation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating reservation",
+      error: error.message,
+    });
+  }
+};
+
+export const getMyAcceptedReservations = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log("Fetching accepted reservations for user:", userId);
+
+    const reservations = await Reservation.find({
+      customer_id: userId,
+      reservation_status: "accepted", // Your model converts to lowercase
+      $or: [
+        { payment_status: { $exists: false } },
+        { payment_status: { $in: ["pending", null] } },
+      ],
+    }).sort({ reservation_date: -1 });
+
+    console.log("Found reservations:", reservations);
+
+    if (!reservations || reservations.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    res.status(200).json(reservations);
+  } catch (error) {
+    console.error("Error in getMyAcceptedReservations:", error);
+    res.status(500).json({
+      message: "Error fetching accepted reservations",
+      error: error.message,
+    });
   }
 };
 
@@ -351,5 +377,48 @@ export const deleteReservation = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting reservation", error: error.message });
+  }
+};
+
+// Add these functions to reservationController.js
+export const getReservationsByDate = async (req, res) => {
+  try {
+    const { date } = req.params;
+    const reservations = await Reservation.find({
+      reservationDate: new Date(date),
+    });
+    res.json(reservations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAcceptedReservations = async (req, res) => {
+  try {
+    const reservations = await Reservation.find({ status: "accepted" });
+    res.json(reservations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus } = req.body;
+
+    const reservation = await Reservation.findByIdAndUpdate(
+      id,
+      { paymentStatus },
+      { new: true }
+    );
+
+    if (!reservation) {
+      return res.status(404).json({ message: "Reservation not found" });
+    }
+
+    res.json(reservation);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

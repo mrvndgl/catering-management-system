@@ -53,6 +53,7 @@ export const auth = (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token);
+    console.log("Decoded token in auth middleware:", decoded);
     req.user = decoded;
     next();
   } catch (error) {

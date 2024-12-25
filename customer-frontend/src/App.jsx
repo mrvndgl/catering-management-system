@@ -6,7 +6,19 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Reservation from "./pages/Reservation/Reservation";
 import Schedules from "./pages/Schedules/Schedules";
+import Payment from "./pages/Payment/Payment";
 import "./App.css";
+
+// Protected Route Component
+const ProtectedRoute = ({ children, isAuthenticated }) => {
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return children;
+};
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,7 +28,6 @@ const App = () => {
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
-      console.log("Current token:", token);
 
       if (token) {
         try {
@@ -36,24 +47,25 @@ const App = () => {
     checkAuth();
   }, []);
 
-  // Show loading state
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  // Function to handle logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsAuthenticated(false);
   };
 
+  const showSidebar = [
+    "/dashboard",
+    "/reservation",
+    "/schedules",
+    "/payment",
+  ].includes(location.pathname);
+
   return (
     <div className="app">
-      {(location.pathname === "/dashboard" ||
-        location.pathname === "/reservation" ||
-        location.pathname === "/schedules") && (
-        <Sidebar onLogout={handleLogout} />
-      )}
+      {showSidebar && <Sidebar onLogout={handleLogout} />}
       <div className="main-container">
         <Routes>
           <Route
@@ -89,31 +101,33 @@ const App = () => {
           <Route
             path="/dashboard"
             element={
-              isAuthenticated ? (
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Dashboard />
-              ) : (
-                <Navigate to="/login" replace state={{ from: location }} />
-              )
+              </ProtectedRoute>
             }
           />
           <Route
             path="/reservation"
             element={
-              isAuthenticated ? (
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Reservation />
-              ) : (
-                <Navigate to="/login" replace state={{ from: location }} />
-              )
+              </ProtectedRoute>
             }
           />
           <Route
             path="/schedules"
             element={
-              isAuthenticated ? (
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Schedules />
-              ) : (
-                <Navigate to="/login" replace state={{ from: location }} />
-              )
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Payment />
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
