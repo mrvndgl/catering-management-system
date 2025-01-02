@@ -395,10 +395,22 @@ export const getReservationsByDate = async (req, res) => {
 
 export const getAcceptedReservations = async (req, res) => {
   try {
-    const reservations = await Reservation.find({ status: "accepted" });
-    res.json(reservations);
+    // Remove any filtering by customer_id to get all accepted reservations
+    const reservations = await Reservation.find({
+      reservation_status: "accepted",
+      reservation_date: { $gte: new Date() }, // Only get future reservations
+    })
+      .sort({ reservation_date: 1 }) // Sort by date ascending
+      .populate("customer_id", "name") // Populate customer details if needed
+      .select("-payment_status -paymentMode"); // Exclude sensitive information
+
+    res.status(200).json(reservations);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getAcceptedReservations:", error);
+    res.status(500).json({
+      message: "Error fetching accepted reservations",
+      error: error.message,
+    });
   }
 };
 

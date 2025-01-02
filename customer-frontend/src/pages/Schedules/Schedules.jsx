@@ -17,13 +17,9 @@ const Schedules = () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Add this line
+          Authorization: `Bearer ${token}`,
         },
       });
-
-      if (response.status === 401) {
-        throw new Error("Please log in to view schedules");
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch schedules");
@@ -46,12 +42,21 @@ const Schedules = () => {
     });
   };
 
+  const formatTime = (timeSlot) => {
+    return timeSlot
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   if (isLoading) return <div className="loading">Loading schedules...</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="schedules-container">
-      <h2>Current Schedules</h2>
+      <h2>Upcoming Events Schedule</h2>
       {schedules.length === 0 ? (
         <p>No scheduled events at the moment.</p>
       ) : (
@@ -66,7 +71,10 @@ const Schedules = () => {
               </div>
               <div className="schedule-details">
                 <p>
-                  <strong>Time:</strong> {schedule.timeSlot}
+                  <strong>Customer:</strong> {schedule.name}
+                </p>
+                <p>
+                  <strong>Time:</strong> {formatTime(schedule.timeSlot)}
                 </p>
                 <p>
                   <strong>Venue:</strong> {schedule.venue}

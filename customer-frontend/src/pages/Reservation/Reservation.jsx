@@ -7,7 +7,6 @@ const PRICE_PER_HEAD = 350;
 const ADDITIONAL_ITEM_PRICE = 35;
 const BASE_PRICE = BASE_PAX * PRICE_PER_HEAD;
 
-// Predefined menu categories and items
 const MENU_ITEMS = {
   Beef: [
     { product_id: 2, category_id: 1, product_name: "Caldereta" },

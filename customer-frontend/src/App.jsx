@@ -7,17 +7,16 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import Reservation from "./pages/Reservation/Reservation";
 import Schedules from "./pages/Schedules/Schedules";
 import Payment from "./pages/Payment/Payment";
+import Feedback from "./pages/Feedback/Feedback";
 import "./App.css";
 
-// Protected Route Component
 const ProtectedRoute = ({ children, isAuthenticated }) => {
   const location = useLocation();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  return children;
+  return !isAuthenticated ? (
+    <Navigate to="/login" replace state={{ from: location }} />
+  ) : (
+    children
+  );
 };
 
 const App = () => {
@@ -28,7 +27,6 @@ const App = () => {
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
-
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
@@ -43,13 +41,10 @@ const App = () => {
       }
       setLoading(false);
     };
-
     checkAuth();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading) return <div>Loading...</div>;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -61,6 +56,7 @@ const App = () => {
     "/reservation",
     "/schedules",
     "/payment",
+    "/feedback",
   ].includes(location.pathname);
 
   return (
@@ -127,6 +123,14 @@ const App = () => {
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <Payment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedback"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Feedback />
               </ProtectedRoute>
             }
           />

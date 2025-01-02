@@ -1,7 +1,7 @@
 .payments-container {
-  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 .payments-card {
@@ -25,42 +25,41 @@
 }
 
 .error-alert {
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 12px;
+  background: #fee;
+  color: #c00;
+  padding: 10px;
   border-radius: 4px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .success-alert {
-  background-color: #dcfce7;
-  color: #16a34a;
-  padding: 12px;
+  background: #efe;
+  color: #0c0;
+  padding: 10px;
   border-radius: 4px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .no-payments-message {
   text-align: center;
   color: #666;
-  padding: 20px;
+  padding: 40px;
 }
 
 .reservations-grid {
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .reservation-card {
   border: 1px solid #eee;
   border-radius: 8px;
-  padding: 16px;
-  background: white;
+  padding: 20px;
 }
 
 .reservation-header {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .reservation-header h3 {
@@ -68,178 +67,142 @@
   color: #333;
 }
 
-.reservation-date {
-  color: #666;
-  font-size: 0.9em;
-}
-
 .reservation-details {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .reservation-details p {
-  margin: 8px 0;
+  margin: 10px 0;
+  line-height: 1.5;
 }
 
 .label {
-  font-weight: 600;
-  color: #555;
+  font-weight: bold;
+  color: #666;
+  margin-right: 8px;
+}
+
+.menu-details {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.menu-details h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.menu-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.menu-details li {
+  margin: 5px 0;
+  color: #666;
 }
 
 .payment-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .payment-button {
-  flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: bold;
   transition: background-color 0.2s;
 }
 
 .payment-button.gcash {
-  background-color: #007bff;
+  background: #4a90e2;
   color: white;
-}
-
-.payment-button.gcash:hover {
-  background-color: #0056b3;
 }
 
 .payment-button.cash {
-  background-color: #28a745;
+  background: #28a745;
   color: white;
 }
 
-.payment-button.cash:hover {
-  background-color: #218838;
+.payment-button:hover {
+  opacity: 0.9;
 }
 
 .payment-instructions {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 20px;
+  padding: 20px;
   border-radius: 4px;
-  background-color: #f8f9fa;
+  background: #f8f9fa;
 }
 
 .payment-instructions h4 {
-  margin-top: 0;
+  margin: 0 0 15px 0;
   color: #333;
-}
-
-.payment-instructions p {
-  margin: 12px 0;
-  color: #555;
 }
 
 .contact-numbers {
-  font-weight: 500;
+  font-weight: bold;
   color: #333;
-  margin-top: 12px;
+  margin: 10px 0;
 }
 
 .file-upload {
-  margin: 16px 0;
+  margin: 20px 0;
 }
 
 .file-input {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
 
 .action-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 16px;
-}
-
-.submit-button,
-.close-button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
+  margin-top: 20px;
 }
 
 .submit-button {
-  background-color: #007bff;
+  background: #28a745;
   color: white;
-}
-
-.submit-button:hover {
-  background-color: #0056b3;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 .close-button {
-  background-color: #6c757d;
+  background: #dc3545;
   color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
+.submit-button:hover,
 .close-button:hover {
-  background-color: #5a6268;
+  opacity: 0.9;
 }
 
 .loading-message {
   text-align: center;
-  padding: 20px;
+  padding: 40px;
   color: #666;
 }
 
-.contact-info-form {
-  margin: 16px 0;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-}
-
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #333;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-}
-
-.file-upload {
-  margin: 16px 0;
-}
-
-.file-upload label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #333;
-}
-
-.file-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
+@media (min-width: 768px) {
+  .reservations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  }
 }
