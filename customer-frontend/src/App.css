@@ -1,8 +1,13 @@
 .app {
-  display: flex;
+  min-height: 100vh;
 }
 
-.main-container {
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dashboard-container {
   flex: 1;
-  margin-left: 250px;
+  padding: 20px;
 }

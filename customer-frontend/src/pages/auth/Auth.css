@@ -1,53 +1,109 @@
+.login-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.login-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-right {
+  flex: 1;
+  overflow: hidden;
+}
+
+.login-image {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
 .auth-container {
-  display: flex;
-  height: 100vh;
-  background-color: #f4f4f4;
-}
-
-.auth-image {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #4caf50;
-}
-
-.auth-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 10px;
-}
-
-.auth-form-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 90%;
+  max-width: 480px;
+  padding: 2.5rem;
+  border-radius: 15px;
   background-color: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .auth-form {
-  width: 80%;
-  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .auth-form h2 {
   text-align: center;
-  color: #4caf50;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  color: #008F28;
+  font-weight: 600;
 }
 
-.error-message {
-  color: red;
-  font-size: 0.9em;
-  margin-bottom: 10px;
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #008F28;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #000000;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #008F28;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+.submit-btn:hover {
+  background-color: #007722;
 }
 
 .auth-link {
-  margin-top: 20px;
   text-align: center;
+  margin-top: 1rem;
 }
 
 .auth-link a {
-  color: #4caf50;
-  text-decoration: none;
+  color: #008F28;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.auth-link a:hover {
+  color: #007722;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .login-page {
+    flex-direction: column;
+  }
+  
+  .login-right {
+    display: none;
+  }
 }

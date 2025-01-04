@@ -1,13 +1,15 @@
 import mongoose from "mongoose";
 
 const feedbackSchema = new mongoose.Schema({
-  customerName: {
-    type: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   message: {
     type: String,
     required: true,
+    trim: true,
   },
   rating: {
     type: Number,

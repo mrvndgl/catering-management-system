@@ -21,7 +21,7 @@ const Feedback = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/feedback", {
+      const response = await fetch("http://localhost:4000/api/feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

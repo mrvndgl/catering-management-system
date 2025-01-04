@@ -15,14 +15,21 @@ const ProtectedRoute = ({ children, isAuthenticated }) => {
   return !isAuthenticated ? (
     <Navigate to="/login" replace state={{ from: location }} />
   ) : (
-    children
+    <div className="dashboard-layout">
+      <Sidebar
+        onLogout={() => {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        }}
+      />
+      <div className="dashboard-container">{children}</div>
+    </div>
   );
 };
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -46,97 +53,81 @@ const App = () => {
 
   if (loading) return <div>Loading...</div>;
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false);
-  };
-
-  const showSidebar = [
-    "/dashboard",
-    "/reservation",
-    "/schedules",
-    "/payment",
-    "/feedback",
-  ].includes(location.pathname);
-
   return (
     <div className="app">
-      {showSidebar && <Sidebar onLogout={handleLogout} />}
-      <div className="main-container">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Login setIsAuthenticated={setIsAuthenticated} />
-              )
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Signup setIsAuthenticated={setIsAuthenticated} />
-              )
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reservation"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Reservation />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/schedules"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Schedules />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/payment"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Payment />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/feedback"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Feedback />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Login setIsAuthenticated={setIsAuthenticated} />
+            )
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Signup setIsAuthenticated={setIsAuthenticated} />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reservation"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Reservation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/schedules"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Schedules />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Payment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Feedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 };

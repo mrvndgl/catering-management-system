@@ -8,6 +8,7 @@ import employeeRoutes from "./routes/employeeRoute.js";
 import productRoutes from "./routes/productRoute.js";
 import reservationRoutes from "./routes/reservationRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
+import feedbackRoutes from "./routes/feedbackRoute.js";
 
 dotenv.config();
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 const predefinedCategories = [
   {
