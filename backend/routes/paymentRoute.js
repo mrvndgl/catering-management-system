@@ -1,4 +1,5 @@
 import express from "express";
+import { auth, adminStaffAuth } from "../middleware/auth.js";
 import {
   createPayment,
   getAllPayments,
@@ -6,15 +7,24 @@ import {
   updatePaymentStatus,
   uploadPaymentProof,
 } from "../controllers/paymentController.js";
-import { auth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Payment routes
+// Admin/Staff payment routes
+router.get("/admin/payments", adminStaffAuth, getAllPayments);
+router.patch(
+  "/admin/payments/:payment_id/status",
+  adminStaffAuth,
+  updatePaymentStatus
+);
+router.get(
+  "/admin/payments/reservation/:reservation_id",
+  adminStaffAuth,
+  getPaymentsByReservation
+);
+
+// Customer payment routes
 router.post("/", auth, createPayment);
-router.get("/", auth, getAllPayments);
-router.get("/reservation/:reservation_id", auth, getPaymentsByReservation);
-router.patch("/:payment_id/status", auth, updatePaymentStatus);
 router.post("/:payment_id/proof", auth, uploadPaymentProof);
 
 export default router;

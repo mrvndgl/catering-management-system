@@ -19,8 +19,13 @@ const verifyToken = (token, requireRole = null) => {
 
     if (requireRole) {
       const { type, employeeType } = decoded;
-      if (type !== "employee" || employeeType !== requireRole) {
-        throw new AuthError(`${requireRole} access required`, 403);
+      if (
+        type !== "employee" ||
+        (Array.isArray(requireRole)
+          ? !requireRole.includes(employeeType)
+          : employeeType !== requireRole)
+      ) {
+        throw new AuthError(`Unauthorized access`, 403);
       }
     }
 
@@ -53,7 +58,6 @@ export const auth = (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token);
-    console.log("Decoded token in auth middleware:", decoded);
     req.user = decoded;
     next();
   } catch (error) {
@@ -61,7 +65,7 @@ export const auth = (req, res, next) => {
   }
 };
 
-// Admin authentication middleware
+// Admin-only authentication middleware
 export const adminAuth = (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
@@ -73,11 +77,23 @@ export const adminAuth = (req, res, next) => {
   }
 };
 
-// Staff authentication middleware
+// Staff-only authentication middleware
 export const staffAuth = (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token, "staff");
+    req.user = decoded;
+    next();
+  } catch (error) {
+    handleAuthError(error, res);
+  }
+};
+
+// Combined admin and staff authentication middleware
+export const adminStaffAuth = (req, res, next) => {
+  try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const decoded = verifyToken(token, ["admin", "staff"]);
     req.user = decoded;
     next();
   } catch (error) {

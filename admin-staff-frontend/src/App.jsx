@@ -5,6 +5,8 @@ import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 import ProductManagement from "./pages/ProductManagement/ProductManagement";
 import AdminReservations from "./pages/ViewReservations/AdminReservations";
 import FeedbackManagement from "./pages/FeedbackManagement/FeedbackManagement";
+import ViewPayment from "./pages/ViewPayment/ViewPayment";
+import ProtectedRoute from "./pages/auth/ProtectedRoute";
 
 const App = () => {
   return (
@@ -16,6 +18,14 @@ const App = () => {
         <Route path="/admin/products" element={<ProductManagement />} />
         <Route path="/admin/reservations" element={<AdminReservations />} />
         <Route path="/admin/feedback" element={<FeedbackManagement />} />
+        <Route
+          path="/admin/payments"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "staff"]}>
+              <ViewPayment />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/staff/dashboard" element={<div>Staff Dashboard</div>} />
       </Routes>
     </BrowserRouter>

@@ -53,7 +53,7 @@ const Login = ({ setIsAuthenticated }) => {
       <div className="login-left">
         <div className="auth-container login">
           <form onSubmit={handleSubmit} className="auth-form">
-            <h2>Welcome Back</h2>
+            <h2>Welcome Back!</h2>
             {error && <div className="error-message">{error}</div>}
 
             <div className="form-group">

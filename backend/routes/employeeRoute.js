@@ -2,7 +2,12 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Employee from "../models/Employee.js";
-import { auth, adminAuth, staffAuth } from "../middleware/auth.js";
+import {
+  auth,
+  adminAuth,
+  staffAuth,
+  adminStaffAuth,
+} from "../middleware/auth.js";
 
 const employeeRouter = express.Router();
 
