@@ -1,34 +1,63 @@
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 0;
+  margin: 0;
+}
+
 .header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh; 
-    background: url('/main.jpg') no-repeat center center;
-    background-size: cover; 
+  width: 100%;
+  height: 100vh; /* Full height of the viewport */
+  background: url('/main.jpg') no-repeat center center;
+  background-size: cover;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5); /* Add opacity here */
-    z-index: 5;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Add opacity here */
+  z-index: 5;
 }
 
 .header-contents {
-    position: relative;
-    z-index: 10;
-    color: white;
-    text-align: center;
-    padding: 20px;
-    max-width: 800px;
+  position: relative;
+  z-index: 10;
+  color: white;
+  text-align: center;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .header-contents h2 {
-    font-weight: 500;
-    font-size: max(4vw, 22px);
+  font-weight: 500;
+  font-size: max(4vw, 22px);
+  margin-bottom: 20px;
+}
+
+.header-contents p {
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.notification-message {
+  background-color: #ff9800;
+  color: white;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 1rem;
 }

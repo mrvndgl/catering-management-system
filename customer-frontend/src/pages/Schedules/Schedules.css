@@ -1,63 +1,66 @@
 .schedules-container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .schedules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-  }
-  
-  .schedule-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    transition: transform 0.2s ease;
-  }
-  
-  .schedule-card:hover {
-    transform: translateY(-5px);
-  }
-  
-  .schedule-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .schedule-header h3 {
-    margin: 0;
-    color: #333;
-  }
-  
-  .date {
-    color: #666;
-    font-size: 0.9rem;
-  }
-  
-  .schedule-details p {
-    margin: 0.5rem 0;
-    color: #444;
-  }
-  
-  .schedule-details strong {
-    color: #333;
-    margin-right: 0.5rem;
-  }
-  
-  .loading, .error {
-    text-align: center;
-    padding: 2rem;
-    color: #666;
-  }
-  
-  .error {
-    color: #d32f2f;
-  }
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+}
+
+.schedules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.schedule-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.schedule-card:hover {
+  transform: translateY(-5px);
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.schedule-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.schedule-details p {
+  margin: 0.5rem 0;
+  color: #444;
+}
+
+.schedule-details strong {
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error {
+  color: #d32f2f;
+}

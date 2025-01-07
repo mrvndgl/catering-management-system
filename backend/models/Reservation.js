@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import ProductModel from "./Product.js";
 
 const reservationSchema = new mongoose.Schema(
   {

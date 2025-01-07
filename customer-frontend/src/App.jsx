@@ -32,12 +32,12 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          const isValid = payload.exp * 1000 > Date.now();
+          // Assume validateToken is a function that validates the token
+          const isValid = await validateToken(token);
           setIsAuthenticated(isValid);
         } catch (e) {
           localStorage.removeItem("token");
@@ -126,7 +126,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

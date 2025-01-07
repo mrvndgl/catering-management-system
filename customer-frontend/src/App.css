@@ -10,4 +10,5 @@
 .dashboard-container {
   flex: 1;
   padding: 20px;
+  margin-left: 280px; /* Add this line to account for the sidebar width */
 }
