@@ -5,8 +5,7 @@ import {
   getAllFeedback,
   updateFeedbackStatus,
 } from "../controllers/feedbackController.js";
-import { auth } from "../middleware/auth.js";
-import { adminAuth } from "../middleware/auth.js";
+import { auth, adminAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 

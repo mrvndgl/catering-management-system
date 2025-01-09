@@ -4,12 +4,14 @@ import Feedback from "../models/Feedback.js";
 export const createFeedback = async (req, res) => {
   try {
     const feedback = new Feedback({
-      ...req.body,
-      userId: req.user._id,
+      message: req.body.message,
+      rating: req.body.rating,
+      userId: req.body.userId,
     });
     await feedback.save();
     res.status(201).json(feedback);
   } catch (error) {
+    console.error("Feedback creation error:", error);
     res.status(400).json({ message: error.message });
   }
 };

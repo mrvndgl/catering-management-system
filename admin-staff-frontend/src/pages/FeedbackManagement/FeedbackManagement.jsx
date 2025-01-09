@@ -1,40 +1,60 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FeedbackManagement.css";
 
 const FeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchFeedbacks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:4000/api/feedback/all", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setFeedbacks(data);
+        } else {
+          console.error("Failed to fetch feedbacks:", response.statusText);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching feedbacks:", error);
+        setLoading(false);
+      }
+    };
+
     fetchFeedbacks();
   }, []);
 
-  const fetchFeedbacks = async () => {
+  const handleStatusChange = async (id, status) => {
     try {
-      const response = await fetch("/api/feedback");
-      const data = await response.json();
-      setFeedbacks(data);
-    } catch (error) {
-      console.error("Error fetching feedback:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStatusUpdate = async (id, status) => {
-    try {
-      const response = await fetch(`/api/feedback/${id}`, {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:4000/api/feedback/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status }),
       });
+
       if (response.ok) {
-        fetchFeedbacks();
+        setFeedbacks((prevFeedbacks) =>
+          prevFeedbacks.map((feedback) =>
+            feedback._id === id ? { ...feedback, status } : feedback
+          )
+        );
+      } else {
+        console.error("Failed to update feedback status:", response.statusText);
       }
     } catch (error) {
-      console.error("Error updating feedback:", error);
+      console.error("Error updating feedback status:", error);
     }
   };
 
@@ -43,6 +63,12 @@ const FeedbackManagement = () => {
   return (
     <div className="feedback-management">
       <header className="feedback-header">
+        <button
+          onClick={() => navigate("/admin/dashboard")}
+          className="back-button"
+        >
+          Back to Dashboard
+        </button>
         <h1>Customer Feedback Management</h1>
       </header>
 
@@ -50,7 +76,7 @@ const FeedbackManagement = () => {
         {feedbacks.map((feedback) => (
           <div key={feedback._id} className="feedback-card">
             <div className="feedback-content">
-              <h3>{feedback.customerName}</h3>
+              <h3>{feedback.userId.name}</h3>
               <p className="feedback-text">{feedback.message}</p>
               <div className="feedback-meta">
                 <span>Rating: {"⭐".repeat(feedback.rating)}</span>
@@ -63,9 +89,8 @@ const FeedbackManagement = () => {
               <select
                 value={feedback.status}
                 onChange={(e) =>
-                  handleStatusUpdate(feedback._id, e.target.value)
+                  handleStatusChange(feedback._id, e.target.value)
                 }
-                className={`status-select ${feedback.status}`}
               >
                 <option value="pending">Pending</option>
                 <option value="reviewed">Reviewed</option>

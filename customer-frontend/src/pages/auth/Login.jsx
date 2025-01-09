@@ -21,6 +21,8 @@ const Login = ({ setIsAuthenticated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
       const response = await fetch(
         "http://localhost:4000/api/customers/login",
@@ -34,17 +36,30 @@ const Login = ({ setIsAuthenticated }) => {
       );
 
       const data = await response.json();
+      console.log("Server response:", data); // Debug log
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
       }
 
+      if (!data.user || !data.user._id) {
+        throw new Error("Invalid user data received");
+      }
+
+      // Store user data only if valid
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("userId", data.user._id);
+
       setIsAuthenticated(true);
       navigate("/dashboard");
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Login failed");
+      console.error("Login error details:", {
+        message: err.message,
+        response: err.response,
+        stack: err.stack,
+      });
+      setError(err.message || "Login failed. Please check your credentials.");
     }
   };
 

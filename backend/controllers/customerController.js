@@ -118,29 +118,34 @@ export const customerController = {
 
   login: async (req, res) => {
     try {
-      const { username, password } = req.body; // Changed from email to username
+      const { username, password } = req.body;
 
-      // Changed to find by username instead of email
       const customer = await Customer.findOne({ username });
       if (!customer) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
-      // Verify password
       const isMatch = await bcrypt.compare(password, customer.password);
       if (!isMatch) {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
-      // Generate JWT
       const token = jwt.sign(
         { userId: customer._id, type: "customer" },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
 
-      res.json({ token });
+      // Remove password from response
+      const customerResponse = customer.toObject();
+      delete customerResponse.password;
+
+      res.json({
+        token,
+        user: customerResponse,
+      });
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json({ message: "Server error" });
     }
   },
