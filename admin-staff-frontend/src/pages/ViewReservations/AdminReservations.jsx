@@ -117,7 +117,8 @@ const AdminReservations = () => {
   };
 
   useEffect(() => {
-    Promise.all([fetchReservations(), fetchProducts()]);
+    fetchReservations();
+    fetchProducts();
   }, []);
 
   const fetchReservations = async () => {
@@ -204,17 +205,6 @@ const AdminReservations = () => {
   const goBackToDashboard = () => {
     navigate("/admin/dashboard");
   };
-
-  if (isLoading) {
-    return (
-      <div className="admin-reservations-container">
-        <button className="back-button" onClick={goBackToDashboard}>
-          Back to Dashboard
-        </button>
-        <div className="loading">Loading reservations...</div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (

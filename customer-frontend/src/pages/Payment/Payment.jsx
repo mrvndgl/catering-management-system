@@ -10,11 +10,38 @@ const Payment = () => {
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [paymentProof, setPaymentProof] = useState(null);
   const [products, setProducts] = useState({});
+  const [paymentStatuses, setPaymentStatuses] = useState({});
 
   useEffect(() => {
     fetchAcceptedReservations();
     fetchProducts();
+    fetchPaymentStatuses();
   }, []);
+
+  const fetchPaymentStatuses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/payments/status", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch payment statuses");
+      }
+
+      const data = await response.json();
+      const statusMap = data.reduce((acc, payment) => {
+        acc[payment.reservation_id] = payment.status;
+        return acc;
+      }, {});
+      setPaymentStatuses(statusMap);
+    } catch (error) {
+      console.error("Error fetching payment statuses:", error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -128,6 +155,13 @@ const Payment = () => {
       setPaymentMethod(null);
       setSelectedReservation(null);
       setPaymentProof(null);
+
+      // Update payment status locally
+      setPaymentStatuses((prev) => ({
+        ...prev,
+        [reservationId]: "Pending",
+      }));
+
       await fetchAcceptedReservations();
     } catch (error) {
       console.error("Payment error:", error);
@@ -159,10 +193,30 @@ const Payment = () => {
       );
       setPaymentMethod(null);
       setSelectedReservation(null);
+
+      // Update payment status locally
+      setPaymentStatuses((prev) => ({
+        ...prev,
+        [reservationId]: "Pending",
+      }));
+
       await fetchAcceptedReservations();
     } catch (error) {
       console.error("Payment error:", error);
       setError(error.message);
+    }
+  };
+
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case "Pending":
+        return <div className="status-badge pending">Payment Pending</div>;
+      case "Accepted":
+        return <div className="status-badge accepted">Payment Accepted</div>;
+      case "Declined":
+        return <div className="status-badge declined">Payment Declined</div>;
+      default:
+        return null;
     }
   };
 
@@ -197,6 +251,10 @@ const Payment = () => {
                 >
                   <div className="reservation-header">
                     <h3>Reservation #{reservation.reservation_id}</h3>
+                    {paymentStatuses[reservation.reservation_id] &&
+                      getStatusDisplay(
+                        paymentStatuses[reservation.reservation_id]
+                      )}
                   </div>
 
                   <div className="reservation-details">
@@ -266,111 +324,117 @@ const Payment = () => {
                     </div>
                   </div>
 
-                  {!paymentMethod && (
-                    <div className="payment-buttons">
-                      <button
-                        className="payment-button gcash"
-                        onClick={() =>
-                          handlePaymentMethodSelect(
-                            reservation.reservation_id,
-                            "GCash"
-                          )
-                        }
-                      >
-                        Pay with GCash
-                      </button>
-                      <button
-                        className="payment-button cash"
-                        onClick={() =>
-                          handlePaymentMethodSelect(
-                            reservation.reservation_id,
-                            "Cash"
-                          )
-                        }
-                      >
-                        Pay in Cash
-                      </button>
-                    </div>
+                  {!paymentStatuses[reservation.reservation_id] && (
+                    <>
+                      {!paymentMethod && (
+                        <div className="payment-buttons">
+                          <button
+                            className="payment-button gcash"
+                            onClick={() =>
+                              handlePaymentMethodSelect(
+                                reservation.reservation_id,
+                                "GCash"
+                              )
+                            }
+                          >
+                            Pay with GCash
+                          </button>
+                          <button
+                            className="payment-button cash"
+                            onClick={() =>
+                              handlePaymentMethodSelect(
+                                reservation.reservation_id,
+                                "Cash"
+                              )
+                            }
+                          >
+                            Pay in Cash
+                          </button>
+                        </div>
+                      )}
+
+                      {paymentMethod === "Cash" &&
+                        selectedReservation === reservation.reservation_id && (
+                          <div className="payment-instructions cash">
+                            <h4>Cash Payment Instructions</h4>
+                            <p>
+                              If you prefer to pay with cash, kindly provide
+                              your mobile number so that you and the staff can
+                              schedule a time for the payment to be processed.
+                            </p>
+                            <p className="contact-numbers">
+                              Kindly give the following mobile numbers a call:
+                              09358276798 / 09207129412
+                            </p>
+                            <p>
+                              It is required that at least half of the
+                              reservation's total cost be paid in advance.
+                            </p>
+                            <div className="action-buttons">
+                              <button
+                                className="submit-button"
+                                onClick={() =>
+                                  handleCashPayment(reservation.reservation_id)
+                                }
+                              >
+                                Confirm Cash Payment
+                              </button>
+                              <button
+                                className="close-button"
+                                onClick={() => {
+                                  setPaymentMethod(null);
+                                  setSelectedReservation(null);
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                      {paymentMethod === "GCash" &&
+                        selectedReservation === reservation.reservation_id && (
+                          <div className="payment-instructions gcash">
+                            <h4>GCash Payment Instructions</h4>
+                            <p>
+                              Please upload a screenshot of your GCash payment.
+                            </p>
+                            <p>
+                              At least half of the total amount must be paid in
+                              advance.
+                            </p>
+                            <div className="file-upload">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                                className="file-input"
+                              />
+                            </div>
+                            <div className="action-buttons">
+                              <button
+                                className="submit-button"
+                                onClick={() =>
+                                  handleGCashSubmit(reservation.reservation_id)
+                                }
+                              >
+                                Submit Payment
+                              </button>
+                              <button
+                                className="close-button"
+                                onClick={() => {
+                                  setPaymentMethod(null);
+                                  setSelectedReservation(null);
+                                  setPaymentProof(null);
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                    </>
                   )}
-
-                  {paymentMethod === "Cash" &&
-                    selectedReservation === reservation.reservation_id && (
-                      <div className="payment-instructions cash">
-                        <h4>Cash Payment Instructions</h4>
-                        <p>
-                          If you prefer to pay with cash, kindly provide your
-                          mobile number so that you and the staff can schedule a
-                          time for the payment to be processed.
-                        </p>
-                        <p className="contact-numbers">
-                          Kindly give the following mobile numbers a call:
-                          09358276798 / 09207129412
-                        </p>
-                        <p>
-                          It is required that at least half of the reservation's
-                          total cost be paid in advance.
-                        </p>
-                        <div className="action-buttons">
-                          <button
-                            className="submit-button"
-                            onClick={() =>
-                              handleCashPayment(reservation.reservation_id)
-                            }
-                          >
-                            Confirm Cash Payment
-                          </button>
-                          <button
-                            className="close-button"
-                            onClick={() => {
-                              setPaymentMethod(null);
-                              setSelectedReservation(null);
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                  {paymentMethod === "GCash" &&
-                    selectedReservation === reservation.reservation_id && (
-                      <div className="payment-instructions gcash">
-                        <h4>GCash Payment Instructions</h4>
-                        <p>Please upload a screenshot of your GCash payment.</p>
-                        <p>
-                          At least half of the total amount must be paid in
-                          advance.
-                        </p>
-                        <div className="file-upload">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileUpload}
-                            className="file-input"
-                          />
-                        </div>
-                        <div className="action-buttons">
-                          <button
-                            className="submit-button"
-                            onClick={() =>
-                              handleGCashSubmit(reservation.reservation_id)
-                            }
-                          >
-                            Submit Payment
-                          </button>
-                          <button
-                            className="close-button"
-                            onClick={() => {
-                              setPaymentMethod(null);
-                              setSelectedReservation(null);
-                              setPaymentProof(null);
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
                 </div>
               ))}
             </div>

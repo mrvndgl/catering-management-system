@@ -87,9 +87,9 @@ const Reservation = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [availableTimeSlots] = useState([
-    { id: "lunch", label: "Lunch (11:00 AM - 12:00 PM)" },
-    { id: "early_dinner", label: "Early Dinner (4:00 PM - 5:00 PM)" },
-    { id: "dinner", label: "Dinner (5:00 PM - 7:00 PM)" },
+    { id: "Lunch", label: "Lunch (11:00 AM - 12:00 PM)" },
+    { id: "Early_Dinner", label: "Early Dinner (4:00 PM - 5:00 PM)" },
+    { id: "Dinner", label: "Dinner (5:00 PM - 7:00 PM)" },
   ]);
 
   useEffect(() => {
