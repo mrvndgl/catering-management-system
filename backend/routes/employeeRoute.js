@@ -89,14 +89,25 @@ employeeRouter.post("/login", async (req, res) => {
   try {
     const { username, password, employeeType } = req.body;
 
+    // Add logging to debug
+    console.log("Login attempt:", { username, employeeType });
+
     // Find employee by username and type (admin or staff)
     const employee = await Employee.findOne({ username, employeeType });
+
+    // Add logging to see if employee was found
+    console.log("Employee found:", employee ? "Yes" : "No");
+
     if (!employee) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, employee.password);
+
+    // Add logging for password match
+    console.log("Password match:", isMatch);
+
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -114,7 +125,9 @@ employeeRouter.post("/login", async (req, res) => {
 
     res.json({ token, employeeType: employee.employeeType });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    // Log the actual error
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
@@ -159,17 +172,48 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
       employeeType,
     } = req.body;
 
+    // Add logging
+    console.log("Attempting to create staff member:", {
+      username,
+      employeeType,
+    });
+
     if (employeeType !== "staff") {
       return res
         .status(400)
         .json({ message: "Only staff can be created by the admin" });
     }
 
+    // Check if username or email already exists
+    const existingEmployee = await Employee.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (existingEmployee) {
+      return res.status(400).json({
+        message:
+          existingEmployee.username === username
+            ? "Username already exists"
+            : "Email already exists",
+      });
+    }
+
+    // Get the last employee to determine the next employee_id
+    const lastEmployee = await Employee.findOne(
+      {},
+      {},
+      { sort: { employee_id: -1 } }
+    );
+    const employee_id = lastEmployee
+      ? lastEmployee.employee_id + 1
+      : 1000000000;
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new employee
     const newEmployee = new Employee({
+      employee_id,
       firstName,
       lastName,
       username,
@@ -181,11 +225,21 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
     });
 
     await newEmployee.save();
-    res
-      .status(201)
-      .json({ message: "Staff created successfully", newEmployee });
+
+    // Remove password from response
+    const employeeResponse = newEmployee.toObject();
+    delete employeeResponse.password;
+
+    res.status(201).json({
+      message: "Staff created successfully",
+      employee: employeeResponse,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Staff creation error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 });
 

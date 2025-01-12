@@ -11,20 +11,25 @@ import {
   getMyAcceptedReservations,
   updatePaymentStatus,
 } from "../controllers/reservationController.js";
-import { auth, adminAuth } from "../middleware/auth.js";
+import { auth, adminStaffAuth } from "../middleware/auth.js"; // Changed import
 
 const router = express.Router();
 
-// Add auth middleware to protected routes
-router.post("/", auth, createReservation);
-router.get("/", adminAuth, getAllReservations);
-router.get("/available-dates", auth, getAvailableDates);
-router.get("/customer/:customer_id", auth, getReservationByCustomerId);
-router.put("/:reservation_id", adminAuth, updateReservation); // Important for accepting reservations
-router.delete("/:reservation_id", adminAuth, deleteReservation);
+// Routes accessible by both admin and staff
+router.get("/", adminStaffAuth, getAllReservations);
+router.get(
+  "/customer/:customer_id",
+  adminStaffAuth,
+  getReservationByCustomerId
+);
+router.put("/:reservation_id", adminStaffAuth, updateReservation);
+router.delete("/:reservation_id", adminStaffAuth, deleteReservation);
+router.get("/date/:date", adminStaffAuth, getReservationsByDate);
+router.get("/accepted", adminStaffAuth, getAcceptedReservations);
 
-router.get("/date/:date", auth, getReservationsByDate);
-router.get("/accepted", auth, getAcceptedReservations);
+// Customer-only routes
+router.post("/", auth, createReservation);
+router.get("/available-dates", auth, getAvailableDates);
 router.get("/my-accepted", auth, getMyAcceptedReservations);
 router.put("/:id/payment", auth, updatePaymentStatus);
 

@@ -7,6 +7,7 @@ import AdminReservations from "./pages/ViewReservations/AdminReservations";
 import FeedbackManagement from "./pages/FeedbackManagement/FeedbackManagement";
 import ViewPayment from "./pages/ViewPayment/ViewPayment";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
+import StaffDashboard from "./pages/Dashboard/StaffDashboard";
 
 const App = () => {
   return (
@@ -26,7 +27,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/staff/dashboard" element={<div>Staff Dashboard</div>} />
+        <Route path="/staff/dashboard" element={<StaffDashboard />} />
       </Routes>
     </BrowserRouter>
   );
