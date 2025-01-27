@@ -1,5 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SidebarProvider } from "./context/SidebarContext";
+import AdminSidebar from "./components/Sidebar/AdminSidebar/AdminSidebar";
+import StaffSidebar from "./components/Sidebar/StaffSidebar/StaffSidebar";
 import Login from "./pages/auth/Login";
 import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 import ProductManagement from "./pages/ProductManagement/ProductManagement";
@@ -8,28 +11,58 @@ import FeedbackManagement from "./pages/FeedbackManagement/FeedbackManagement";
 import ViewPayment from "./pages/ViewPayment/ViewPayment";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import StaffDashboard from "./pages/Dashboard/StaffDashboard";
+import AdminReports from "./pages/ViewReports/ViewReports";
 
 const App = () => {
+  const isAuthenticated = !!localStorage.getItem("token");
+  const employeeType = localStorage.getItem("employeeType");
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/products" element={<ProductManagement />} />
-        <Route path="/admin/reservations" element={<AdminReservations />} />
-        <Route path="/admin/feedback" element={<FeedbackManagement />} />
-        <Route
-          path="/admin/payments"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "staff"]}>
-              <ViewPayment />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/staff/dashboard" element={<StaffDashboard />} />
-      </Routes>
-    </BrowserRouter>
+    <SidebarProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminSidebar>
+                  <Routes>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="products" element={<ProductManagement />} />
+                    <Route
+                      path="reservations"
+                      element={<AdminReservations />}
+                    />
+                    <Route path="feedback" element={<FeedbackManagement />} />
+                    <Route path="payments" element={<ViewPayment />} />
+                    <Route path="reports" element={<AdminReports />} />
+                  </Routes>
+                </AdminSidebar>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Staff Routes */}
+          <Route
+            path="/staff/*"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <StaffSidebar>
+                  <Routes>
+                    <Route path="dashboard" element={<StaffDashboard />} />
+                    {/* Add other staff routes here */}
+                  </Routes>
+                </StaffSidebar>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </SidebarProvider>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "../../components/Sidebar/StaffSidebar/StaffSidebar";
 import "./StaffDashboard.css";
 
 const StaffDashboard = () => {
@@ -28,14 +29,6 @@ const StaffDashboard = () => {
       path: "/staff/payments",
     },
   ];
-
-  const handleButtonClick = (section) => {
-    setActivePage(section);
-    const item = navItems.find((item) => item.id === section);
-    if (item) {
-      navigate(item.path);
-    }
-  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -72,35 +65,14 @@ const StaffDashboard = () => {
       )}
 
       {/* Sidebar */}
-      <div className={`sidebar ${isSidebarCollapsed ? "collapsed" : ""}`}>
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">Catering Staff</h2>
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="toggle-button"
-          >
-            ☰
-          </button>
-        </div>
-
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleButtonClick(item.id)}
-              className={`nav-button ${activePage === item.id ? "active" : ""}`}
-            >
-              {item.icon}
-              {!isSidebarCollapsed && <span>{item.label}</span>}
-            </button>
-          ))}
-        </nav>
-
-        <button className="logout-button" onClick={handleLogoutClick}>
-          🚪
-          {!isSidebarCollapsed && <span>Logout</span>}
-        </button>
-      </div>
+      <Sidebar
+        navItems={navItems}
+        activePage={activePage}
+        setActivePage={setActivePage}
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+        handleLogoutClick={handleLogoutClick}
+      />
 
       {/* Main Content */}
       <div className="main-content">
@@ -110,7 +82,7 @@ const StaffDashboard = () => {
           </h1>
         </header>
         <div className="content-area">
-          {/* Page specific content will be rendered here */}
+          {/* Page-specific content will be rendered here */}
         </div>
       </div>
     </div>
