@@ -11,19 +11,6 @@
   margin-bottom: 24px;
 }
 
-.button {
-  padding: 8px 16px;
-  background-color: #4caf50;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.button:hover {
-  background-color: #45a049;
-}
-
 .select {
   padding: 8px;
   border: 1px solid #ddd;
@@ -141,6 +128,95 @@
   margin: 0;
   font-size: 14px;
   color: #666;
+}
+
+.payment-proof {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.proof-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.proof-preview img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.proof-preview img:hover {
+  transform: scale(1.05);
+}
+
+.view-proof-button {
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-proof-button:hover {
+  background-color: #357abd;
+}
+
+.image-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.image-viewer-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90vh;
+  background-color: white;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.image-viewer-content img {
+  max-width: 100%;
+  max-height: calc(90vh - 2rem);
+  object-fit: contain;
+}
+
+.close-button {
+  position: absolute;
+  top: -1.5rem;
+  right: -1.5rem;
+  width: 2rem;
+  height: 2rem;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.close-button:hover {
+  background-color: #f0f0f0;
 }
 
 @media (max-width: 768px) {

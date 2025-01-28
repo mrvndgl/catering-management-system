@@ -63,12 +63,6 @@ const FeedbackManagement = () => {
   return (
     <div className="feedback-management">
       <header className="feedback-header">
-        <button
-          onClick={() => navigate("/admin/dashboard")}
-          className="back-button"
-        >
-          Back to Dashboard
-        </button>
         <h1>Customer Feedback Management</h1>
       </header>
 

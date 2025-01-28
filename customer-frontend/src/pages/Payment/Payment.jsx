@@ -133,6 +133,9 @@ const Payment = () => {
         return;
       }
 
+      setError(null);
+      setSuccessMessage("");
+
       const formData = new FormData();
       formData.append("payment_proof", paymentProof);
       formData.append("reservation_id", reservationId);
@@ -148,15 +151,16 @@ const Payment = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload payment proof");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload payment proof");
       }
 
+      const data = await response.json();
       setSuccessMessage("Payment proof uploaded successfully!");
       setPaymentMethod(null);
       setSelectedReservation(null);
       setPaymentProof(null);
 
-      // Update payment status locally
       setPaymentStatuses((prev) => ({
         ...prev,
         [reservationId]: "Pending",
@@ -165,7 +169,13 @@ const Payment = () => {
       await fetchAcceptedReservations();
     } catch (error) {
       console.error("Payment error:", error);
-      setError(error.message);
+      setError(error.message || "Failed to upload payment proof");
+
+      setPaymentProof(null);
+      const fileInput = document.querySelector(".file-input");
+      if (fileInput) {
+        fileInput.value = "";
+      }
     }
   };
 

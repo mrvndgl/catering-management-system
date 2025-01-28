@@ -1,15 +1,15 @@
-/* Sidebar.css */
 .dashboard-sidebar {
-    width: 250px;
-    height: 100vh;
-    background-color: #1a1a1a;
-    color: white;
-    padding: 1rem;
-    transition: width 0.3s ease;
-    position: fixed;
-    left: 0;
-    top: 0;
-  }
+  width: 250px;
+  height: 100vh;
+  background-color: #1a1a1a;
+  color: white;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100; /* Add this to ensure sidebar stays on top */
+}
   
   .dashboard-sidebar.collapsed {
     width: 60px;

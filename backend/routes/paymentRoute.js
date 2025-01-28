@@ -6,9 +6,12 @@ import {
   getPaymentsByReservation,
   updatePaymentStatus,
   uploadPaymentProof,
+  getPaymentProof,
 } from "../controllers/paymentController.js";
+import multer from "multer";
 
 const router = express.Router();
+const upload = multer({ dest: "uploads/payments/" });
 
 // Admin/Staff payment routes
 router.get("/admin/payments", adminStaffAuth, getAllPayments);
@@ -22,9 +25,15 @@ router.get(
   adminStaffAuth,
   getPaymentsByReservation
 );
+router.get("/admin/payments/proof/:filename", adminStaffAuth, getPaymentProof);
 
 // Customer payment routes
 router.post("/", auth, createPayment);
-router.post("/:payment_id/proof", auth, uploadPaymentProof);
+router.post(
+  "/:payment_id/proof",
+  auth,
+  upload.single("payment_proof"),
+  uploadPaymentProof
+);
 
 export default router;

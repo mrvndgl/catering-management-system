@@ -226,11 +226,8 @@ const ProductManagement = () => {
   return (
     <div className="product-management">
       <div className="header-section">
-        <button className="return-button" onClick={handleReturn}>
-          Return to Dashboard
-        </button>
+        <h1>Manage Products</h1>
       </div>
-
       {error && <div className="error-message">{error}</div>}
 
       <div className="product-forms">

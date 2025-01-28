@@ -11,7 +11,7 @@ import {
   getMyAcceptedReservations,
   updatePaymentStatus,
 } from "../controllers/reservationController.js";
-import { auth, adminStaffAuth } from "../middleware/auth.js"; // Changed import
+import { auth, adminStaffAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 

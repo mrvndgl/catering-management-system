@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSidebar } from "../../../context/SidebarContext";
 import "./AdminSidebar.css";
 
-const AdminSidebar = ({ activePage, setActivePage }) => {
+const AdminSidebar = () => {
   const navigate = useNavigate();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
-  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [activePage, setActivePage] = useState("dashboard"); // Add this line
 
   const navItems = [
     {
@@ -50,7 +51,7 @@ const AdminSidebar = ({ activePage, setActivePage }) => {
   const handleButtonClick = (section) => {
     const item = navItems.find((item) => item.id === section);
     if (item) {
-      setActivePage(section);
+      setActivePage(section); // Now this will work
       navigate(item.path);
     }
   };

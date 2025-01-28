@@ -53,7 +53,7 @@ const AdminReservations = () => {
       }
 
       // Update reservation status
-      const response = await fetch(`/api/reservations/${reservationId}`, {
+      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -220,9 +220,6 @@ const AdminReservations = () => {
   if (error) {
     return (
       <div className="admin-reservations-container">
-        <button className="back-button" onClick={goBackToDashboard}>
-          Back to Dashboard
-        </button>
         <div className="error">Error: {error}</div>
       </div>
     );
@@ -231,9 +228,6 @@ const AdminReservations = () => {
   return (
     <div className="admin-reservations-container">
       <div className="reservations-header">
-        <button className="back-button" onClick={goBackToDashboard}>
-          Back to Dashboard
-        </button>
         <h1>Manage Reservations</h1>
       </div>
 

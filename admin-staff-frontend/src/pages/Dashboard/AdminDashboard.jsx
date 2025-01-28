@@ -1,6 +1,12 @@
+// AdminDashboard.js
 import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar/AdminSidebar";
+import ProductManagement from "../ProductManagement/ProductManagement";
+import AdminReservations from "../ViewReservations/AdminReservations";
+import FeedbackManagement from "../FeedbackManagement/FeedbackManagement";
+import ViewPayment from "../ViewPayment/ViewPayment";
+import AdminReports from "../ViewReports/ViewReports";
 import "./AdminDashboard.css";
 
 const DashboardContent = () => (
@@ -15,7 +21,6 @@ const DashboardContent = () => (
         </div>
       </div>
     </div>
-
     <div className="dashboard-card">
       <div className="stat-card">
         <div className="stat-icon">💰</div>
@@ -26,7 +31,6 @@ const DashboardContent = () => (
         </div>
       </div>
     </div>
-
     <div className="dashboard-card">
       <div className="stat-card">
         <div className="stat-icon">🍽️</div>
@@ -46,17 +50,15 @@ const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <AdminSidebar activePage={activePage} setActivePage={setActivePage} />
-      <div className="dashboard-content">
+      <div className="dashboard-main">
         <Routes>
           <Route path="/" element={<DashboardContent />} />
-          <Route
-            path="/reservations"
-            element={<div>Reservations Content</div>}
-          />
-          <Route path="/products" element={<div>Products Content</div>} />
-          <Route path="/feedback" element={<div>Feedback Content</div>} />
-          <Route path="/payments" element={<div>Payments Content</div>} />
-          <Route path="/reports" element={<div>Reports Content</div>} />
+          <Route path="/dashboard" element={<DashboardContent />} />
+          <Route path="/products" element={<ProductManagement />} />
+          <Route path="/reservations" element={<AdminReservations />} />
+          <Route path="/feedback" element={<FeedbackManagement />} />
+          <Route path="/payments" element={<ViewPayment />} />
+          <Route path="/reports" element={<AdminReports />} />
         </Routes>
       </div>
     </div>

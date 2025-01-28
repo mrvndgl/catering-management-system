@@ -1,20 +1,6 @@
-.return-button {
-    padding: 8px 16px;
-    margin-bottom: 20px;
-    background-color: #45a049;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .return-button:hover {
-    background-color: #4caf50; 
-    transition: 0.3s;
-  }
+.header-section{
+  margin-bottom: 24px;
+}
 
 .product-management {
     padding: 20px;

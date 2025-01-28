@@ -1,6 +1,7 @@
 .admin-dashboard {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
 .dashboard-grid {
@@ -11,7 +12,7 @@
 }
 
 .dashboard-card {
-  background: white;
+  background: #f5f6fa;
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
@@ -58,15 +59,25 @@
   background-color: #45a049;
   color: white;
   padding: 20px;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease; /* Changed to all for smoother transition */
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: fixed; /* Add this */
+  height: 100vh; /* Add this */
+  left: 0; /* Add this */
+  top: 0; /* Add this */
 }
 
 .dashboard-sidebar.collapsed {
   width: 80px;
 }
+
+.dashboard-main.sidebar-collapsed {
+  margin-left: 60px;
+  width: calc(100% - 60px);
+}
+
 
 .sidebar-toggle {
   display: flex;
@@ -163,6 +174,9 @@
   flex: 1;
   padding: 20px;
   background-color: #f5f6fa;
+  margin-left: 250px;
+  transition: margin-left 0.3s ease;
+  width: calc(100% - 250px);
 }
 
 .content-area {

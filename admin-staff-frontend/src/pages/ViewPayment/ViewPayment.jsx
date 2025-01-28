@@ -8,6 +8,7 @@ const ViewPayment = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [expandedImage, setExpandedImage] = useState(null);
 
   useEffect(() => {
     fetchPayments();
@@ -33,30 +34,19 @@ const ViewPayment = () => {
           if (
             !acc[payment.reservation_id] ||
             (payment.payment_status === "Paid" &&
-              acc[payment.reservation_id].payment_status !== "Paid") ||
-            payment.created_at > acc[payment.reservation_id].created_at
+              acc[payment.reservation_id].payment_status !== "Paid")
           ) {
             acc[payment.reservation_id] = payment;
           }
           return acc;
         }, {});
-
-        setPayments(
-          Object.values(latestPayments).sort(
-            (a, b) => new Date(b.created_at) - new Date(a.created_at)
-          )
-        );
+        setPayments(Object.values(latestPayments));
       }
       setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching payments:", error);
       setError(error.message);
       setIsLoading(false);
     }
-  };
-
-  const handleReturn = () => {
-    navigate("/admin/dashboard");
   };
 
   const getStatusClass = (status) => {
@@ -74,6 +64,37 @@ const ViewPayment = () => {
     }
   };
 
+  // Image viewer modal component
+  const ImageViewer = ({ imageUrl, onClose }) => (
+    <div className="image-viewer-overlay" onClick={onClose}>
+      <div
+        className="image-viewer-content"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="close-button" onClick={onClose}>
+          ×
+        </button>
+        <img src={imageUrl} alt="Payment proof" />
+      </div>
+    </div>
+  );
+
+  const handleImageClick = (imageUrl) => {
+    setExpandedImage(imageUrl);
+  };
+
+  const handleCloseImage = () => {
+    setExpandedImage(null);
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   if (isLoading) {
     return <div className="loading">Loading payments...</div>;
   }
@@ -90,10 +111,7 @@ const ViewPayment = () => {
   return (
     <div className="page">
       <div className="header">
-        <button onClick={handleReturn} className="button">
-          Return to Dashboard
-        </button>
-
+        <h1>Manage Payments</h1>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -146,11 +164,41 @@ const ViewPayment = () => {
                     <p>{payment.notes}</p>
                   </div>
                 )}
+                {payment.payment_proof && (
+                  <div className="payment-proof">
+                    <div className="proof-preview">
+                      <img
+                        src={`/api/payments/proof/${payment.payment_proof}`}
+                        alt="Payment proof thumbnail"
+                        onClick={() =>
+                          setExpandedImage(
+                            `/api/payments/proof/${payment.payment_proof}`
+                          )
+                        }
+                      />
+                      <button
+                        className="view-proof-button"
+                        onClick={() =>
+                          setExpandedImage(
+                            `/api/payments/proof/${payment.payment_proof}`
+                          )
+                        }
+                      >
+                        View Payment Proof
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
+      {expandedImage && (
+        <div className="expanded-image-overlay" onClick={handleCloseImage}>
+          <img src={expandedImage} alt="Expanded Payment Proof" />
+        </div>
+      )}
     </div>
   );
 };
