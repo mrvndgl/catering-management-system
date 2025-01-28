@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
+import assets from "../../assets/index.js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -59,58 +60,65 @@ const Login = () => {
 
   return (
     <div className="login-container">
-      <form onSubmit={handleSubmit} className="login-form">
-        <div className="login-header">
-          <h2>Employee Login</h2>
+      <div className="login-form-section">
+        <div className="login-form-wrapper">
+          <h2>Login</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <select
+                id="employeeType"
+                name="employeeType"
+                value={formData.employeeType}
+                onChange={handleChange}
+                required
+              >
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="Username"
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Password"
+              />
+            </div>
+
+            {error && <div className="error-message">{error}</div>}
+
+            <button
+              type="submit"
+              className={`submit-button ${loading ? "loading" : ""}`}
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
         </div>
-
-        <div className="form-group">
-          <select
-            id="employeeType"
-            name="employeeType"
-            value={formData.employeeType}
-            onChange={handleChange}
-            required
-          >
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <input
-            id="username"
-            name="username"
-            type="text"
-            required
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Username"
-          />
-        </div>
-
-        <div className="form-group">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Password"
-          />
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-
-        <button
-          type="submit"
-          className={`submit-button ${loading ? "loading" : ""}`}
-          disabled={loading}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+      </div>
+      <div className="login-right">
+        <div
+          className="login-image"
+          style={{ backgroundImage: `url(${assets.samplebg})` }}
+        />
+      </div>
     </div>
   );
 };
