@@ -6,6 +6,7 @@ import AdminReservations from "../ViewReservations/AdminReservations";
 import FeedbackManagement from "../FeedbackManagement/FeedbackManagement";
 import ViewPayment from "../ViewPayment/ViewPayment";
 import AdminReports from "../ViewReports/ViewReports";
+import ViewAccounts from "../ViewAccounts/ViewAccounts";
 import "./AdminDashboard.css";
 
 const DashboardContent = () => (
@@ -105,6 +106,14 @@ const AdminDashboard = () => {
           element={
             <PageWrapper title="Reports & Analytics">
               <AdminReports />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/accounts"
+          element={
+            <PageWrapper title="Manage Accounts">
+              <ViewAccounts />
             </PageWrapper>
           }
         />

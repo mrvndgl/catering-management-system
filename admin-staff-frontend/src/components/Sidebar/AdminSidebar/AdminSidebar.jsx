@@ -46,6 +46,12 @@ const AdminSidebar = () => {
       label: "Reports",
       path: "/admin/reports",
     },
+    {
+      id: "accounts",
+      icon: "👥",
+      label: "Accounts",
+      path: "/admin/accounts",
+    },
   ];
 
   const handleButtonClick = (section) => {
