@@ -2,7 +2,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   background-color: #fff;
-  overflow: hidden; /* Prevent scrolling */
+  overflow: hidden; 
 }
 
 .login-container {
@@ -68,8 +68,8 @@ body {
 .submit-button {
   width: 100%;
   padding: 12px;
-  background-color: #008037;
-  color: white;
+  background-color: #008037 !important;
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -79,11 +79,11 @@ body {
 }
 
 .submit-button:hover:not(:disabled) {
-  background-color: #006c2f;
+  background-color: #006c2f !important;
 }
 
 .submit-button:disabled {
-  background-color: #cccccc;
+  background-color: #ffffff;
   cursor: not-allowed;
 }
 

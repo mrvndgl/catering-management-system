@@ -11,6 +11,29 @@ import {
 
 const employeeRouter = express.Router();
 
+// Get all staff accounts (admin only)
+employeeRouter.get("/staff", adminAuth, async (req, res) => {
+  try {
+    const staffAccounts = await Employee.find({ employeeType: "staff" })
+      .select("-password -photo")
+      .sort({ employee_id: 1 });
+    res.json(staffAccounts);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Delete staff account (admin only)
+employeeRouter.delete("/staff/:id", adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Employee.findOneAndDelete({ _id: id, employeeType: "staff" });
+    res.json({ message: "Staff account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 // Admin registration
 employeeRouter.post("/admin/register", async (req, res) => {
   try {
@@ -84,18 +107,15 @@ employeeRouter.post("/admin/register", async (req, res) => {
   }
 });
 
-// Admin login route (for login of admin and staff)
+// Login route (for both admin and staff)
 employeeRouter.post("/login", async (req, res) => {
   try {
     const { username, password, employeeType } = req.body;
 
-    // Add logging to debug
     console.log("Login attempt:", { username, employeeType });
 
-    // Find employee by username and type (admin or staff)
+    // Find employee by username and type
     const employee = await Employee.findOne({ username, employeeType });
-
-    // Add logging to see if employee was found
     console.log("Employee found:", employee ? "Yes" : "No");
 
     if (!employee) {
@@ -104,8 +124,6 @@ employeeRouter.post("/login", async (req, res) => {
 
     // Verify password
     const isMatch = await bcrypt.compare(password, employee.password);
-
-    // Add logging for password match
     console.log("Password match:", isMatch);
 
     if (!isMatch) {
@@ -125,7 +143,6 @@ employeeRouter.post("/login", async (req, res) => {
 
     res.json({ token, employeeType: employee.employeeType });
   } catch (error) {
-    // Log the actual error
     console.error("Login error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -134,16 +151,14 @@ employeeRouter.post("/login", async (req, res) => {
 // Staff profile update route
 employeeRouter.put("/staff/profile", staffAuth, async (req, res) => {
   try {
-    const { userId } = req.user; // Extracted from auth middleware
+    const { userId } = req.user;
     const { firstName, lastName, contactNumber, address, email } = req.body;
 
-    // Find the employee by ID
     const employee = await Employee.findById(userId);
     if (!employee || employee.employeeType !== "staff") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Update staff profile
     employee.firstName = firstName || employee.firstName;
     employee.lastName = lastName || employee.lastName;
     employee.contactNumber = contactNumber || employee.contactNumber;
@@ -158,7 +173,7 @@ employeeRouter.put("/staff/profile", staffAuth, async (req, res) => {
   }
 });
 
-// Admin route to create a new staff
+// Create new staff account (admin only)
 employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
   try {
     const {
@@ -172,7 +187,6 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
       employeeType,
     } = req.body;
 
-    // Add logging
     console.log("Attempting to create staff member:", {
       username,
       employeeType,
@@ -181,7 +195,7 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
     if (employeeType !== "staff") {
       return res
         .status(400)
-        .json({ message: "Only staff can be created by the admin" });
+        .json({ message: "Only staff accounts can be created" });
     }
 
     // Check if username or email already exists
@@ -240,6 +254,37 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
       message: "Server error",
       error: error.message,
     });
+  }
+});
+
+// Update staff account (admin only)
+employeeRouter.put("/staff/:id", adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, contactNumber, address } = req.body;
+
+    const updatedEmployee = await Employee.findOneAndUpdate(
+      { _id: id, employeeType: "staff" },
+      {
+        firstName,
+        lastName,
+        email,
+        contactNumber,
+        address,
+      },
+      { new: true }
+    ).select("-password -photo");
+
+    if (!updatedEmployee) {
+      return res.status(404).json({ message: "Staff member not found" });
+    }
+
+    res.json({
+      message: "Staff updated successfully",
+      employee: updatedEmployee,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

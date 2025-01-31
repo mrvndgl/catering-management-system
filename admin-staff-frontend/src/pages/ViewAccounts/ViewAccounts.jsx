@@ -22,16 +22,47 @@ const ViewAccounts = () => {
   const fetchAccounts = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/employee/staff", {
+      console.log("Fetching accounts with token", token);
+
+      const response = await fetch("/api/employees/staff", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch accounts");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch accounts");
       }
 
       const data = await response.json();
+      console.log("Fetched accounts", data);
       setAccounts(data);
+    } catch (err) {
+      console.error("Failed to fetch accounts", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this account?"))
+      return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/employees/staff/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete account");
+      }
+
+      setAccounts(accounts.filter((account) => account._id !== id));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -52,7 +83,7 @@ const ViewAccounts = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/employee/staff/create", {
+      const response = await fetch("/api/employees/staff/create", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,7 +121,7 @@ const ViewAccounts = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`/api/employee/staff/${id}`, {
+      const response = await fetch(`/api/employees/staff/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -256,6 +287,13 @@ const ViewAccounts = () => {
                       disabled={loading}
                     >
                       Edit
+                    </button>
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDeleteAccount(account._id)}
+                      disabled={loading}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
