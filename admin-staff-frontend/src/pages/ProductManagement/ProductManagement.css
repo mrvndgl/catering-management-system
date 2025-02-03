@@ -119,6 +119,16 @@
     gap: 10px; 
   }
   
+.cancel-button{
+  background-color: #ffffff;
+  color: #4caf50;
+} 
+
+.cancel-button:hover {
+  background-color: #ddd;
+  color: #ffffff;
+}
+
   .edit-button,
 .delete-button {
   background-color: #4caf50;

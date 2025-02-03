@@ -3,7 +3,8 @@ import Category from "../models/Category.js";
 
 export const createProduct = async (req, res) => {
   try {
-    const { product_id, category_id, product_name, product_details } = req.body;
+    const { product_id, category_id, product_name, product_details, images } =
+      req.body;
 
     // i convert ang string to number if needed
     const numericProductId = Number(product_id);
@@ -41,6 +42,11 @@ export const createProduct = async (req, res) => {
       category_id: numericCategoryId,
       product_name,
       product_details,
+      images:
+        images?.map((img) => ({
+          url: img.url,
+          is_primary: img.is_primary || false,
+        })) || [],
     });
 
     const savedProduct = await newProduct.save();
@@ -71,7 +77,14 @@ export const getAllProducts = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { product_id } = req.params;
-    const updateData = req.body;
+    const updateData = {
+      ...req.body,
+      images:
+        req.body.images?.map((img) => ({
+          url: img.url,
+          is_primary: img.is_primary || false,
+        })) || [],
+    };
 
     // Convert numeric fields
     if (updateData.category_id) {

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import "./ProductManagement.css";
 
 const ProductManagement = () => {
-  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [productImages, setProductImages] = useState([]);
   const [productForm, setProductForm] = useState({
     product_id: "",
     category_id: "",
@@ -35,20 +34,19 @@ const ProductManagement = () => {
     fetchCategories();
   }, []);
 
-  // Generate the next available product ID
   const getNextProductId = () => {
     if (products.length === 0) return 1;
     const maxId = Math.max(...products.map((p) => Number(p.product_id)));
     return maxId + 1;
   };
 
-  // Auto-fill product ID when form is reset or component mounts
   useEffect(() => {
     if (!isEditing) {
       setProductForm((prev) => ({
         ...prev,
         product_id: getNextProductId(),
       }));
+      setProductImages([]);
     }
   }, [products, isEditing]);
 
@@ -70,12 +68,178 @@ const ProductManagement = () => {
     }
   };
 
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      file,
+      is_primary: productImages.length === 0,
+    }));
+    setProductImages((prev) => [...prev, ...newImages]);
+  };
+
+  const handleSetPrimaryImage = (imageUrl) => {
+    setProductImages((prev) =>
+      prev.map((img) => ({
+        ...img,
+        is_primary: img.url === imageUrl,
+      }))
+    );
+  };
+
+  const handleRemoveImage = (imageUrl) => {
+    setProductImages((prev) => prev.filter((img) => img.url !== imageUrl));
+  };
+
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch("http://localhost:4000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Image upload failed");
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      throw error;
+    }
+  };
+
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Upload images
+      const uploadedImageUrls = await Promise.all(
+        productImages
+          .filter((img) => img.file)
+          .map((img) => uploadImage(img.file))
+      );
+
+      // Prepare image data with primary flag
+      const images = uploadedImageUrls.map((url, index) => ({
+        url,
+        is_primary: productImages[index].is_primary,
+      }));
+
+      const url = isEditing
+        ? `http://localhost:4000/api/products/${productForm.product_id}`
+        : "http://localhost:4000/api/products/create";
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...productForm,
+          product_id: Number(productForm.product_id),
+          category_id: Number(productForm.category_id),
+          images,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save product");
+      }
+
+      await fetchProducts();
+      setProductForm({
+        product_id: "",
+        category_id: "",
+        product_name: "",
+        product_details: "",
+      });
+      setProductImages([]);
+      setIsEditing(false);
+      setError("");
+    } catch (error) {
+      console.error("Error submitting product:", error);
+      setError(`Failed to save product: ${error.message}`);
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setIsEditing(true);
+    setProductForm({
+      ...product,
+      category_id: Number(product.category_id),
+    });
+    // If product has images, set them
+    setProductImages(
+      product.images?.map((img) => ({
+        url: img.url,
+        is_primary: img.is_primary,
+        // Note: existing images won't have a file object
+      })) || []
+    );
+    setError("");
+  };
+
+  const handleDeleteProduct = async (product_id) => {
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/products/${product_id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to delete product");
+      }
+
+      await fetchProducts();
+      setError("");
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      setError(`Failed to delete product: ${error.message}`);
+    }
+  };
+
+  const handleProductInputChange = (e) => {
+    const { name, value } = e.target;
+    setProductForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "category_id" || name === "product_id"
+          ? Number(value) || value
+          : value,
+    }));
+  };
+
   const handleCategoryInputChange = (e) => {
     const { name, value } = e.target;
     setCategoryForm((prev) => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/products");
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      // Optional: Add state for error handling
+      // setError(error.message);
+    }
   };
 
   const handleCategorySubmit = async (e) => {
@@ -110,112 +274,6 @@ const ProductManagement = () => {
     } catch (error) {
       console.error("Error adding category:", error);
       setError(`Failed to add category: ${error.message}`);
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("http://localhost:4000/api/products");
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch products (Status: ${response.status})`
-        );
-      }
-      const data = await response.json();
-      setProducts(Array.isArray(data) ? data : []);
-      setError("");
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      setError("Failed to load products - Please try again later");
-      setProducts([]);
-    }
-  };
-
-  const handleProductInputChange = (e) => {
-    const { name, value } = e.target;
-    setProductForm((prev) => ({
-      ...prev,
-      [name]:
-        name === "category_id" || name === "product_id"
-          ? Number(value) || value
-          : value,
-    }));
-  };
-
-  const handleProductSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const url = isEditing
-        ? `http://localhost:4000/api/products/${productForm.product_id}`
-        : "http://localhost:4000/api/products/create";
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...productForm,
-          product_id: Number(productForm.product_id),
-          category_id: Number(productForm.category_id),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.error && data.error.includes("duplicate key error")) {
-          throw new Error(
-            `Product ID ${productForm.product_id} already exists. Please use a different ID.`
-          );
-        }
-        throw new Error(data.message || "Failed to save product");
-      }
-
-      await fetchProducts();
-      setProductForm({
-        product_id: "",
-        category_id: "",
-        product_name: "",
-        product_details: "",
-      });
-      setIsEditing(false);
-      setError("");
-    } catch (error) {
-      console.error("Error submitting product:", error);
-      setError(`Failed to save product: ${error.message}`);
-    }
-  };
-
-  const handleEditProduct = (product) => {
-    setIsEditing(true);
-    setProductForm({
-      ...product,
-      category_id: Number(product.category_id),
-    });
-    setError("");
-  };
-
-  const handleDeleteProduct = async (product_id) => {
-    try {
-      const response = await fetch(
-        `http://localhost:4000/api/products/${product_id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to delete product");
-      }
-
-      await fetchProducts();
-      setError("");
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      setError(`Failed to delete product: ${error.message}`);
     }
   };
 
@@ -266,11 +324,52 @@ const ProductManagement = () => {
               onChange={handleProductInputChange}
               maxLength="30"
             />
+
+            <div className="image-upload-section">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+              <div className="image-preview-container">
+                {productImages.map((image) => (
+                  <div key={image.url} className="image-preview">
+                    <img
+                      src={image.url}
+                      alt="Product"
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <div className="image-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleSetPrimaryImage(image.url)}
+                        disabled={image.is_primary}
+                      >
+                        {image.is_primary ? "Primary" : "Set Primary"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(image.url)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <button type="submit">
               {isEditing ? "Update Product" : "Add Product"}
             </button>
             {isEditing && (
               <button
+                className="cancel-button"
                 type="button"
                 onClick={() => {
                   setIsEditing(false);

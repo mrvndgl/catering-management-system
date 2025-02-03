@@ -25,10 +25,20 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    images: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        is_primary: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 productSchema.index({ product_id: 1, category_id: 1 });
