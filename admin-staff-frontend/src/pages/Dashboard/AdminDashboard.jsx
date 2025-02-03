@@ -41,7 +41,7 @@ const DashboardContent = () => (
             <div className="stat-icon">🍽️</div>
             <div className="stat-content">
               <h3>Products</h3>
-              <p className="stat-number">45</p>
+              <p className="stat-number">41</p>
               <p className="stat-label">Active Items</p>
             </div>
           </div>

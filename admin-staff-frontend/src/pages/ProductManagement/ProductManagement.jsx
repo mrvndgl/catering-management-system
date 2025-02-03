@@ -219,15 +219,8 @@ const ProductManagement = () => {
     }
   };
 
-  const handleReturn = () => {
-    navigate("/admin/dashboard");
-  };
-
   return (
     <div className="product-management">
-      <div className="header-section">
-        <h1>Manage Products</h1>
-      </div>
       {error && <div className="error-message">{error}</div>}
 
       <div className="product-forms">

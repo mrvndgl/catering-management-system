@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import "./AdminReservations.css";
+import "./StaffReservations.css";
 
-const AdminReservations = () => {
+const StaffReservations = () => {
   const [reservations, setReservations] = useState([]);
   const [products, setProducts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -364,4 +364,4 @@ const AdminReservations = () => {
   );
 };
 
-export default AdminReservations;
+export default StaffReservations;

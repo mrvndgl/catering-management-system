@@ -1,7 +1,8 @@
 .dashboard-container {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
 }
 
 /* Main Content Area */
@@ -9,96 +10,210 @@
   flex: 1;
   background-color: #ffffff;
   overflow-y: auto;
+  width: 100%;
 }
 
 .main-header {
   background-color: white;
-  padding: 20px;
+  padding: 1.25rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .page-title {
   margin: 0;
   font-size: 1.8rem;
   color: #2c3e50;
+  font-weight: 600;
 }
 
 .content-area {
-  padding: 20px;
+  padding: 1.25rem;
 }
 
-/* Logout Modal Styles */
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Stat Cards */
+.stat-card {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+.stat-number {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.stat-label {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* Logout Modal */
 .logout-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1rem;
   z-index: 1000;
 }
 
 .logout-modal-content {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 300px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: min(90%, 300px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .logout-modal-actions {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 }
 
 .logout-confirm-btn,
 .logout-cancel-btn {
-  padding: 8px 16px;
+  padding: 0.75rem 1.25rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   min-width: 100px;
-  transition: opacity 0.2s ease;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.logout-confirm-btn {
+  background-color: #B22222;
+  color: white;
 }
 
 .logout-confirm-btn:hover {
   background-color: #9B1D1D;
 }
 
-.logout-cancel-btn:hover {
-  background-color: gray;
-}
-
-.logout-confirm-btn {
-  background-color: #B22222;
-  color: #ffffff;
-  font-weight: 300;
-}
-
 .logout-cancel-btn {
   background-color: #8F8F8F;
-  color: #ffffff;
-  font-weight: 300;
+  color: white;
 }
 
-/* Media Queries */
-@media (max-width: 768px) {
-  .logout-modal-content {
-    width: 90%;
-    max-width: 300px;
-    margin: 0 20px;
-  }
+.logout-cancel-btn:hover {
+  background-color: #757575;
+}
 
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  
+  .stat-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-header {
+    padding: 1rem;
+  }
+  
+  .content-area {
+    padding: 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .stat-number {
+    font-size: 1.25rem;
+  }
+  
   .logout-modal-actions {
     flex-direction: column;
   }
-
+  
   .logout-confirm-btn,
   .logout-cancel-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+  .dashboard-card:hover {
+    transform: none;
+  }
+  
+  .logout-confirm-btn,
+  .logout-cancel-btn {
+    padding: 0.875rem 1.5rem;
   }
 }

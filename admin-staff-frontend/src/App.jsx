@@ -3,13 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "./context/SidebarContext";
 import Login from "./pages/auth/Login";
 import AdminDashboard from "./pages/Dashboard/AdminDashboard";
-import ProductManagement from "./pages/ProductManagement/ProductManagement";
-import AdminReservations from "./pages/ViewReservations/AdminReservations";
-import FeedbackManagement from "./pages/FeedbackManagement/FeedbackManagement";
-import ViewPayment from "./pages/ViewPayment/ViewPayment";
 import ProtectedRoute from "./pages/auth/ProtectedRoute";
 import StaffDashboard from "./pages/Dashboard/StaffDashboard";
-import AdminReports from "./pages/ViewReports/ViewReports";
 
 const App = () => {
   return (

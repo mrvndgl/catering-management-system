@@ -62,10 +62,6 @@ const FeedbackManagement = () => {
 
   return (
     <div className="feedback-management">
-      <header className="feedback-header">
-        <h1>Customer Feedback Management</h1>
-      </header>
-
       <div className="feedback-grid">
         {feedbacks.map((feedback) => (
           <div key={feedback._id} className="feedback-card">

@@ -111,7 +111,6 @@ const ViewPayment = () => {
   return (
     <div className="page">
       <div className="header">
-        <h1>Manage Payments</h1>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}

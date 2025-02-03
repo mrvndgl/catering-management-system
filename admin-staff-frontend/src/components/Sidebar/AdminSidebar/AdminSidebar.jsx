@@ -7,7 +7,7 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [activePage, setActivePage] = useState("dashboard"); // Add this line
+  const [activePage, setActivePage] = useState("dashboard");
 
   const navItems = [
     {
