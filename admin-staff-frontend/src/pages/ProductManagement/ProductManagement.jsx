@@ -52,19 +52,98 @@ const ProductManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/categories");
+      // Get the token from localStorage or your auth storage
+      const token = localStorage.getItem("token"); // or 'accessToken' depending on your key name
+
+      if (!token) {
+        setError("No authentication token found - please log in");
+        setCategories(predefinedCategories);
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:4000/api/products/categories",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Make sure this matches your backend's expected format
+          },
+        }
+      );
+
       if (!response.ok) {
+        console.error(
+          `HTTP Error Response: ${response.status} ${response.statusText}`
+        );
+
+        if (response.status === 401) {
+          // Clear invalid token
+          localStorage.removeItem("token");
+          throw new Error("Authentication required - please log in");
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            "Categories endpoint not found - please check API route configuration"
+          );
+        }
+
         throw new Error(
           `Failed to fetch categories (Status: ${response.status})`
         );
       }
+
       const data = await response.json();
-      setCategories(data.length > 0 ? data : predefinedCategories);
+
+      // Transform the data to match your component's needs
+      const formattedCategories = data.map((category) => ({
+        value: category.category_id,
+        label: category.category_name,
+        details: category.category_details,
+      }));
+
+      setCategories(
+        formattedCategories.length > 0
+          ? formattedCategories
+          : predefinedCategories
+      );
       setError("");
     } catch (error) {
       console.error("Error fetching categories:", error);
       setCategories(predefinedCategories);
-      setError("Using default categories - Unable to connect to server");
+      setError(`Using default categories - ${error.message}`);
+    }
+  };
+
+  // If you need to create a new category
+  const createNewCategory = async (categoryData) => {
+    try {
+      const response = await fetch(
+        "http://localhost:4000/api/products/category/create",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${yourAuthToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            category_id: categoryData.id,
+            category_name: categoryData.name,
+            category_details: categoryData.details,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create category");
+      }
+
+      const newCategory = await response.json();
+      return newCategory;
+    } catch (error) {
+      console.error("Error creating category:", error);
+      throw error;
     }
   };
 
