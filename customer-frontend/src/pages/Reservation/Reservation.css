@@ -1,6 +1,6 @@
 .reservation-container {
-  margin-left: 280px;
-  max-width: 1200px;
+  margin-left: 280px !important;
+  min-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   background-color: #ffffff;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Reservation.css";
+import FoodImageTippy from "../../components/FoodImageTippy";
 
 const BASE_PAX = 50;
 const PRICE_PER_HEAD = 350;
@@ -396,7 +397,10 @@ const Reservation = () => {
                       }
                       onChange={() => {}}
                     />
-                    {product.product_name}
+                    <FoodImageTippy
+                      key={`${product?.product_name}-${product.product_id}`}
+                      product={product}
+                    />
                   </div>
                 ))}
               </div>
@@ -473,6 +477,11 @@ const Reservation = () => {
                         product.product_id
                       )}
                     >
+                      <img
+                        alt="sample"
+                        src=" "
+                        style={{ width: "250px", height: "250px" }}
+                      />
                       {product.product_name}
                     </button>
                   ))}

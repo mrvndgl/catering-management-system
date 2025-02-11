@@ -1,5 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  CreditCard,
+  Utensils,
+  MessageSquare,
+  BarChart3,
+  Users,
+  LogOut,
+  Menu,
+} from "lucide-react";
 import { useSidebar } from "../../../context/SidebarContext";
 import "./AdminSidebar.css";
 
@@ -12,43 +23,43 @@ const AdminSidebar = () => {
   const navItems = [
     {
       id: "dashboard",
-      icon: "📊",
+      icon: LayoutDashboard,
       label: "Dashboard",
       path: "/admin/dashboard",
     },
     {
       id: "reservations",
-      icon: "📋",
+      icon: ClipboardList,
       label: "Reservations",
       path: "/admin/reservations",
     },
     {
       id: "payment",
-      icon: "💳",
+      icon: CreditCard,
       label: "Payments",
       path: "/admin/payments",
     },
     {
       id: "products",
-      icon: "🍽️",
+      icon: Utensils,
       label: "Products",
       path: "/admin/products",
     },
     {
       id: "feedback",
-      icon: "💬",
+      icon: MessageSquare,
       label: "Feedback",
       path: "/admin/feedback",
     },
     {
       id: "reports",
-      icon: "📈",
+      icon: BarChart3,
       label: "Reports",
       path: "/admin/reports",
     },
     {
       id: "accounts",
-      icon: "👥",
+      icon: Users,
       label: "Accounts",
       path: "/admin/accounts",
     },
@@ -57,7 +68,7 @@ const AdminSidebar = () => {
   const handleButtonClick = (section) => {
     const item = navItems.find((item) => item.id === section);
     if (item) {
-      setActivePage(section); // Now this will work
+      setActivePage(section);
       navigate(item.path);
     }
   };
@@ -75,7 +86,6 @@ const AdminSidebar = () => {
   const cancelLogout = () => {
     setShowLogoutConfirm(false);
   };
-
   return (
     <>
       {showLogoutConfirm && (
@@ -103,27 +113,34 @@ const AdminSidebar = () => {
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="toggle-btn"
           >
-            ☰
+            <Menu />
           </button>
         </div>
 
         <nav className="nav-menu">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleButtonClick(item.id)}
-              className={`nav-link ${activePage === item.id ? "active" : ""}`}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {!isSidebarCollapsed && (
-                <span className="nav-text">{item.label}</span>
-              )}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleButtonClick(item.id)}
+                className={`nav-link ${activePage === item.id ? "active" : ""}`}
+              >
+                <span className="nav-icon">
+                  <IconComponent size={20} strokeWidth={1.5} />
+                </span>
+                {!isSidebarCollapsed && (
+                  <span className="nav-text">{item.label}</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <button className="nav-link logout-link" onClick={handleLogoutClick}>
-          <span className="nav-icon">🚪</span>
+          <span className="nav-icon">
+            <LogOut size={20} strokeWidth={1.5} />
+          </span>
           {!isSidebarCollapsed && <span className="nav-text">Logout</span>}
         </button>
       </div>

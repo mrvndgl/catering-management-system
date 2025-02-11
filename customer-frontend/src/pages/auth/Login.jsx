@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
 import "./Login.css";
+import { useSidebar } from "../../context/SidebarContext";
 import backgroundImage from "../../assets/samplebg.jpg";
 
-const Login = ({ setIsAuthenticated }) => {
+const Login = () => {
+  const { setIsAuthenticated } = useSidebar();
   const [formData, setFormData] = useState({
     username: "",
     password: "",

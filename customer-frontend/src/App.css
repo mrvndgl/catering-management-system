@@ -10,19 +10,18 @@ body {
 }
 
 .app {
-  min-height: 100vh; /* Change back to min-height */
+  min-height: 100vh;
 }
 
 .dashboard-layout {
   display: flex;
-  min-height: 100vh; /* Change back to min-height */
+  width: 100%;
+  min-height: 100vh;
 }
 
 .dashboard-container {
   flex: 1;
-  margin-left: 280px;
-  width: calc(100% - 280px);
-  padding: 0; /* Remove padding here to allow image to fill */
+  width: calc(100% - 280px); /* Subtract sidebar width */
 }
 
 .header {

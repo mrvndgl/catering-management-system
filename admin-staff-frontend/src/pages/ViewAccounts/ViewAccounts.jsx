@@ -151,8 +151,6 @@ const ViewAccounts = () => {
 
   return (
     <div className="accounts-container">
-      <h1>Manage Staff Accounts</h1>
-
       {error && (
         <div className="error-message">
           <span>{error}</span>

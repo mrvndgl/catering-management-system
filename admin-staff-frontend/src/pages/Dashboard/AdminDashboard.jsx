@@ -7,10 +7,12 @@ import FeedbackManagement from "../FeedbackManagement/FeedbackManagement";
 import ViewPayment from "../ViewPayment/ViewPayment";
 import AdminReports from "../ViewReports/ViewReports";
 import ViewAccounts from "../ViewAccounts/ViewAccounts";
+import { ClipboardList, CreditCard, Utensils } from "lucide-react";
 import "./AdminDashboard.css";
+import { useSidebar } from "../../context/SidebarContext";
 
-const DashboardContent = () => (
-  <div className="main-content">
+const DashboardContent = ({ isSidebarCollapsed }) => (
+  <div className={`main-content ${isSidebarCollapsed ? "collapsed" : ""}`}>
     <div className="main-header">
       <h1 className="page-title">Dashboard Overview</h1>
     </div>
@@ -18,7 +20,9 @@ const DashboardContent = () => (
       <div className="dashboard-grid">
         <div className="dashboard-card">
           <div className="stat-card">
-            <div className="stat-icon">📋</div>
+            <div className="stat-icon">
+              <ClipboardList size={50} color="#ffffff" />
+            </div>
             <div className="stat-content">
               <h3>Total Reservations</h3>
               <p className="stat-number">150</p>
@@ -28,7 +32,9 @@ const DashboardContent = () => (
         </div>
         <div className="dashboard-card">
           <div className="stat-card">
-            <div className="stat-icon">💰</div>
+            <div className="stat-icon">
+              <CreditCard size={50} color="#ffffff" />
+            </div>
             <div className="stat-content">
               <h3>Revenue</h3>
               <p className="stat-number">₱25,000</p>
@@ -38,7 +44,9 @@ const DashboardContent = () => (
         </div>
         <div className="dashboard-card">
           <div className="stat-card">
-            <div className="stat-icon">🍽️</div>
+            <div className="stat-icon">
+              <Utensils size={50} color="#ffffff" />
+            </div>
             <div className="stat-content">
               <h3>Products</h3>
               <p className="stat-number">41</p>
@@ -51,24 +59,34 @@ const DashboardContent = () => (
   </div>
 );
 
-const PageWrapper = ({ title, children }) => (
-  <div className="main-content">
-    <div className="main-header">
-      <h1 className="page-title">{title}</h1>
+const PageWrapper = ({ title, children }) => {
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
+  return (
+    <div className={`main-content ${isSidebarCollapsed ? "collapsed" : ""}`}>
+      <div className="main-header">
+        <h1 className="page-title">{title}</h1>
+      </div>
+      <div className="content-area">{children}</div>
     </div>
-    <div className="content-area">{children}</div>
-  </div>
-);
+  );
+};
 
 const AdminDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
-
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
+  console.log("first", isSidebarCollapsed);
   return (
     <div className="dashboard-container">
       <AdminSidebar activePage={activePage} setActivePage={setActivePage} />
       <Routes>
-        <Route path="/" element={<DashboardContent />} />
-        <Route path="/dashboard" element={<DashboardContent />} />
+        <Route
+          path="/"
+          element={<DashboardContent isSidebarCollapsed={isSidebarCollapsed} />}
+        />
+        <Route
+          path="/dashboard"
+          element={<DashboardContent isSidebarCollapsed={isSidebarCollapsed} />}
+        />
         <Route
           path="/products"
           element={

@@ -195,18 +195,37 @@ const ProductManagement = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Upload images
-      const uploadedImageUrls = await Promise.all(
-        productImages
-          .filter((img) => img.file)
-          .map((img) => uploadImage(img.file))
-      );
+      const token = localStorage.getItem("token"); // or wherever you store your auth token
 
-      // Prepare image data with primary flag
-      const images = uploadedImageUrls.map((url, index) => ({
-        url,
-        is_primary: productImages[index].is_primary,
-      }));
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const formData = new FormData();
+
+      // Add product data
+      formData.append("product_id", productForm.product_id);
+      formData.append("category_id", productForm.category_id);
+      formData.append("product_name", productForm.product_name);
+      formData.append("product_details", productForm.product_details);
+
+      // Add existing images data if any
+      if (productImages.length > 0) {
+        const existingImages = productImages
+          .filter((img) => !img.file)
+          .map((img) => ({
+            url: img.url,
+            is_primary: img.is_primary,
+          }));
+        formData.append("images", JSON.stringify(existingImages));
+      }
+
+      // Add new image files
+      productImages
+        .filter((img) => img.file)
+        .forEach((img) => {
+          formData.append("images", img.file);
+        });
 
       const url = isEditing
         ? `http://localhost:4000/api/products/${productForm.product_id}`
@@ -216,19 +235,13 @@ const ProductManagement = () => {
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Add the authorization header
         },
-        body: JSON.stringify({
-          ...productForm,
-          product_id: Number(productForm.product_id),
-          category_id: Number(productForm.category_id),
-          images,
-        }),
+        body: formData,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.message || "Failed to save product");
       }
 
@@ -381,8 +394,11 @@ const ProductManagement = () => {
             >
               <option value="">Select Category</option>
               {categories.map((category) => (
-                <option key={category.category_id} value={category.category_id}>
-                  {category.category_name}
+                <option
+                  key={`${category?.label}-${category.category_id}`}
+                  value={category.category_id}
+                >
+                  {category?.label}
                 </option>
               ))}
             </select>

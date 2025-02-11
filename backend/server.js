@@ -2,6 +2,12 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import { mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
 import Category from "./models/Category.js";
 import customerRoutes from "./routes/customerRoute.js";
 import employeeRoutes from "./routes/employeeRoute.js";
@@ -10,8 +16,23 @@ import reservationRoutes from "./routes/reservationRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import feedbackRoutes from "./routes/feedbackRoute.js";
 
+// ES module __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 dotenv.config();
 const app = express();
+
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, "uploads");
+if (!existsSync(uploadDir)) {
+  try {
+    await mkdir(uploadDir, { recursive: true });
+    console.log("Uploads directory created successfully");
+  } catch (error) {
+    console.error("Error creating uploads directory:", error);
+  }
+}
 
 // Logging middleware should be first
 app.use((req, res, next) => {
@@ -30,6 +51,9 @@ app.use(
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/customers", customerRoutes);
@@ -109,6 +133,17 @@ app.use((err, req, res, next) => {
     message: "An unexpected error occurred",
     error: err.message,
   });
+});
+
+// Handle file upload errors
+app.use((err, req, res, next) => {
+  if (err.name === "MulterError") {
+    return res.status(400).json({
+      message: "File upload error",
+      error: err.message,
+    });
+  }
+  next(err);
 });
 
 const PORT = process.env.PORT || 4000;

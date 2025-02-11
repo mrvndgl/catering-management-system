@@ -1,6 +1,6 @@
 .payments-container {
   max-width: 1200px;
-  margin: 0 auto;
+  margin-left: 280px;
   padding: 20px;
   display: flex;
   flex-direction: column;
