@@ -17,7 +17,7 @@
 }
 
 .main-content.collapsed {
-  margin-left: 80px; /* Match sidebar width */
+  margin-left: 80px; 
   width: calc(100% - 80px);
 }
 
