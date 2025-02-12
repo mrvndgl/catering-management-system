@@ -7,6 +7,7 @@
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 .app {
@@ -21,23 +22,18 @@ body {
 
 .dashboard-container {
   flex: 1;
-  width: calc(100% - 280px); /* Subtract sidebar width */
+  margin-left: 250px; /* Sidebar width */
+  transition: margin-left 0.3s ease;
+  width: calc(100% - 250px);
 }
 
-.header {
-  width: 100%;
-  height: 100vh;
-  background: url('/main.jpg') no-repeat center center;
-  background-size: cover;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
+/* This is the key class for the collapsed state */
+.dashboard-container.collapsed-sidebar {
+  margin-left: 60px;
+  width: calc(100% - 60px);
 }
 
-/* Scrollbar Styling */
+/* Rest of your scrollbar styles */
 ::-webkit-scrollbar {
   width: 10px;
 }
