@@ -1,66 +1,168 @@
 .schedules-container {
-  padding: 2rem;
   max-width: 1200px;
-  margin-left: 280px !important;
-  display: flex;
-  flex-direction: column;
-  align-items: start;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .schedules-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
 }
 
 .schedule-card {
-  background: white;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  transition: transform 0.2s ease;
+  padding: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
 .schedule-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .schedule-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 10px;
 }
 
 .schedule-header h3 {
   margin: 0;
+  font-size: 1.2em;
   color: #333;
 }
 
-.date {
+.schedule-header .date {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.9em;
+}
+
+.schedule-details {
+  font-size: 0.9em;
 }
 
 .schedule-details p {
-  margin: 0.5rem 0;
-  color: #444;
+  margin: 8px 0;
+  color: #555;
 }
 
-.schedule-details strong {
-  color: #333;
-  margin-right: 0.5rem;
+.schedule-status {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.loading, .error {
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.8em;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background-color: #FFF3CD;
+  color: #856404;
+}
+
+.status-badge.confirmed {
+  background-color: #D4EDDA;
+  color: #155724;
+}
+
+.status-badge.cancelled {
+  background-color: #F8D7DA;
+  color: #721C24;
+}
+
+.no-schedules {
   text-align: center;
-  padding: 2rem;
-  color: #666;
+  padding: 50px 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
-.error {
-  color: #d32f2f;
+.no-schedules p {
+  color: #6c757d;
+  font-size: 1.1em;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  margin: 0 5px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination button:hover {
+  background-color: #f0f0f0;
+}
+
+.pagination button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.error-container button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.error-container button:hover {
+  background-color: #c82333;
 }
