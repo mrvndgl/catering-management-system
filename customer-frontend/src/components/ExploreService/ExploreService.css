@@ -1,0 +1,44 @@
+.explore-service-container {
+    max-width: 90%; 
+    margin: auto;
+  }
+  
+  .explore-service-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px; /* Added padding to h2 for better spacing */
+  }
+  
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px; 
+    padding: 0 10px; /* better spacing on smaller screens */
+  }
+  
+  .service-card {
+    background-color: #f0f0f0;
+    padding: 15px; /* Reduced padding for tighter spacing */
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .service-card h3 {
+    margin-top: 0;
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    .services-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .services-grid {
+      grid-template-columns: 1fr;
+      padding: 0; /* Removed padding on smaller screens */
+    }
+  }
+  
