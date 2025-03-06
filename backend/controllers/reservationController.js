@@ -7,6 +7,66 @@ const PRICE_PER_HEAD = 350;
 const ADDITIONAL_ITEM_PRICE = 35;
 const BASE_PRICE = BASE_PAX * PRICE_PER_HEAD;
 
+// Function to get available dates
+export const getAvailableDates = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message:
+          "Both startDate and endDate are required in the query parameters.",
+      });
+    }
+
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      return res.status(400).json({
+        message:
+          "Invalid date format for startDate or endDate. Use YYYY-MM-DD format.",
+      });
+    }
+
+    const reservations = await Reservation.find({
+      reservation_date: {
+        $gte: startDateObj,
+        $lte: endDateObj,
+      },
+    }).select("reservation_date timeSlot");
+
+    // Create a map of booked slots
+    const bookedSlots = reservations.reduce((acc, reservation) => {
+      const date = reservation.reservation_date.toISOString().split("T")[0];
+      if (!acc[date]) {
+        acc[date] = new Set();
+      }
+      acc[date].add(reservation.timeSlot);
+      return acc;
+    }, {});
+
+    // Generate a list of all dates between startDate and endDate
+    const allDates = [];
+    let currentDate = new Date(startDateObj);
+    while (currentDate <= endDateObj) {
+      allDates.push(currentDate.toISOString().split("T")[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Determine available dates
+    const availableDates = allDates.filter((date) => !bookedSlots[date]);
+
+    res.status(200).json(availableDates);
+  } catch (error) {
+    console.error("Error in getAvailableDates:", error);
+    res.status(500).json({
+      message: "Error fetching available dates",
+      error: error.message,
+    });
+  }
+};
+
 export const createReservation = async (req, res) => {
   console.log("========== RESERVATION CREATION REQUEST ==========");
   console.log("Received request headers:", req.headers);
@@ -207,35 +267,6 @@ export const updateReservationStatus = async (req, res) => {
     res.json(reservation);
   } catch (error) {
     res.status(500).json({ message: error.message });
-  }
-};
-
-export const getAvailableDates = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const reservations = await Reservation.find({
-      reservation_date: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      },
-    }).select("reservation_date timeSlot");
-
-    // Create a map of booked slots
-    const bookedSlots = reservations.reduce((acc, reservation) => {
-      const date = reservation.reservation_date.toISOString().split("T")[0];
-      if (!acc[date]) {
-        acc[date] = new Set();
-      }
-      acc[date].add(reservation.timeSlot);
-      return acc;
-    }, {});
-
-    res.status(200).json(bookedSlots);
-  } catch (error) {
-    res.status(500).json({
-      message: "Error fetching available dates",
-      error: error.message,
-    });
   }
 };
 

@@ -7,7 +7,6 @@ import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-
 import Category from "./models/Category.js";
 import customerRoutes from "./routes/customerRoute.js";
 import employeeRoutes from "./routes/employeeRoute.js";
@@ -15,6 +14,7 @@ import productRoutes from "./routes/productRoute.js";
 import reservationRoutes from "./routes/reservationRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import feedbackRoutes from "./routes/feedbackRoute.js";
+import scheduleRoutes from "./routes/scheduleRoute.js";
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -43,7 +43,11 @@ app.use((req, res, next) => {
 // CORS middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+    ],
     credentials: true,
   })
 );
@@ -62,6 +66,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/schedules", scheduleRoutes);
 
 const predefinedCategories = [
   {

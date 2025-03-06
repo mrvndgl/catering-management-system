@@ -1,19 +1,19 @@
 .dashboard-container {
   display: flex;
   height: 100vh;
-  position: relative; /* Add this */
+  position: relative; 
 }
 
 .main-content {
   flex: 1;
-  background-color: #ffffff;
+  background-color: #F1F8E9 !important;
   overflow-y: auto;
   margin-left: 250px; /* Match sidebar width */
   width: calc(100% - 250px);
   transition: margin-left 0.3s ease, width 0.3s ease;
   min-height: 100vh;
   position: relative;
-  z-index: 1; /* Add this */
+  z-index: 1; 
 }
 
 .main-content.collapsed {
@@ -33,7 +33,7 @@
 .page-title {
   margin-left: 20px !important;
   font-size: 1.8rem;
-  color: #DA1D1D !important;
+  color: #263238;
 }
 
 .content-area {
@@ -49,7 +49,7 @@
 }
 
 .dashboard-card {
-  background-color: #FBAB10 !important;
+  background-color: #8BC34A  !important;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -70,7 +70,7 @@
   margin: 5px 0;
   font-size: 1.8rem;
   font-weight: bold;
-  color: #DA1D1D !important;
+  color: #263238 !important;
 }
 
 .stat-label {
