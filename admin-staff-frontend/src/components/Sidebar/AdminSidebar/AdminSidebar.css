@@ -1,7 +1,7 @@
 .dashboard-sidebar {
   width: 250px;
   height: 100vh;
-  background-color: #DA1D1D !important;
+  background-color: #4CAF50;
   padding: 1rem;
   transition: all 0.3s ease;
   position: fixed;
@@ -30,8 +30,8 @@
 }
 
 .toggle-btn:hover {
-  background-color: #FBAB10 !important;
-  color: #ffffff;
+  background-color: #F1F8E9 !important;
+  color: #4CAF50;
 }
 
 .nav-menu {
@@ -58,13 +58,12 @@
 }
 
 .nav-link:hover {
-  background-color: #FBAB10 !important;
-  color: #ffffff;
-  justify-content: center;
+  background-color: #F1F8E9 !important;
+  color: #4CAF50;
 }
 
 .nav-link.active {
-  background-color: #444;
+  background-color: #F1F8E9 ;
 }
 
 .nav-icon {
@@ -80,8 +79,8 @@
 }
 
 .logout-link:hover {
-  background-color: #FBAB10 !important;
-  color: #ffffff;
+  background-color: #F1F8E9  !important;
+  color: #4CAF50;
 }
 
 /* Customer Sidebar */
