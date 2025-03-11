@@ -1,44 +1,191 @@
 .explore-service-container {
-    max-width: 90%; 
-    margin: auto;
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+.explore-service-header {
+  position: relative;
+  width: 100%;
+  height: 600px; 
+  overflow: hidden;
+  margin-bottom: -470px; 
+}
+
+.image-wrapper {
+  position: absolute;
+  top: 50px; /* match the margin-top value of the image */
+  width: 100%;
+  height: 500px; /* height of the image */
+  background-color: #f0f8ff; 
+  border-radius: 50px;
+}
+
+.explore-service-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 1; /* Image z-index */
+  border-radius: 20px;
+  border-bottom-left-radius: 20px; 
+  border-bottom-right-radius: 20px;
+  filter: brightness(60%);
+}
+
+.service-title-container {
+  position: absolute;
+  top: 12%; /* Adjust as needed */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: black;
+  z-index: 2; /* Title z-index: MUST be higher than image */
+}
+
+.service-title {
+  font-size: 3rem;
+  margin-top: 50px;
+  color: #ffffff;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+  padding: 20px;
+  position: relative;
+  z-index: 3;
+}
+
+.service-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 25px 20px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.service-icon {
+  margin-bottom: 15px;
+}
+
+.service-card h3 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.service-card p {
+  margin: 0 0 20px;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.service-link {
+  display: inline-block;
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.service-link:hover {
+  color: #388E3C;
+}
+
+/* Media query for responsiveness */
+@media (max-width: 1200px) {
+  .explore-service-header {
+      height: 500px; /* Adjusted height */
+      margin-bottom: -350px; /* Adjusted overlap */
   }
-  
-  .explore-service-container h2 {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 20px; /* Added padding to h2 for better spacing */
+
+  .image-wrapper {
+      height: 400px; /* Adjusted height */
   }
-  
+}
+
+@media (max-width: 992px) {
+  .explore-service-header {
+      height: 450px; /* Adjusted height */
+      margin-bottom: -250px; /* Adjusted overlap */
+  }
+
+  .image-wrapper {
+      height: 350px; /* Adjusted height */
+  }
+}
+
+@media (max-width: 768px) {
   .services-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px; 
-    padding: 0 10px; /* better spacing on smaller screens */
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
-  
-  .service-card {
-    background-color: #f0f0f0;
-    padding: 15px; /* Reduced padding for tighter spacing */
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
+
+  .explore-service-header {
+      height: 250px; /* Adjusted height */
+      margin-bottom: -80px; /* Adjusted overlap */
   }
-  
-  .service-card h3 {
-    margin-top: 0;
-    text-align: center;
+
+  .image-wrapper {
+      height: 200px; /* Adjusted height */
   }
-  
-  @media (max-width: 768px) {
-    .services-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+
+  .service-title-container {
+      top: 10%; /* Adjusted position for smaller screens */
   }
-  
-  @media (max-width: 480px) {
-    .services-grid {
+
+  .service-title {
+      font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .services-grid {
       grid-template-columns: 1fr;
-      padding: 0; /* Removed padding on smaller screens */
-    }
   }
-  
+
+  .explore-service-header {
+      height: 200px; /* Adjusted height */
+      margin-bottom: -50px; /* Adjusted overlap */
+  }
+
+  .image-wrapper {
+      height: 150px; /* Adjusted height */
+  }
+
+  .service-title-container {
+      top: 5%; /* Adjusted position for smaller screens */
+  }
+
+  .service-title {
+      font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .services-grid {
+      padding: 10px;
+  }
+
+  .service-card {
+      padding: 15px 10px;
+  }
+
+  .service-card h3 {
+      font-size: 1.2rem;
+  }
+
+  .service-card p {
+      font-size: 0.8rem;
+  }
+}

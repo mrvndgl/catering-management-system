@@ -9,7 +9,7 @@
 
 body{
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: #F1F8E9;
 }
 
 a{
@@ -25,6 +25,8 @@ hr{
 
 .app-content{
   display: flex;
+  margin-left: 0; /* Ensure no left margin is applied */
+  padding-top: 90px; /* Add padding to push content below navbar (adjust value as needed) */
 }
 
 .flex-col {
@@ -35,4 +37,22 @@ hr{
 
 .cursor {
   cursor: pointer;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #4caf50;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #388E3C;
 }
