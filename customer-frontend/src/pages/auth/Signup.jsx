@@ -10,7 +10,6 @@ const Signup = ({ setIsAuthenticated }) => {
     lastName: "",
     username: "",
     contactNumber: "",
-    address: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -58,8 +57,8 @@ const Signup = ({ setIsAuthenticated }) => {
   return (
     <div className="login-page signup">
       <div className="login-left">
-        <div className="auth-container">
-          <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-container compact">
+          <form onSubmit={handleSubmit} className="auth-form compact-form">
             <h2>Create Account</h2>
             {error && <div className="error-message">{error}</div>}
 
@@ -71,7 +70,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -83,7 +82,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -95,7 +94,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -107,19 +106,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.contactNumber}
                 onChange={handleChange}
                 required
-                className="input-field"
-              />
-            </div>
-
-            <div className="form-group">
-              <input
-                type="text"
-                name="address"
-                placeholder="Address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -131,7 +118,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -143,7 +130,7 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
@@ -155,15 +142,15 @@ const Signup = ({ setIsAuthenticated }) => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="input-field"
+                className="input-field compact-input"
               />
             </div>
 
-            <button type="submit" className="submit-btn">
+            <button type="submit" className="submit-btn compact-btn">
               Sign Up
             </button>
 
-            <p className="auth-link">
+            <p className="auth-link compact-link">
               Already have an account?{" "}
               <Link
                 to="/login"
@@ -175,12 +162,10 @@ const Signup = ({ setIsAuthenticated }) => {
           </form>
         </div>
       </div>
-      <div className="login-right">
-        <div
-          className="login-image"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
-        />
-      </div>
+      <div
+        className="login-image"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      />
     </div>
   );
 };

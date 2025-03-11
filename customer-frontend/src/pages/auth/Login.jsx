@@ -1,12 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthProvider";
 import "./Auth.css";
-import "./Login.css";
-import { useSidebar } from "../../context/SidebarContext";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Login = () => {
-  const { setIsAuthenticated } = useSidebar();
+  const { setIsAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -108,12 +107,10 @@ const Login = () => {
           </form>
         </div>
       </div>
-      <div className="login-right">
-        <div
-          className="login-image"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
-        />
-      </div>
+      <div
+        className="login-image"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      />
     </div>
   );
 };

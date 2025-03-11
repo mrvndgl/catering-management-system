@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import {
   LayoutDashboard,
@@ -10,6 +10,7 @@ import {
   Menu,
   LogOut,
 } from "lucide-react";
+import logoImage from "../../assets/logo2.png";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -49,13 +50,15 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    logout(); // Use the logout function from AuthContext
-    // Navigation should happen automatically via protected route
+    logout();
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
+        <div className="navbar-logo">
+          <img src={logoImage} alt="Logo" className="logo-image" />
+        </div>
         <button className="menu-toggle" onClick={toggleMenu}>
           <Menu size={20} />
         </button>
@@ -64,10 +67,15 @@ const Navbar = () => {
           <ul className="nav-list">
             {menuItems.map((item) => (
               <li key={item.path} className="nav-item">
-                <Link to={item.path} className="nav-link">
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active" : "nav-link"
+                  }
+                >
                   <item.icon size={20} className="nav-icon" />
                   <span>{item.label}</span>
-                </Link>
+                </NavLink>
               </li>
             ))}
             <li className="nav-item logout-item">

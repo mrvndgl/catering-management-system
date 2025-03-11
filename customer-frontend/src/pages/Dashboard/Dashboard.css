@@ -1,25 +1,21 @@
 .dashboard-layout {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
-}
-
-.main-content {
-  flex: 1;
-  margin-left: 280px; /* Add this to offset the sidebar width */
-  width: calc(100% - 280px); /* Add this to make content take remaining width */
-  padding: 0;
-  margin: 0;
 }
 
 .header {
   width: 100%;
   height: 100vh;
-  background: url('/main.jpg') no-repeat center center;
   background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0;
+  padding: 0;
 }
 
 .header::before {
@@ -29,37 +25,98 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5); /* Add opacity here */
-  z-index: 5;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .header-contents {
-  position: relative;
-  z-index: 10;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2;
   color: white;
-  text-align: center;
+  text-align: right;
   padding: 20px;
   max-width: 800px;
-  margin: 0 auto;
 }
 
+
 .header-contents h2 {
-  font-weight: 500;
-  font-size: max(4vw, 22px);
+  font-size: clamp(2rem, 4vw, 4rem);
+  font-family: serif;
+  font-style: italic;
   margin-bottom: 20px;
+  font-weight: 500;
 }
 
 .header-contents p {
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1vw, 1.2rem);
   line-height: 1.5;
 }
 
 .notification-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #ff9800;
   color: white;
-  padding: 10px;
-  margin-bottom: 20px;
+  padding: 10px 20px;
   border-radius: 5px;
   text-align: center;
   font-size: 1rem;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Media Queries for Responsiveness */
+
+@media screen and (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .main-content.collapsed {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .header-contents {
+    padding: 15px;
+  }
+
+  .header-contents h2 {
+    font-size: clamp(1.5rem, 3vw, 3rem);
+  }
+
+  .header-contents p {
+    font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+  }
+}
+
+/* Add styles for other dashboard elements */
+.dashboard-section {
+  padding: 20px;
+}
+
+/* Ensure content doesn't overlap with collapsed/expanded sidebar */
+@media screen and (min-width: 769px) {
+  .dashboard-container {
+    transition: margin-left 0.3s ease;
+  }
+}
+
+/* Handle mobile layout */
+@media screen and (max-width: 768px) {
+  .dashboard-container {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .dashboard-container.collapsed-sidebar {
+    margin-left: 60px;
+  }
 }

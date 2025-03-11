@@ -1,0 +1,145 @@
+.navbar {
+  width: 100%;
+  height: 80px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0 10px;
+  background-color: #4CAF50;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.logo-image {
+  width: auto;
+  height: 70px;
+  max-height: none;
+  margin: 5px 0;
+}
+
+.navbar-menu {
+  display: flex;
+  justify-content: flex-end;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center; /* Vertically align items in the nav list */
+}
+
+.nav-item {
+  margin: 0 15px;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ffffff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+}
+
+.nav-link.active {
+  color: #ffffff;
+  font-weight: bold; 
+  border-bottom: 2px solid white; 
+}
+
+
+.nav-icon {
+  font-size: 20px; /* Adjust as needed */
+  margin-bottom: 5px; /* Add space between icon and text */
+}
+
+.logout-btn {
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: white;
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center items horizontally */
+  justify-content: center;
+  background-color: transparent; /* Make background transparent */
+}
+
+.logout-btn:hover {
+  background-color: rgba(0, 0, 0, 0.2); /* Example: Darken slightly on hover */
+}
+
+/* Hamburger Menu (Hidden by Default) */
+.menu-toggle {
+  display: none;
+  cursor: pointer;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+}
+
+/* Responsive Fix */
+@media (max-width: 900px) {
+  .navbar-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #4CAF50;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+  }
+
+  .navbar-menu.open {
+    display: flex;
+  }
+
+  .nav-list {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-item {
+    margin: 10px 0;
+  }
+
+  .menu-toggle {
+    display: block;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
