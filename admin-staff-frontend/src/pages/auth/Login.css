@@ -2,37 +2,52 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   background-color: #fff;
-  overflow: hidden; 
+  overflow: hidden;
+  height: 100%;
 }
 
+html {
+  height: 100%;
+}
+
+/* Apply background image and center content */
 .login-container {
   display: flex;
-  width: 100vw; /* Use viewport width */
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
   height: 100vh;
-  position: fixed; /* Fix the container */
+  position: relative;
   top: 0;
   left: 0;
+  background-image: url('../../assets/samplebg.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .login-form-section {
-  width: 50%; /* Fixed at 50% */
-  min-width: 50%; /* Prevent shrinking */
-  flex: 0 0 50%; /* Don't grow or shrink */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  box-sizing: border-box;
-  background-color: #F1F8E9;
+  width: 90%;
+  max-width: 400px;
+  padding: 2.5rem;
+  border-radius: 15px;
+  background: rgba( 255, 255, 255, 0.55 );
+  box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
+  backdrop-filter: blur( 6.5px );
+  -webkit-backdrop-filter: blur( 6.5px );
+  border-radius: 10px;
+  position: relative;
+  z-index: 1;
+  min-height: 460px; 
+  width: 400px;
 }
 
 .login-form-wrapper {
   width: 100%;
-  max-width: 400px;
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  height: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .login-form-wrapper h2 {
@@ -45,6 +60,7 @@ body {
 
 .form-group {
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .form-group select,
@@ -77,6 +93,7 @@ body {
   font-size: 1rem;
   font-weight: 500;
   margin-top: 1rem;
+  position: relative;
 }
 
 .submit-button:hover:not(:disabled) {
@@ -84,7 +101,8 @@ body {
 }
 
 .submit-button:disabled {
-  background-color: #ffffff;
+  background-color: #cccccc;
+  color: #666666;
   cursor: not-allowed;
 }
 
@@ -102,52 +120,27 @@ body {
   border: 1px solid #f5c6cb;
 }
 
-.login-right {
-  width: 50%; /* Fixed at 50% */
-  min-width: 50%; /* Prevent shrinking */
-  flex: 0 0 50%; /* Don't grow or shrink */
-  height: 100vh;
-  overflow: hidden;
+/* Add a spacer to maintain the height without signup section */
+.spacer {
+  height: 40px;
 }
 
-.login-image {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* Tablet Devices */
+/* Media queries */
 @media screen and (max-width: 1024px) {
   .login-form-section {
     padding: 1.5rem;
-  }
-  
-  .login-form-wrapper {
-    max-width: 90%;
+    width: 90%;
+    max-width: 400px;
   }
 }
 
-/* Mobile Devices */
 @media screen and (max-width: 768px) {
   .login-container {
-    flex-direction: column;
-  }
-
-  .login-form-section,
-  .login-right {
-    width: 100%;
+    align-items: flex-start;
   }
 
   .login-form-section {
-    padding: 1rem;
-    min-height: 100vh;
-  }
-
-  .login-right {
-    height: 30vh;
-    order: -1;
+    margin-top: 2rem;
   }
 
   .form-group input,
@@ -157,10 +150,9 @@ body {
   }
 }
 
-/* Small Mobile Devices */
 @media screen and (max-width: 480px) {
   .login-form-wrapper {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
   .login-form-wrapper h2 {

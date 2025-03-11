@@ -8,11 +8,12 @@ const Login = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    employeeType: "admin",
+    employeeType: "admin", // Hardcoded to "admin"
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Simplified handleChange function
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -53,6 +54,7 @@ const Login = () => {
       }
     } catch (err) {
       setError(err.message);
+      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
     } finally {
       setLoading(false);
     }
@@ -62,21 +64,9 @@ const Login = () => {
     <div className="login-container">
       <div className="login-form-section">
         <div className="login-form-wrapper">
-          <h2>Login</h2>
+          <h2>Log In</h2>
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <select
-                id="employeeType"
-                name="employeeType"
-                value={formData.employeeType}
-                onChange={handleChange}
-                required
-              >
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
-              </select>
-            </div>
-
+            {/* Username Input */}
             <div className="form-group">
               <input
                 id="username"
@@ -89,6 +79,7 @@ const Login = () => {
               />
             </div>
 
+            {/* Password Input */}
             <div className="form-group">
               <input
                 id="password"
@@ -103,21 +94,14 @@ const Login = () => {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button
-              type="submit"
-              className={`submit-button ${loading ? "loading" : ""}`}
-              disabled={loading}
-            >
+            <button type="submit" className="submit-button" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
+
+          {/* Adding a spacer to maintain height without the sign up section */}
+          <div className="spacer"></div>
         </div>
-      </div>
-      <div className="login-right">
-        <div
-          className="login-image"
-          style={{ backgroundImage: `url(${assets.samplebg})` }}
-        />
       </div>
     </div>
   );
