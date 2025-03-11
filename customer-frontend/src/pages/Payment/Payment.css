@@ -1,16 +1,20 @@
 .payments-container {
-  max-width: 1200px;
-  margin-left: 280px;
+  max-width: 100%;
+  margin-left: 0; /* Remove left margin */
   padding: 20px;
   display: flex;
   flex-direction: column;
-  align-items: start;
+  align-items: center; /* Center content horizontally */
+  margin-top: 90px; /* Adjust for navbar height */
 }
 
 .payments-card {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Take full width */
+  max-width: 1200px; /* Limit max width */
+  margin: 0 auto; /* Center horizontally */
 }
 
 .card-header {
@@ -53,6 +57,12 @@
   display: grid;
   gap: 20px;
   grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .reservations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  }
 }
 
 .reservation-card {
@@ -205,8 +215,85 @@
   color: #666;
 }
 
-@media (min-width: 768px) {
-  .reservations-grid {
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+
+@media (max-width: 768px) {
+  .payments-container {
+    padding: 10px; 
+  }
+
+  .payments-card {
+    padding: 10px; 
+  }
+
+  .card-header {
+    padding: 15px; 
+  }
+
+  .card-content {
+    padding: 15px; 
+  }
+
+  .payment-buttons {
+    grid-template-columns: 1fr; 
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr; 
+  }
+
+  .reservation-card {
+    padding: 15px; 
+  }
+
+  .reservation-details {
+    padding: 10px; 
+  }
+
+  .menu-details {
+    padding: 10px; 
+  }
+
+  .payment-instructions {
+    padding: 15px; 
+  }
+}
+
+@media (max-width: 480px) {
+  .payments-container {
+    padding: 5px; 
+  }
+
+  .payments-card {
+    padding: 5px; 
+  }
+
+  .card-header {
+    padding: 10px; 
+  }
+
+  .card-content {
+    padding: 10px; 
+  }
+
+  .reservation-card {
+    padding: 10px; 
+  }
+
+  .reservation-details {
+    padding: 5px; 
+  }
+
+  .menu-details {
+    padding: 5px; 
+  }
+
+  .payment-instructions {
+    padding: 10px; 
+  }
+
+  .payment-button,
+  .submit-button,
+  .close-button {
+    padding: 8px; 
   }
 }
