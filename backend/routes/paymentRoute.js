@@ -7,6 +7,7 @@ import {
   updatePaymentStatus,
   uploadPaymentProof,
   getPaymentProof,
+  getPaymentStatuses,
 } from "../controllers/paymentController.js";
 import multer from "multer";
 
@@ -36,4 +37,13 @@ router.post(
   uploadPaymentProof
 );
 
+// Add these routes to your paymentRoute.js
+router.get("/status", auth, getPaymentStatuses); // You'll need to create this controller function
+router.post(
+  "/upload",
+  auth,
+  upload.single("payment_proof"),
+  uploadPaymentProof
+);
+router.post("/cash-intent", auth, createPayment); // Reuse or modify createPayment for this route
 export default router;

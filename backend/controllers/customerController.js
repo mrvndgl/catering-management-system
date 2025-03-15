@@ -100,7 +100,6 @@ export const customerController = {
         stack: error.stack,
       });
 
-      // Send more specific error messages
       if (error.name === "ValidationError") {
         return res.status(400).json({ message: error.message });
       }
@@ -118,45 +117,78 @@ export const customerController = {
 
   login: async (req, res) => {
     try {
+      console.log("Login endpoint hit with body:", {
+        ...req.body,
+        password: req.body.password ? "[REDACTED]" : undefined,
+      });
+
       const { username, password } = req.body;
 
+      if (!username || !password) {
+        console.log("Missing login credentials");
+        return res.status(400).json({
+          message: `Missing required fields: ${!username ? "username" : ""}${
+            !username && !password ? ", " : ""
+          }${!password ? "password" : ""}`,
+        });
+      }
+
+      console.log("Finding customer with username:", username);
       const customer = await Customer.findOne({ username });
       if (!customer) {
+        console.log("No customer found with username:", username);
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      console.log("Comparing passwords...");
       const isMatch = await bcrypt.compare(password, customer.password);
       if (!isMatch) {
+        console.log("Password doesn't match");
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      console.log("Login successful, generating token...");
       const token = jwt.sign(
         { userId: customer._id, type: "customer" },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
 
-      // Remove password from response
       const customerResponse = customer.toObject();
       delete customerResponse.password;
 
+      console.log("Sending successful login response");
       res.json({
         token,
         user: customerResponse,
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
       res.status(500).json({ message: "Server error" });
     }
   },
 
   getProfile: async (req, res) => {
     try {
-      const customer = await Customer.findById(req.user.userId).select(
-        "-password"
-      );
+      // Auth middleware attaches decoded JWT to req.user
+      const userId = req.user.userId;
+
+      // Fetch customer (exclude password)
+      const customer = await Customer.findById(userId)
+        .select("-password")
+        .lean();
+
+      if (!customer) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       res.json(customer);
     } catch (error) {
+      console.error("Profile error:", error);
       res.status(500).json({ message: "Server error" });
     }
   },

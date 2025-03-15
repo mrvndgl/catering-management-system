@@ -7,68 +7,42 @@ const AdminReservations = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [paymentStatuses, setPaymentStatuses] = useState({});
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const handleReservationAction = async (reservationId, status) => {
     try {
       const token = localStorage.getItem("token");
-
-      // Check existing reservations for the day if trying to accept
-      if (status === "Accepted") {
-        const reservation = reservations.find(
-          (r) => r.reservation_id === reservationId
-        );
-
-        const existingReservations = await fetch(
-          `/api/reservations/date/${reservation.reservation_date}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        ).then((res) => res.json());
-
-        // Filter accepted reservations for the same day
-        const acceptedReservations = existingReservations.filter(
-          (r) => r.reservation_status === "Accepted"
-        );
-
-        // Check if there are already 2 accepted reservations
-        if (acceptedReservations.length >= 2) {
-          setError("Maximum reservations for this day has been reached");
-          return;
-        }
-
-        // Check if there's already a reservation in the same time slot
-        const sameTimeSlot = acceptedReservations.some(
-          (r) => r.timeSlot === reservation.timeSlot
-        );
-        if (sameTimeSlot) {
-          setError("This time slot is already reserved");
-          return;
-        }
+      if (!token) {
+        throw new Error("Authentication token not found");
       }
 
-      // Update reservation status
-      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          reservation_status: status,
-        }),
-      });
+      setIsLoading(true);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+      // Update reservation status using the correct endpoint from reservationRoute.js
+      const updateResponse = await fetch(
+        `${import.meta.env.VITE_API_URL}/reservations/${reservationId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reservation_status: status,
+          }),
+        }
+      );
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({}));
         throw new Error(
-          errorData?.message ||
-            `Failed to update reservation status to ${status}`
+          errorData.message ||
+            `Failed to update reservation (Status: ${updateResponse.status})`
         );
       }
+
+      const updatedReservation = await updateResponse.json();
 
       // Update local state
       setReservations((prev) =>
@@ -79,43 +53,130 @@ const AdminReservations = () => {
         )
       );
 
-      // If accepted, send payment notification
+      // If accepted, update payment status
       if (status === "Accepted") {
         try {
-          const notificationResponse = await fetch(
-            `/api/notifications/payment-required/${reservationId}`,
+          // Update payment status using the correct endpoint
+          const paymentResponse = await fetch(
+            `${
+              import.meta.env.VITE_API_URL
+            }/reservations/${reservationId}/payment`,
             {
-              method: "POST",
+              method: "PUT",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
+              body: JSON.stringify({
+                payment_status: "Pending",
+                payment_required: true,
+              }),
             }
           );
 
-          if (!notificationResponse.ok) {
-            console.error("Failed to send payment notification");
+          if (!paymentResponse.ok) {
+            console.warn(
+              "Failed to mark payment as required:",
+              await paymentResponse.text()
+            );
           }
-        } catch (notificationError) {
-          console.error(
-            "Error sending payment notification:",
-            notificationError
-          );
+
+          // Send notification if you have a notifications endpoint
+          // Note: You'll need to add a notifications route to your backend
+          try {
+            const notificationResponse = await fetch(
+              `${import.meta.env.VITE_API_URL}/notifications`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  reservation_id: reservationId,
+                  type: "PAYMENT_REQUIRED",
+                  message:
+                    "Your reservation has been accepted. Please proceed with the payment.",
+                  user_id: updatedReservation.customer_id,
+                }),
+              }
+            );
+
+            if (!notificationResponse.ok) {
+              console.warn(
+                "Failed to send notification:",
+                await notificationResponse.text()
+              );
+            }
+          } catch (notificationError) {
+            console.error("Error sending notification:", notificationError);
+          }
+        } catch (error) {
+          console.error("Error in post-acceptance actions:", error);
         }
       }
 
-      // Clear any existing errors on success
       setError(null);
+      await Promise.all([fetchReservations(), fetchPaymentStatuses()]);
     } catch (err) {
       console.error("Error updating reservation:", err);
-      setError(err.message);
+      setError(
+        err.message ||
+          "Failed to update reservation. Please check your connection and try again."
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchReservations();
     fetchProducts();
+    fetchPaymentStatuses();
   }, []);
+
+  const fetchPaymentStatuses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // Update the endpoint to the correct one
+      const response = await fetch("/api/payments/status", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch payment statuses");
+      }
+
+      const result = await response.json();
+      if (Array.isArray(result)) {
+        // Modified to handle direct array response
+        const statusMap = result.reduce((acc, payment) => {
+          if (
+            !acc[payment.reservation_id] ||
+            new Date(payment.created_at) >
+              new Date(acc[payment.reservation_id].created_at)
+          ) {
+            acc[payment.reservation_id] = payment;
+          }
+          return acc;
+        }, {});
+
+        const finalMap = {};
+        for (const [resId, payment] of Object.entries(statusMap)) {
+          finalMap[resId] = payment.status; // Update to match your payment status field
+        }
+
+        setPaymentStatuses(finalMap);
+      }
+    } catch (error) {
+      console.error("Error fetching payment statuses:", error);
+      // Add fallback behavior when payment status fetch fails
+      setPaymentStatuses({});
+    }
+  };
 
   const fetchReservations = async () => {
     try {
@@ -182,11 +243,17 @@ const AdminReservations = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    // Use a safer date formatting approach
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (e) {
+      return "Invalid Date";
+    }
   };
 
   const viewReservationDetails = (reservation) => {
@@ -197,37 +264,87 @@ const AdminReservations = () => {
     setSelectedReservation(null);
   };
 
+  const getPaymentStatusDisplay = (reservationId) => {
+    const status = paymentStatuses[reservationId];
+    if (!status) return "No Payment";
+
+    switch (status) {
+      case "Pending":
+        return <span className="payment-status pending">Payment Pending</span>;
+      case "Paid":
+        return <span className="payment-status paid">Paid</span>;
+      case "Failed":
+        return <span className="payment-status failed">Payment Failed</span>;
+      case "Declined":
+        return (
+          <span className="payment-status declined">Payment Declined</span>
+        );
+      default:
+        return <span className="payment-status">Unknown</span>;
+    }
+  };
+
+  const filteredReservations =
+    filterStatus === "all"
+      ? reservations
+      : reservations.filter((res) => res.reservation_status === filterStatus);
+
   return (
     <div className="admin-reservations-container">
       {error && <div className="error-message">{error}</div>}
 
+      <div className="filter-controls">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="status-filter"
+        >
+          <option value="all">All Reservations</option>
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Declined">Declined</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+        <button
+          className="refresh-button"
+          onClick={() => {
+            fetchReservations();
+            fetchPaymentStatuses();
+          }}
+        >
+          Refresh Data
+        </button>
+      </div>
+
       {isLoading ? (
         <div className="loading">Loading reservations...</div>
-      ) : reservations.length === 0 ? (
+      ) : filteredReservations.length === 0 ? (
         <div className="no-reservations">No reservations found</div>
       ) : (
         <table className="reservations-table">
           <thead>
             <tr>
-              <th>Reservation ID</th>
+              <th>ID</th>
               <th>Name</th>
               <th>Date</th>
               <th>Time Slot</th>
               <th>Pax</th>
-              <th>Total Amount</th>
+              <th>Amount</th>
               <th>Status</th>
+              <th>Payment</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reservation) => (
+            {filteredReservations.map((reservation) => (
               <tr key={reservation.reservation_id}>
                 <td>{reservation.reservation_id}</td>
                 <td>{reservation.name}</td>
                 <td>{formatDate(reservation.reservation_date)}</td>
                 <td>{reservation.timeSlot}</td>
                 <td>{reservation.numberOfPax}</td>
-                <td>₱{reservation.total_amount.toLocaleString()}</td>
+                <td>₱{reservation.total_amount?.toLocaleString()}</td>
                 <td>
                   <span
                     className={`status-badge ${reservation.reservation_status.toLowerCase()}`}
@@ -235,6 +352,7 @@ const AdminReservations = () => {
                     {reservation.reservation_status}
                   </span>
                 </td>
+                <td>{getPaymentStatusDisplay(reservation.reservation_id)}</td>
                 <td className="actions-cell">
                   <div className="action-buttons">
                     <button
@@ -243,32 +361,6 @@ const AdminReservations = () => {
                     >
                       View
                     </button>
-                    {reservation.reservation_status === "Pending" && (
-                      <>
-                        <button
-                          className="accept-btn"
-                          onClick={() =>
-                            handleReservationAction(
-                              reservation.reservation_id,
-                              "Accepted"
-                            )
-                          }
-                        >
-                          Accept
-                        </button>
-                        <button
-                          className="decline-btn"
-                          onClick={() =>
-                            handleReservationAction(
-                              reservation.reservation_id,
-                              "Declined"
-                            )
-                          }
-                        >
-                          Decline
-                        </button>
-                      </>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -282,41 +374,59 @@ const AdminReservations = () => {
           <div className="modal-content">
             <h2>Reservation Details</h2>
             <div className="reservation-details">
-              <p>
-                <strong>Reservation ID:</strong>{" "}
-                {selectedReservation.reservation_id}
-              </p>
-              <p>
-                <strong>Name:</strong> {selectedReservation.name}
-              </p>
-              <p>
-                <strong>Phone Number:</strong> {selectedReservation.phoneNumber}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {formatDate(selectedReservation.reservation_date)}
-              </p>
-              <p>
-                <strong>Time Slot:</strong> {selectedReservation.timeSlot}
-              </p>
-              <p>
-                <strong>Number of Guests:</strong>{" "}
-                {selectedReservation.numberOfPax}
-              </p>
-              <p>
-                <strong>Venue:</strong> {selectedReservation.venue}
-              </p>
-              <p>
-                <strong>Payment Mode:</strong> {selectedReservation.paymentMode}
-              </p>
-              <p>
-                <strong>Total Amount:</strong> ₱
-                {selectedReservation.total_amount.toLocaleString()}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                {selectedReservation.reservation_status}
-              </p>
+              <div className="detail-headers">
+                <div className="details-left">
+                  <p>
+                    <strong>Reservation ID:</strong>{" "}
+                    {selectedReservation.reservation_id}
+                  </p>
+                  <p>
+                    <strong>Name:</strong> {selectedReservation.name}
+                  </p>
+                  <p>
+                    <strong>Phone Number:</strong>{" "}
+                    {selectedReservation.phoneNumber}
+                  </p>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {formatDate(selectedReservation.reservation_date)}
+                  </p>
+                  <p>
+                    <strong>Time Slot:</strong> {selectedReservation.timeSlot}
+                  </p>
+                  <p>
+                    <strong>Number of Guests:</strong>{" "}
+                    {selectedReservation.numberOfPax}
+                  </p>
+                </div>
+                <div className="details-right">
+                  <p>
+                    <strong>Venue:</strong> {selectedReservation.venue}
+                  </p>
+                  <p>
+                    <strong>Payment Mode:</strong>{" "}
+                    {selectedReservation.paymentMode}
+                  </p>
+                  <p>
+                    <strong>Total Amount:</strong> ₱
+                    {selectedReservation.total_amount?.toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    <span
+                      className={`status-badge ${selectedReservation.reservation_status.toLowerCase()}`}
+                    >
+                      {selectedReservation.reservation_status}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Payment Status:</strong>{" "}
+                    {getPaymentStatusDisplay(
+                      selectedReservation.reservation_id
+                    )}
+                  </p>
+                </div>
+              </div>
 
               <div className="selected-items-section">
                 <h3>Selected Menu Items</h3>
@@ -355,7 +465,39 @@ const AdminReservations = () => {
               )}
             </div>
             <div className="modal-actions">
-              <button onClick={closeReservationDetails}>Close</button>
+              {selectedReservation &&
+                selectedReservation.reservation_status.toLowerCase() ===
+                  "pending" && (
+                  <div className="reservation-action-buttons">
+                    <button
+                      className="accept-btn"
+                      onClick={() => {
+                        handleReservationAction(
+                          selectedReservation.reservation_id,
+                          "Accepted"
+                        );
+                        closeReservationDetails();
+                      }}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="decline-btn"
+                      onClick={() => {
+                        handleReservationAction(
+                          selectedReservation.reservation_id,
+                          "Declined"
+                        );
+                        closeReservationDetails();
+                      }}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
+              <button className="close-btn" onClick={closeReservationDetails}>
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
 
     // If no schedules found
     if (schedules.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No schedules found",
         schedules: [],
         currentPage: page,

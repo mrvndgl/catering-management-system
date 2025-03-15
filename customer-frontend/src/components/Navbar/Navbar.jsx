@@ -10,7 +10,7 @@ import {
   Menu,
   LogOut,
 } from "lucide-react";
-import logoImage from "../../assets/logo2.png";
+import logoImage from "../../assets/mainLogo.png";
 import "./Navbar.css";
 
 const Navbar = () => {

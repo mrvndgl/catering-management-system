@@ -115,6 +115,28 @@ export const getPaymentsByReservation = async (req, res) => {
   }
 };
 
+// Get payment statuses for a user
+export const getPaymentStatuses = async (req, res) => {
+  try {
+    const customer_id = req.user.userId;
+
+    // Find all payments for this customer
+    const payments = await Payment.find({ customer_id });
+
+    res.status(200).json({
+      success: true,
+      data: payments,
+    });
+  } catch (error) {
+    console.error("Error fetching payment statuses:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching payment statuses",
+      error: error.message,
+    });
+  }
+};
+
 // Update payment status
 export const updatePaymentStatus = async (req, res) => {
   try {
