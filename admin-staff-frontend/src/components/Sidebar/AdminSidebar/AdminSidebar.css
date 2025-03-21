@@ -8,6 +8,8 @@
   left: 0;
   top: 0;
   z-index: 100;
+  border-top-right-radius: 25px;
+  border-bottom-right-radius: 25px;
 }
 
 .dashboard-sidebar.collapsed {
@@ -174,5 +176,5 @@
 }
 
 .logout-modal-content h2 {
-  color: #DA1D1D;
+  color: #263238 !important;
 }
