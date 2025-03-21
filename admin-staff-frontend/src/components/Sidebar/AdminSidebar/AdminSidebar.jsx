@@ -10,6 +10,7 @@ import {
   Users,
   LogOut,
   Menu,
+  CalendarCheck2,
 } from "lucide-react";
 import { useSidebar } from "../../../context/SidebarContext";
 import "./AdminSidebar.css";
@@ -32,6 +33,12 @@ const AdminSidebar = () => {
       icon: ClipboardList,
       label: "Reservations",
       path: "/admin/reservations",
+    },
+    {
+      id: "schedules",
+      icon: CalendarCheck2,
+      label: "Schedules",
+      path: "/admin/schedules",
     },
     {
       id: "payment",
