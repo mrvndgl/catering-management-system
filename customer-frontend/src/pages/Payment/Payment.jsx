@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./Payment.css";
 
 const Payment = () => {
+  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [acceptedReservations, setAcceptedReservations] = useState([]);
@@ -18,10 +19,45 @@ const Payment = () => {
     fetchPaymentStatuses();
   }, []);
 
+  useEffect(() => {
+    const checkNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/notifications/unread", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.length > 0) {
+            setNotifications(data);
+            // Refresh the payments list if there are new notifications
+            fetchAcceptedReservations();
+            fetchPaymentStatuses();
+          }
+        }
+      } catch (error) {
+        console.error("Error checking notifications:", error);
+      }
+    };
+
+    // Check for notifications every 30 seconds
+    const intervalId = setInterval(checkNotifications, 30000);
+
+    // Initial check
+    checkNotifications();
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, []);
+
   const fetchPaymentStatuses = async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch("/api/payments/status", {
+        // Match the route in your router
         headers: {
           Authorization: `Bearer ${token}`,
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -29,15 +65,21 @@ const Payment = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch payment statuses");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to fetch payment statuses"
+        );
       }
 
       const data = await response.json();
-      const statusMap = data.reduce((acc, payment) => {
-        acc[payment.reservation_id] = payment.status;
-        return acc;
-      }, {});
-      setPaymentStatuses(statusMap);
+      // Your backend returns data in { success: true, data: [...] } format
+      if (data.success && Array.isArray(data.data)) {
+        const statusMap = data.data.reduce((acc, payment) => {
+          acc[payment.reservation_id] = payment.payment_status;
+          return acc;
+        }, {});
+        setPaymentStatuses(statusMap);
+      }
     } catch (error) {
       console.error("Error fetching payment statuses:", error);
     }
@@ -142,7 +184,7 @@ const Payment = () => {
       formData.append("payment_method", "GCash");
 
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/payments/upload", {
+      const response = await fetch(`/api/payments/${reservationId}/proof`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -182,7 +224,7 @@ const Payment = () => {
   const handleCashPayment = async (reservationId) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/payments/cash-intent", {
+      const response = await fetch("/api/payments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -195,9 +237,13 @@ const Payment = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit cash payment information");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to submit cash payment information"
+        );
       }
 
+      const data = await response.json();
       setSuccessMessage(
         "Cash payment information submitted successfully! The owner will contact you shortly."
       );
@@ -236,6 +282,34 @@ const Payment = () => {
 
   return (
     <div className="payments-container">
+      {notifications.length > 0 && (
+        <div className="notifications">
+          {notifications.map((notification) => (
+            <div key={notification._id} className="notification-item">
+              <p>{notification.message}</p>
+              {notification.type === "PAYMENT_REQUIRED" && (
+                <button
+                  onClick={() => {
+                    const reservation = acceptedReservations.find(
+                      (r) => r.reservation_id === notification.reservation_id
+                    );
+                    if (reservation) {
+                      // Scroll to the reservation card
+                      document
+                        .getElementById(
+                          `reservation-${notification.reservation_id}`
+                        )
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                >
+                  View Payment Details
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="payments-card">
         <div className="card-header">
           <h2>Your Payments</h2>

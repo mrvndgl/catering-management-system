@@ -15,6 +15,7 @@ import reservationRoutes from "./routes/reservationRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import feedbackRoutes from "./routes/feedbackRoute.js";
 import scheduleRoutes from "./routes/scheduleRoute.js";
+import reportRoutes from "./routes/reportRoute.js";
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,16 @@ if (!existsSync(uploadDir)) {
     console.log("Uploads directory created successfully");
   } catch (error) {
     console.error("Error creating uploads directory:", error);
+  }
+}
+
+const paymentsUploadDir = path.join(__dirname, "uploads", "payments");
+if (!existsSync(paymentsUploadDir)) {
+  try {
+    await mkdir(paymentsUploadDir, { recursive: true });
+    console.log("Payments uploads directory created successfully");
+  } catch (error) {
+    console.error("Error creating payments uploads directory:", error);
   }
 }
 
@@ -52,12 +63,43 @@ app.use(
   })
 );
 
+app.get("/api/debug/payment-proof/:filename", (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "uploads",
+    "payments",
+    req.params.filename
+  );
+  const exists = existsSync(filePath);
+  res.json({
+    exists,
+    filePath,
+    requestedFile: req.params.filename,
+  });
+});
+
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Update static file serving (add before routes)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/api/payments/proof",
+  express.static(path.join(__dirname, "uploads", "payments"))
+);
+
+app.use("/api/payments/proof", (req, res, next) => {
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=3600",
+    Vary: "Origin",
+  });
+  next();
+});
 
 // Routes
 app.use("/api/customers", customerRoutes);
@@ -67,6 +109,7 @@ app.use("/api/reservations", reservationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/schedules", scheduleRoutes);
+app.use("/api/reports", reportRoutes);
 
 const predefinedCategories = [
   {

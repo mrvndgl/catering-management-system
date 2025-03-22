@@ -43,6 +43,15 @@ export const employeeController = {
         password,
       } = req.body;
 
+      console.log("Creating staff with data:", {
+        firstName,
+        lastName,
+        username,
+        contactNumber: contactNumber ? "provided" : "missing",
+        address: address ? "provided" : "missing",
+        email,
+      });
+
       const existingStaff = await Employee.findOne({
         $or: [{ email }, { username }],
       });
@@ -54,19 +63,32 @@ export const employeeController = {
 
       const staff = new Employee({
         employeeType: "staff",
-        firstName,
-        lastName,
+        firstName: firstName || "",
+        lastName: lastName || "",
         username,
-        contactNumber,
-        address,
+        contactNumber: contactNumber || "",
+        address: address || "",
         email,
         password: hashedPassword,
       });
 
-      await staff.save();
-      res.status(201).json({ message: "Staff member created successfully" });
+      // Log the staff object before saving
+      console.log("Staff object before save:", staff);
+
+      const savedStaff = await staff.save();
+      console.log("Staff saved successfully:", savedStaff);
+
+      // Return the created staff without password
+      const staffToReturn = savedStaff.toObject();
+      delete staffToReturn.password;
+
+      res.status(201).json({
+        message: "Staff member created successfully",
+        employee: staffToReturn,
+      });
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      console.error("Staff creation error:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
   },
 

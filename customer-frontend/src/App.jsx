@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthProvider";
+import StoreContextProvider from "./context/StoreContext";
 import Navbar from "./components/Navbar/Navbar";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
@@ -11,6 +12,9 @@ import Payment from "./pages/Payment/Payment";
 import Feedback from "./pages/Feedback/Feedback";
 import ExploreService from "./components/ExploreService/ExploreService";
 import ExploreMenu from "./components/ExploreMenu/ExploreMenu";
+import FoodDisplay from "./components/FoodDisplay/FoodDisplay";
+import FoodItem from "./components/FoodItem/FoodItem";
+import Footer from "./components/Footer/Footer";
 import "tippy.js/dist/tippy.css";
 import "tippy.js/themes/translucent.css";
 
@@ -56,42 +60,47 @@ class ErrorBoundary extends React.Component {
 }
 
 const App = () => {
+  const [selectedCategory, setSelectedCategory] = useState("All");
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Routes>
-          {/* Routes remain the same */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+        <StoreContextProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route
-                      path="dashboard"
-                      element={
-                        <div>
-                          <Dashboard />
-                          <ExploreService />
-                          <ExploreMenu />
-                        </div>
-                      }
-                    />
-
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="reservation" element={<Reservation />} />
-                    <Route path="schedules" element={<Schedules />} />
-                    <Route path="payment" element={<Payment />} />
-                    <Route path="feedback" element={<Feedback />} />
-                  </Routes>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route
+                        path="dashboard"
+                        element={
+                          <div>
+                            <Dashboard />
+                            <ExploreService />
+                            <ExploreMenu
+                              selectedCategory={selectedCategory}
+                              setSelectedCategory={setSelectedCategory}
+                            />
+                            <FoodDisplay category={selectedCategory} />
+                            <Footer />
+                          </div>
+                        }
+                      />
+                      <Route path="reservation" element={<Reservation />} />
+                      <Route path="schedules" element={<Schedules />} />
+                      <Route path="payment" element={<Payment />} />
+                      <Route path="feedback" element={<Feedback />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </StoreContextProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

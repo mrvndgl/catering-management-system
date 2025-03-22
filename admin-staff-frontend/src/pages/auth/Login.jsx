@@ -8,7 +8,6 @@ const Login = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    employeeType: "admin", // Hardcoded to "admin"
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +33,10 @@ const Login = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            username: formData.username,
+            password: formData.password,
+          }),
         }
       );
 
@@ -54,7 +56,7 @@ const Login = () => {
       }
     } catch (err) {
       setError(err.message);
-      setTimeout(() => setError(""), 5000); // Clear error after 5 seconds
+      setTimeout(() => setError(""), 5000);
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CreditCard,
   LogOut,
+  Utensils,
 } from "lucide-react";
 import { useSidebar } from "../../../context/SidebarContext";
 import "./StaffSidebar.css";
@@ -32,6 +33,12 @@ const StaffSidebar = ({ activePage, setActivePage }) => {
       icon: CreditCard,
       label: "Payments",
       path: "/staff/payments",
+    },
+    {
+      id: "products",
+      icon: Utensils,
+      label: "Products",
+      path: "/staff/products",
     },
   ];
 

@@ -16,6 +16,7 @@ import "./Navbar.css";
 const Navbar = () => {
   const { logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const menuItems = [
     {
@@ -49,8 +50,17 @@ const Navbar = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const openLogoutConfirm = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const closeLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
+  };
+
   const handleLogout = () => {
     logout();
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -79,13 +89,30 @@ const Navbar = () => {
               </li>
             ))}
             <li className="nav-item logout-item">
-              <button onClick={handleLogout} className="logout-btn">
+              <button onClick={openLogoutConfirm} className="logout-btn">
                 <LogOut size={20} className="nav-icon" />
                 <span>Log out</span>
               </button>
             </li>
           </ul>
         </div>
+
+        {showLogoutConfirm && (
+          <div className="logout-confirm-overlay">
+            <div className="logout-confirm-dialog">
+              <h2>Confirm Logout</h2>
+              <p>Are you sure you want to log out?</p>
+              <div className="logout-dialog-buttons">
+                <button className="confirm-btn" onClick={handleLogout}>
+                  Yes, Logout
+                </button>
+                <button className="cancel-btn" onClick={closeLogoutConfirm}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

@@ -52,8 +52,7 @@ const ProductManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      // Get the token from localStorage or your auth storage
-      const token = localStorage.getItem("token"); // or 'accessToken' depending on your key name
+      const token = localStorage.getItem("token");
 
       if (!token) {
         setError("No authentication token found - please log in");
@@ -66,7 +65,7 @@ const ProductManagement = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Make sure this matches your backend's expected format
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -95,11 +94,11 @@ const ProductManagement = () => {
 
       const data = await response.json();
 
-      // Transform the data to match your component's needs
+      // Keep the original structure from the API
       const formattedCategories = data.map((category) => ({
-        value: category.category_id,
-        label: category.category_name,
-        details: category.category_details,
+        category_id: category.category_id,
+        category_name: category.category_name,
+        category_details: category.category_details,
       }));
 
       setCategories(
@@ -192,90 +191,64 @@ const ProductManagement = () => {
     }
   };
 
+  const handleEditProduct = (product) => {
+    setProductForm({
+      product_id: product.product_id,
+      category_id: product.category_id,
+      product_name: product.product_name,
+      product_details: product.product_details,
+    });
+    setIsEditing(true);
+  };
+
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token"); // or wherever you store your auth token
+      const token = localStorage.getItem("token");
 
       if (!token) {
         throw new Error("No authentication token found");
       }
 
-      const formData = new FormData();
-
-      // Add product data
-      formData.append("product_id", productForm.product_id);
-      formData.append("category_id", productForm.category_id);
-      formData.append("product_name", productForm.product_name);
-      formData.append("product_details", productForm.product_details);
-
-      // Add existing images data if any
-      if (productImages.length > 0) {
-        const existingImages = productImages
-          .filter((img) => !img.file)
-          .map((img) => ({
-            url: img.url,
-            is_primary: img.is_primary,
-          }));
-        formData.append("images", JSON.stringify(existingImages));
-      }
-
-      // Add new image files
-      productImages
-        .filter((img) => img.file)
-        .forEach((img) => {
-          formData.append("images", img.file);
-        });
+      // Create product data object
+      const productData = {
+        product_id: productForm.product_id,
+        category_id: parseInt(productForm.category_id), // Ensure category_id is a number
+        product_name: productForm.product_name,
+        product_details: productForm.product_details,
+      };
 
       const url = isEditing
         ? `http://localhost:4000/api/products/${productForm.product_id}`
         : "http://localhost:4000/api/products/create";
-      const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {
-        method,
+        method: isEditing ? "PUT" : "POST",
         headers: {
-          Authorization: `Bearer ${token}`, // Add the authorization header
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        body: JSON.stringify(productData),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to save product");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save product");
       }
 
       await fetchProducts();
       setProductForm({
-        product_id: "",
+        product_id: getNextProductId(),
         category_id: "",
         product_name: "",
         product_details: "",
       });
-      setProductImages([]);
       setIsEditing(false);
       setError("");
     } catch (error) {
       console.error("Error submitting product:", error);
       setError(`Failed to save product: ${error.message}`);
     }
-  };
-
-  const handleEditProduct = (product) => {
-    setIsEditing(true);
-    setProductForm({
-      ...product,
-      category_id: Number(product.category_id),
-    });
-    // If product has images, set them
-    setProductImages(
-      product.images?.map((img) => ({
-        url: img.url,
-        is_primary: img.is_primary,
-        // Note: existing images won't have a file object
-      })) || []
-    );
-    setError("");
   };
 
   const handleDeleteProduct = async (product_id) => {
@@ -394,11 +367,8 @@ const ProductManagement = () => {
             >
               <option value="">Select Category</option>
               {categories.map((category) => (
-                <option
-                  key={`${category?.label}-${category.category_id}`}
-                  value={category.category_id}
-                >
-                  {category?.label}
+                <option key={category.category_id} value={category.category_id}>
+                  {category.category_name}
                 </option>
               ))}
             </select>
@@ -533,8 +503,9 @@ const ProductManagement = () => {
                 <td>{product.product_id}</td>
                 <td>{product.product_name}</td>
                 <td>
-                  {categories.find((c) => c.category_id === product.category_id)
-                    ?.category_name || "No Category"}
+                  {categories.find(
+                    (c) => c.category_id === parseInt(product.category_id)
+                  )?.category_name || "No Category"}
                 </td>
                 <td>{product.product_details}</td>
                 <td>

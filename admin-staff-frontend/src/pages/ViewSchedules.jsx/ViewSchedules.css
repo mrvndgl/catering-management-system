@@ -1,0 +1,127 @@
+/* ViewSchedules.css */
+.admin-schedules-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .admin-title {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+    border-bottom: 2px solid #eaeaea;
+    padding-bottom: 10px;
+  }
+  
+  .admin-summary {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+  
+  .admin-count {
+    font-weight: bold;
+    color: #45a049;
+    font-size: large;
+  }
+  
+  .admin-dates-container {
+    margin-top: 20px;
+  }
+  
+  .admin-dates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .admin-date-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .admin-date-card:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .admin-date-card:active {
+  background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .admin-date-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .admin-date {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .admin-time-slot {
+    margin: 10px 0;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .admin-status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .admin-status-badge.booked {
+    background-color: #FBC02D;
+    color: white;
+  }
+  
+  .admin-loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: #666;
+  }
+  
+  .admin-error-container {
+    padding: 20px;
+    background-color: #fff2f0;
+    border: 1px solid #ffccc7;
+    border-radius: 8px;
+    color: #ff4d4f;
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .admin-retry-btn {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .admin-no-schedules {
+    text-align: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    color: #666;
+  }
+  
+  @media (max-width: 768px) {
+    .admin-dates-grid {
+      grid-template-columns: 1fr;
+    }
+  }

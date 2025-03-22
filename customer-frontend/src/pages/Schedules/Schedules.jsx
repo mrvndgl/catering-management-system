@@ -2,135 +2,97 @@ import React, { useState, useEffect } from "react";
 import "./Schedules.css";
 
 const Schedules = () => {
-  const [schedules, setSchedules] = useState([]);
+  const [bookedDates, setBookedDates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
-    fetchPublicSchedules();
-  }, [currentPage]);
+    console.log("Schedules component mounted");
+    fetchBookedDates();
+  }, []);
 
-  const fetchPublicSchedules = async () => {
+  const fetchBookedDates = async () => {
     try {
       setIsLoading(true);
-      setError(null); // Reset error state before fetching
+      setError(null);
+      console.log("Fetching booked dates...");
 
-      const response = await fetch(
-        `/api/schedules?page=${currentPage}&limit=10`
-      );
+      const response = await fetch("/api/schedules/booked-dates");
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
-        // Attempt to parse error response
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch schedules");
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
       const data = await response.json();
-      setSchedules(data.schedules || []);
-      setTotalPages(data.totalPages || 0);
+      console.log("Full API Response:", data);
+
+      if (!data || !Array.isArray(data.bookedDates)) {
+        console.error("Invalid response format:", data);
+        throw new Error("Invalid data format: bookedDates is not an array");
+      }
+
+      setBookedDates(data.bookedDates);
+      setDebugInfo(data);
+      console.log("Booked dates set:", data.bookedDates);
     } catch (err) {
-      // Ensure error is a string
-      setError(err.message || "An unexpected error occurred");
+      console.error("Error details:", err);
+      setError(err.message || "Failed to load booked dates");
+      setDebugInfo({ error: err.message, stack: err.stack });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Error rendering function
-  const renderError = () => {
+  const renderDateCard = (dateObj) => {
+    console.log("Rendering date card for:", dateObj);
     return (
-      <div className="error-container">
-        <h2>Error</h2>
-        <p>{error}</p>
-        <button onClick={fetchPublicSchedules}>Try Again</button>
+      <div key={dateObj.date} className="date-card">
+        <div className="date-info">
+          <span className="date">{dateObj.formattedDate}</span>
+          <span className="status-badge booked">Booked</span>
+        </div>
       </div>
     );
   };
 
-  // Loading state
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="loading-container">
-        <div className="spinner"></div>
-        <p>Loading schedules...</p>
+        <p>Loading...</p>
       </div>
     );
-  }
-
-  // Error state
-  if (error) {
-    return renderError();
-  }
-
-  // Render schedule cards
-  const renderScheduleCard = (schedule) => (
-    <div key={schedule._id || schedule.schedule_id} className="schedule-card">
-      <div className="schedule-header">
-        <h3>{schedule.eventType || "Unnamed Event"}</h3>
-        <span className="date">
-          {schedule.formattedReservationDate || "Date Not Specified"}
-        </span>
-      </div>
-      <div className="schedule-details">
-        <p>
-          <strong>Customer:</strong>
-          {schedule.customerName || "Unknown Customer"}
-        </p>
-        <p>
-          <strong>Guests:</strong>
-          {schedule.numberOfGuests || "N/A"}
-        </p>
-        {schedule.specialRequirements && (
-          <p>
-            <strong>Special Requirements:</strong>
-            {schedule.specialRequirements}
-          </p>
+  if (error)
+    return (
+      <div className="error-container">
+        <p>{error}</p>
+        {debugInfo && (
+          <details>
+            <summary>Debug Info</summary>
+            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          </details>
         )}
-        <div className="schedule-status">
-          <span
-            className={`status-badge ${(
-              schedule.status || "pending"
-            ).toLowerCase()}`}
-          >
-            {schedule.status || "Pending"}
-          </span>
-        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="schedules-container">
-      <h2>Upcoming Schedules</h2>
-      {schedules.length === 0 ? (
+      <h2 className="unavailable-dates-title">Unavailable Dates</h2>
+      {bookedDates.length === 0 ? (
         <div className="no-schedules">
-          <p>No schedules found. Check back later!</p>
+          <p>All dates are currently available!</p>
+          {debugInfo && (
+            <details>
+              <summary>Debug Info</summary>
+              <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+            </details>
+          )}
         </div>
       ) : (
-        <>
-          <div className="schedules-grid">
-            {schedules.map(renderScheduleCard)}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={page === currentPage ? "active" : ""}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
-            </div>
-          )}
-        </>
+        <div className="dates-container">
+          <div className="dates-grid">{bookedDates.map(renderDateCard)}</div>
+        </div>
       )}
     </div>
   );

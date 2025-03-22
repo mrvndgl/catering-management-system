@@ -16,49 +16,47 @@ const services = [
   {
     name: "Weddings",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "Celebrate your special day with a memorable and elegant experience.",
     icon: <Heart size={48} color="black" />,
   },
   {
     name: "Birthday Party",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "Make birthdays unforgettable with fun, laughter, and great food.",
     icon: <Cake size={48} color="black" />,
   },
   {
     name: "Anniversary",
-    description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+    description: "Cherish milestones with a beautifully planned celebration.",
     icon: <Users size={48} color="black" />,
   },
   {
     name: "Corporate Event",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "Professional and seamless events tailored for your business needs.",
     icon: <Briefcase size={48} color="black" />,
   },
   {
     name: "Debut",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "Mark the transition to adulthood with a grand and stylish party.",
     icon: <Sparkles size={48} color="black" />,
   },
   {
     name: "Baptism/Christening",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "A meaningful and intimate gathering for your child's blessing.",
     icon: <Droplet size={48} color="black" />,
   },
   {
     name: "Graduation",
     description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+      "Honor achievements with a joyful and well-planned celebration.",
     icon: <GraduationCap size={48} color="black" />,
   },
   {
     name: "Funeral",
-    description:
-      "Sample text. Click to select the text box. Click again or double click to start editing the text. Excepteur sint occaecat cupidatat non proident.",
+    description: "A dignified and heartfelt tribute to honor your loved one.",
     icon: <Flower size={48} color="black" />,
   },
 ];

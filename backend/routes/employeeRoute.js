@@ -115,7 +115,7 @@ employeeRouter.post("/login", async (req, res) => {
     console.log("Login attempt:", { username, employeeType });
 
     // Find employee by username and type
-    const employee = await Employee.findOne({ username, employeeType });
+    const employee = await Employee.findOne({ username });
     console.log("Employee found:", employee ? "Yes" : "No");
 
     if (!employee) {
@@ -187,8 +187,12 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
       employeeType,
     } = req.body;
 
-    console.log("Attempting to create staff member:", {
+    console.log("Creating staff account with data:", {
+      firstName: firstName || "missing",
+      lastName: lastName || "missing",
       username,
+      email,
+      contactNumber: contactNumber || "missing",
       employeeType,
     });
 
@@ -212,36 +216,26 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
       });
     }
 
-    // Get the last employee to determine the next employee_id
-    const lastEmployee = await Employee.findOne(
-      {},
-      {},
-      { sort: { employee_id: -1 } }
-    );
-    const employee_id = lastEmployee
-      ? lastEmployee.employee_id + 1
-      : 1000000000;
-
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new employee
+    // Create new employee with proper defaults for required fields
     const newEmployee = new Employee({
-      employee_id,
-      firstName,
-      lastName,
+      firstName: firstName || "",
+      lastName: lastName || "",
       username,
       email,
-      contactNumber,
-      address,
+      contactNumber: contactNumber || "",
+      address: address || "",
       password: hashedPassword,
       employeeType,
     });
 
-    await newEmployee.save();
+    const savedEmployee = await newEmployee.save();
+    console.log("Employee saved with ID:", savedEmployee.employee_id);
 
     // Remove password from response
-    const employeeResponse = newEmployee.toObject();
+    const employeeResponse = savedEmployee.toObject();
     delete employeeResponse.password;
 
     res.status(201).json({
@@ -261,17 +255,21 @@ employeeRouter.post("/staff/create", adminAuth, async (req, res) => {
 employeeRouter.put("/staff/:id", adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, contactNumber, address } = req.body;
+    const { firstName, lastName, email, contactNumber, address, username } =
+      req.body;
+
+    // Only update fields that have actual values
+    const updateFields = {};
+    if (firstName) updateFields.firstName = firstName;
+    if (lastName) updateFields.lastName = lastName;
+    if (email) updateFields.email = email;
+    if (contactNumber) updateFields.contactNumber = contactNumber;
+    if (address) updateFields.address = address;
+    if (username) updateFields.username = username;
 
     const updatedEmployee = await Employee.findOneAndUpdate(
       { _id: id, employeeType: "staff" },
-      {
-        firstName,
-        lastName,
-        email,
-        contactNumber,
-        address,
-      },
+      updateFields,
       { new: true }
     ).select("-password -photo");
 

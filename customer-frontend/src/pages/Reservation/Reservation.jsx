@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Reservation.css";
+import { Beef, Drumstick, Fish, Salad, Soup, Utensils } from "lucide-react";
 import FoodImageTippy from "../../components/FoodImageTippy";
 
 const BASE_PAX = 50;
@@ -71,21 +72,27 @@ const Reservation = () => {
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
-    numberOfPax: BASE_PAX,
+    numberOfPax: "",
     timeSlot: "",
-    paymentMode: "",
     reservation_date: "",
     venue: "",
-    selectedProducts: {},
+    paymentMode: "",
     specialNotes: "",
+    selectedProducts: {},
   });
 
-  const [selectedAdditionalItems, setSelectedAdditionalItems] = useState([]);
-  const [showAdditionalItemModal, setShowAdditionalItemModal] = useState(false);
-  const [totalAmount, setTotalAmount] = useState(BASE_PRICE);
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAdditionalItemModal, setShowAdditionalItemModal] = useState(false);
+  const [selectedAdditionalItems, setSelectedAdditionalItems] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [activeCategory, setActiveCategory] = useState(
+    Object.keys(MENU_ITEMS)[0]
+  );
+  const [activeModalCategory, setActiveModalCategory] = useState(
+    Object.keys(MENU_ITEMS)[0]
+  );
 
   const [availableTimeSlots] = useState([
     { id: "Lunch", label: "Lunch (11:00 AM - 12:00 PM)" },
@@ -175,6 +182,7 @@ const Reservation = () => {
       additionalItems: selectedAdditionalItems,
       specialNotes: formData.specialNotes,
       totalAmount: totalAmount,
+      createdAt: new Date().toISOString(),
     };
 
     try {
@@ -257,126 +265,158 @@ const Reservation = () => {
       )}
 
       <form onSubmit={handleSubmit} className="reservation-form">
-        <div className="form-section">
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+        <div className="form-columns">
+          <div className="form-column left-column">
+            <div className="form-group">
+              <label>Name:</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Phone Number:</label>
-            <input
-              type="text"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              placeholder="11 digits required"
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label>Phone Number:</label>
+              <input
+                type="text"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                placeholder="11 digits required"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Number of Pax:</label>
-            <input
-              type="number"
-              name="numberOfPax"
-              min="50"
-              max="150"
-              value={formData.numberOfPax}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label>Number of Pax:</label>
+              <input
+                type="number"
+                name="numberOfPax"
+                min="50"
+                max="150"
+                value={formData.numberOfPax}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Time Slot:</label>
-            <select
-              name="timeSlot"
-              value={formData.timeSlot}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Select a time slot</option>
-              {availableTimeSlots.map((slot) => (
-                <option key={slot.id} value={slot.id}>
-                  {slot.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Date:</label>
-            <input
-              type="date"
-              name="reservation_date"
-              value={formData.reservation_date}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Venue:</label>
-            <input
-              type="text"
-              name="venue"
-              value={formData.venue}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Payment Mode:</label>
-            <div className="payment-options">
-              <label>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="cash"
-                  checked={formData.paymentMode === "cash"}
-                  onChange={handleInputChange}
-                />
-                Cash
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value="gcash"
-                  checked={formData.paymentMode === "gcash"}
-                  onChange={handleInputChange}
-                />
-                GCash
-              </label>
+            <div className="form-group">
+              <label>Time Slot:</label>
+              <select
+                name="timeSlot"
+                value={formData.timeSlot}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select a time slot</option>
+                {availableTimeSlots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    {slot.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Special Notes:</label>
-            <textarea
-              name="specialNotes"
-              value={formData.specialNotes}
-              onChange={handleInputChange}
-              placeholder="Enter any special requests or dietary requirements..."
-              rows={4}
-              className="w-full p-2 border rounded"
-            />
+          <div className="form-column right-column">
+            <div className="form-group">
+              <label>Date:</label>
+              <input
+                type="date"
+                name="reservation_date"
+                value={formData.reservation_date}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Venue:</label>
+              <input
+                type="text"
+                name="venue"
+                value={formData.venue}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Payment Mode:</label>
+              <div className="payment-options">
+                <label>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="cash"
+                    checked={formData.paymentMode === "cash"}
+                    onChange={handleInputChange}
+                  />
+                  Cash
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="gcash"
+                    checked={formData.paymentMode === "gcash"}
+                    onChange={handleInputChange}
+                  />
+                  GCash
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Special Notes:</label>
+              <textarea
+                name="specialNotes"
+                value={formData.specialNotes}
+                onChange={handleInputChange}
+                placeholder="Enter any special requests or dietary requirements..."
+                rows={4}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="menu-selection">
-          <h3>Select Menu Items</h3>
+        <div className="menu-selection form-section">
+          <h3 className="section-title">Select Menu Items</h3>
+
+          {/* Category tabs */}
+          <div className="category-tabs">
+            {Object.keys(MENU_ITEMS).map((category) => (
+              <div
+                key={category}
+                className={`category-tab ${
+                  activeCategory === category ? "active" : ""
+                }`}
+                onClick={() => setActiveCategory(category)}
+              >
+                <div className="icon-container">
+                  {category === "Beef" && <Beef size={24} />}
+                  {category === "Pork" && <Soup size={24} />}
+                  {category === "Chicken" && <Drumstick size={24} />}
+                  {category === "Vegetable" && <Salad size={24} />}
+                  {category === "Seafoods" && <Fish size={24} />}
+                  {category === "Noodles" && <Utensils size={24} />}
+                </div>
+                <span>{category}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Display products for each category */}
           {Object.entries(MENU_ITEMS).map(([category, products]) => (
-            <div key={category} className="category-section">
-              <h4>{category}</h4>
+            <div
+              key={category}
+              className={`category-section ${
+                activeCategory === category ? "active" : ""
+              }`}
+            >
               <div className="product-list">
                 {products.map((product) => (
                   <div
@@ -388,19 +428,20 @@ const Reservation = () => {
                     }`}
                     onClick={() => handleProductSelect(category, product)}
                   >
-                    <input
-                      type="radio"
-                      name={`product-${category}`}
-                      checked={
-                        formData.selectedProducts[category] ===
-                        product.product_id
-                      }
-                      onChange={() => {}}
-                    />
-                    <FoodImageTippy
-                      key={`${product?.product_name}-${product.product_id}`}
-                      product={product}
-                    />
+                    <div className="product-content">
+                      <input
+                        type="radio"
+                        name={`product-${category}`}
+                        checked={
+                          formData.selectedProducts[category] ===
+                          product.product_id
+                        }
+                        onChange={() => {}}
+                      />
+                      <span className="product-name">
+                        {product.product_name}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -458,9 +499,30 @@ const Reservation = () => {
               ×
             </button>
             <h3>Select Additional Items</h3>
+
+            {/* Modal category tabs */}
+            <div className="category-tabs">
+              {Object.keys(MENU_ITEMS).map((category) => (
+                <button
+                  key={category}
+                  className={`category-tab ${
+                    activeModalCategory === category ? "active" : ""
+                  }`}
+                  onClick={() => setActiveModalCategory(category)}
+                >
+                  <span>{category}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Modal category sections */}
             {Object.entries(MENU_ITEMS).map(([category, products]) => (
-              <div key={category} className="category-section">
-                <h4>{category}</h4>
+              <div
+                key={category}
+                className={`category-section ${
+                  activeModalCategory === category ? "active" : ""
+                }`}
+              >
                 <div className="items-grid">
                   {products.map((product) => (
                     <button
@@ -477,11 +539,14 @@ const Reservation = () => {
                         product.product_id
                       )}
                     >
-                      <img
-                        alt="sample"
-                        src=" "
-                        style={{ width: "250px", height: "250px" }}
-                      />
+                      <div className="icon-container">
+                        {category === "Beef" && <Beef size={20} />}
+                        {category === "Pork" && <Soup size={20} />}
+                        {category === "Chicken" && <Drumstick size={20} />}
+                        {category === "Vegetable" && <Salad size={20} />}
+                        {category === "Seafoods" && <Fish size={20} />}
+                        {category === "Noodles" && <Utensils size={20} />}
+                      </div>
                       {product.product_name}
                     </button>
                   ))}

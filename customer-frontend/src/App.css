@@ -29,6 +29,6 @@ body {
 .dashboard-content {
   flex: 1;
   padding: 20px;
-  margin-top: 85px; /* Increased margin-top to be greater than navbar height */
+  margin-top: 85px; 
   width: 100%;
 }

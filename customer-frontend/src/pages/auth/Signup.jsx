@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthProvider"; // Import useAuth
 import "./Auth.css";
 import "./Signup.css";
 import backgroundImage from "../../assets/samplebg.jpg";
 
-const Signup = ({ setIsAuthenticated }) => {
+const Signup = () => {
+  const { setIsAuthenticated } = useAuth(); // Get from context instead of props
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     username: "",
     contactNumber: "",
+    address: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // Add success message state
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,6 +30,9 @@ const Signup = ({ setIsAuthenticated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -46,10 +53,19 @@ const Signup = ({ setIsAuthenticated }) => {
       if (!response.ok) {
         throw new Error(data.message || "Signup failed");
       }
-      localStorage.setItem("token", data.token);
-      setIsAuthenticated(true);
-      navigate("/dashboard");
+
+      // Show success message
+      setSuccess("Account created successfully! Redirecting...");
+
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
+      // Don't set authentication here - let the user log in properly
+      // Don't store token here - it should be stored after login
     } catch (err) {
+      console.error("Signup error:", err);
       setError(err.message || "Signup failed");
     }
   };
@@ -61,6 +77,7 @@ const Signup = ({ setIsAuthenticated }) => {
           <form onSubmit={handleSubmit} className="auth-form compact-form">
             <h2>Create Account</h2>
             {error && <div className="error-message">{error}</div>}
+            {success && <div className="success-message">{success}</div>}
 
             <div className="form-group">
               <input
@@ -104,6 +121,18 @@ const Signup = ({ setIsAuthenticated }) => {
                 name="contactNumber"
                 placeholder="Contact Number"
                 value={formData.contactNumber}
+                onChange={handleChange}
+                required
+                className="input-field compact-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                type="text"
+                name="address"
+                placeholder="Address"
+                value={formData.address}
                 onChange={handleChange}
                 required
                 className="input-field compact-input"

@@ -1,4 +1,5 @@
 import Reservation from "../models/Reservation.js";
+import { Schedule } from "../models/Schedule.js";
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
 
@@ -6,6 +7,85 @@ const BASE_PAX = 50;
 const PRICE_PER_HEAD = 350;
 const ADDITIONAL_ITEM_PRICE = 35;
 const BASE_PRICE = BASE_PAX * PRICE_PER_HEAD;
+
+// Function to sync a reservation to the schedules collection
+export const syncReservationToSchedule = async (reservation) => {
+  try {
+    // Check if a schedule already exists for this date
+    const existingSchedule = await Schedule.findOne({
+      reservationDate: new Date(reservation.date),
+    });
+
+    if (!existingSchedule && reservation.status === "ACCEPTED") {
+      // Create a new schedule entry if it doesn't exist
+      const newSchedule = new Schedule({
+        reservationDate: new Date(reservation.date),
+        status: "Confirmed", // Map reservation status to schedule status
+        // You could add more fields here if needed
+        reservationId: reservation._id, // Reference back to the reservation
+      });
+
+      await newSchedule.save();
+      console.log(`Created schedule for reservation date: ${reservation.date}`);
+    }
+  } catch (error) {
+    console.error("Error syncing reservation to schedule:", error);
+  }
+};
+
+// Function to sync all existing reservations
+export const syncAllReservationsToSchedules = async () => {
+  try {
+    const acceptedReservations = await Reservation.find({
+      status: "accepted", // Adjust based on your actual status values
+    });
+
+    console.log(
+      `Syncing ${acceptedReservations.length} reservations to schedules`
+    );
+
+    for (const reservation of acceptedReservations) {
+      await syncReservationToSchedule(reservation);
+    }
+
+    console.log("Finished syncing reservations to schedules");
+    return acceptedReservations.length;
+  } catch (error) {
+    console.error("Error syncing all reservations:", error);
+    throw error;
+  }
+};
+
+// Add this endpoint to your routes to manually trigger a sync
+export const triggerSync = async (req, res) => {
+  try {
+    const syncCount = await syncAllReservationsToSchedules();
+    res.status(200).json({
+      message: `Successfully synchronized ${syncCount} reservations`,
+      syncCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error synchronizing reservations",
+      error: error.message,
+    });
+  }
+};
+
+// You could also add a hook to automatically sync when reservations are created/updated
+// Add this to your reservation model or wherever you handle reservation updates
+export const addSyncHook = () => {
+  // If using Mongoose middleware:
+  Reservation.schema.post("save", async function (doc) {
+    await syncReservationToSchedule(doc);
+  });
+
+  Reservation.schema.post("findOneAndUpdate", async function (doc) {
+    if (doc) {
+      await syncReservationToSchedule(doc);
+    }
+  });
+};
 
 // Function to get available dates
 export const getAvailableDates = async (req, res) => {
@@ -195,6 +275,7 @@ export const createReservation = async (req, res) => {
       phoneNumber,
       numberOfPax,
       timeSlot,
+      created_at: req.body.createdAt,
       paymentMode,
       reservation_date: new Date(reservation_date),
       venue,

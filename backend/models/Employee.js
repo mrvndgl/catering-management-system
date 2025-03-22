@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 const employeeSchema = new mongoose.Schema({
   employee_id: {
     type: Number,
-    required: true,
     unique: true,
   },
   employeeType: {
@@ -14,10 +13,12 @@ const employeeSchema = new mongoose.Schema({
   firstName: {
     type: String,
     required: true,
+    default: "", // Provide default values
   },
   lastName: {
     type: String,
     required: true,
+    default: "",
   },
   username: {
     type: String,
@@ -29,12 +30,14 @@ const employeeSchema = new mongoose.Schema({
     contentType: String,
   },
   contactNumber: {
-    type: Number,
+    type: String, // Change to String to handle formatting
     required: true,
+    default: "",
   },
   address: {
     type: String,
     required: true,
+    default: "",
   },
   email: {
     type: String,
@@ -47,17 +50,25 @@ const employeeSchema = new mongoose.Schema({
   },
 });
 
-// Auto-increment employee_id
+// Auto-increment employee_id - modified for better reliability
 employeeSchema.pre("save", async function (next) {
-  if (this.isNew) {
-    const lastEmployee = await this.constructor.findOne(
-      {},
-      {},
-      { sort: { employee_id: -1 } }
-    );
-    this.employee_id = lastEmployee ? lastEmployee.employee_id + 1 : 1000000000;
+  try {
+    if (this.isNew && !this.employee_id) {
+      const lastEmployee = await this.constructor.findOne(
+        {},
+        {},
+        { sort: { employee_id: -1 } }
+      );
+      this.employee_id = lastEmployee
+        ? lastEmployee.employee_id + 1
+        : 1000000000;
+      console.log("Auto-assigning employee_id:", this.employee_id);
+    }
+    next();
+  } catch (error) {
+    console.error("Error in pre-save hook:", error);
+    next(error);
   }
-  next();
 });
 
 const Employee = mongoose.model("Employee", employeeSchema);

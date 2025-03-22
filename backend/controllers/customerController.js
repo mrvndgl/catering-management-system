@@ -20,98 +20,103 @@ export const customerController = {
         password,
       } = req.body;
 
-      // Validate required fields
-      const requiredFields = [
-        "firstName",
-        "lastName",
-        "username",
-        "contactNumber",
-        "address",
-        "email",
-        "password",
-      ];
-      const missingFields = requiredFields.filter((field) => !req.body[field]);
-
-      if (missingFields.length > 0) {
+      // Enhanced validation
+      if (!password || password.length < 6) {
         return res.status(400).json({
-          message: `Missing required fields: ${missingFields.join(", ")}`,
+          message: "Password must be at least 6 characters long",
         });
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: "Invalid email format" });
+      if (!username || username.length < 3) {
+        return res.status(400).json({
+          message: "Username must be at least 3 characters long",
+        });
       }
 
-      // Validate contact number
-      if (isNaN(contactNumber) || contactNumber.toString().length < 10) {
-        return res.status(400).json({ message: "Invalid contact number" });
+      // Validate contact number format (Philippines format)
+      const contactRegex = /^(09|\+639)\d{9}$/;
+      if (!contactRegex.test(contactNumber)) {
+        return res.status(400).json({
+          message:
+            "Invalid contact number format. Use 09XXXXXXXXX or +639XXXXXXXXX",
+        });
       }
 
-      // Check if user exists
+      // Check if user exists with more detailed error
       console.log("Checking for existing user...");
-      const existingUser = await Customer.findOne({
-        $or: [{ email }, { username }],
-      });
+      const existingEmail = await Customer.findOne({ email });
+      const existingUsername = await Customer.findOne({ username });
 
-      if (existingUser) {
-        const field = existingUser.email === email ? "email" : "username";
-        return res
-          .status(400)
-          .json({ message: `This ${field} is already registered` });
+      if (existingEmail) {
+        return res.status(400).json({
+          message: "Email already registered",
+          field: "email",
+        });
+      }
+
+      if (existingUsername) {
+        return res.status(400).json({
+          message: "Username already taken",
+          field: "username",
+        });
       }
 
       // Hash password
       console.log("Hashing password...");
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create new customer
+      // Create new customer with trimmed strings
       console.log("Creating new customer...");
       const customer = new Customer({
-        firstName,
-        lastName,
-        username,
-        contactNumber,
-        address,
-        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        username: username.trim(),
+        contactNumber: contactNumber.trim(),
+        address: address.trim(),
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
       });
 
-      console.log("Saving customer to database...");
       await customer.save();
 
-      console.log("Generating JWT...");
+      // Generate token with user role
       const token = jwt.sign(
-        { userId: customer._id, type: "customer" },
+        {
+          userId: customer._id,
+          type: "customer",
+          username: customer.username,
+        },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
 
-      console.log("Signup successful");
+      // Send success response without sensitive data
       res.status(201).json({
         message: "Signup successful",
         token,
+        user: {
+          id: customer._id,
+          username: customer.username,
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+        },
       });
     } catch (error) {
-      console.error("Signup error:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-      });
+      console.error("Signup error:", error);
 
       if (error.name === "ValidationError") {
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
+        });
       }
 
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyPattern)[0];
-        return res
-          .status(400)
-          .json({ message: `This ${field} is already in use` });
-      }
-
-      res.status(500).json({ message: "Server error", error: error.message });
+      res.status(500).json({
+        message: "Server error during signup",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
   },
 

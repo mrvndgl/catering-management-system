@@ -1,168 +1,115 @@
-import Schedule from "../models/Schedule.js";
+import { Schedule } from "../models/Schedule.js";
+import Reservation from "../models/Reservation.js";
 import mongoose from "mongoose";
 
-export const createSchedule = async (req, res) => {
+// Updated endpoint to get booked dates from reservations
+export const getBookedDates = async (req, res) => {
   try {
-    const { title, events, isPublic } = req.body;
-
-    // Validate input
-    if (!title) {
-      return res.status(400).json({ message: "Schedule title is required" });
-    }
-
-    const newSchedule = new Schedule({
-      userId: req.user.id,
-      title,
-      events: events || [],
-      isPublic: isPublic || false,
+    // Query accepted reservations from the reservations collection
+    const reservations = await Reservation.find({
+      reservation_status: "accepted", // Lowercase, match your actual field name and values
     });
 
-    const savedSchedule = await newSchedule.save();
-    res.status(201).json(savedSchedule);
+    console.log("Found reservations:", reservations);
+
+    const bookedDates = reservations.map((reservation) => {
+      // Use the correct field name from your model
+      const reservationDate = new Date(reservation.reservation_date);
+
+      return {
+        date: reservationDate,
+        formattedDate: reservationDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          weekday: "long",
+        }),
+        // Match your actual field name
+        timeSlot: reservation.timeSlot,
+      };
+    });
+
+    res.status(200).json({
+      bookedDates,
+      message: "Booked dates retrieved successfully",
+    });
   } catch (error) {
-    console.error("Error creating schedule:", error);
+    console.error("Error fetching booked dates:", error);
     res.status(500).json({
-      message: "Error creating schedule",
+      message: "Error fetching booked dates",
       error: error.message,
     });
   }
 };
 
-export const getUserSchedules = async (req, res) => {
-  try {
-    const schedules = await Schedule.find({
-      userId: req.user.id,
-    }).sort({ createdAt: -1 });
+// Keep your existing test endpoints
+export const testEndpoint = (req, res) => {
+  res.json({ message: "Schedule route is working" });
+};
 
-    res.json(schedules);
+// DB info endpoint function
+export const getDbInfo = (req, res) => {
+  try {
+    const dbInfo = {
+      connected: mongoose.connection.readyState === 1,
+      name: mongoose.connection.name,
+      host: mongoose.connection.host,
+      collections: mongoose.connection.collections
+        ? Object.keys(mongoose.connection.collections)
+        : [],
+      modelName: Schedule.modelName,
+      collectionName: Schedule.collection.name,
+    };
+
+    res.json(dbInfo);
   } catch (error) {
-    console.error("Error fetching user schedules:", error);
-    res.status(500).json({
-      message: "Error retrieving schedules",
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const getPublicSchedules = async (req, res) => {
+// Direct query endpoint function
+export const directQuery = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skipIndex = (page - 1) * limit;
-
-    const publicSchedules = await Schedule.find({
-      isPublic: true,
-    })
-      .select("title userId createdAt events isPublic")
-      .populate("userId", "username")
-      .skip(skipIndex)
-      .limit(limit)
-      .sort({ createdAt: -1 });
-
-    const total = await Schedule.countDocuments({ isPublic: true });
+    const db = mongoose.connection.db;
+    const schedules = await db.collection("schedules").find({}).toArray();
 
     res.json({
-      schedules: publicSchedules,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalSchedules: total,
+      count: schedules.length,
+      data: schedules,
     });
   } catch (error) {
-    console.error("Error fetching public schedules:", error);
-    res.status(500).json({
-      message: "Error retrieving public schedules",
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const getPublicScheduleById = async (req, res) => {
+// Insert test data endpoint function
+// Add this to scheduleController.js to insert multiple test dates
+export const insertTestData = async (req, res) => {
   try {
-    const schedule = await Schedule.findOne({
-      _id: req.params.scheduleId,
-      isPublic: true,
-    }).populate("userId", "username");
+    const dates = [
+      new Date(), // today
+      new Date(Date.now() + 24 * 60 * 60 * 1000), // tomorrow
+      new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+    ];
 
-    if (!schedule) {
-      return res
-        .status(404)
-        .json({ message: "Schedule not found or not public" });
+    const savedSchedules = [];
+
+    for (const date of dates) {
+      const newSchedule = new Schedule({
+        reservationDate: date,
+        status: "Confirmed",
+      });
+
+      const saved = await newSchedule.save();
+      savedSchedules.push(saved);
     }
 
-    res.json(schedule);
+    res.json({
+      message: "Test data inserted",
+      count: savedSchedules.length,
+      data: savedSchedules,
+    });
   } catch (error) {
-    console.error("Error fetching schedule details:", error);
-    res.status(500).json({
-      message: "Error retrieving schedule details",
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
-};
-
-export const updateSchedule = async (req, res) => {
-  try {
-    const { isPublic, title, events } = req.body;
-
-    const updateData = {};
-    if (title !== undefined) updateData.title = title;
-    if (events !== undefined) updateData.events = events;
-    if (isPublic !== undefined) updateData.isPublic = isPublic;
-
-    const updatedSchedule = await Schedule.findOneAndUpdate(
-      { _id: req.params.scheduleId, userId: req.user.id },
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedSchedule) {
-      return res
-        .status(404)
-        .json({ message: "Schedule not found or unauthorized" });
-    }
-
-    res.json(updatedSchedule);
-  } catch (error) {
-    console.error("Error updating schedule:", error);
-    res.status(500).json({
-      message: "Error updating schedule",
-      error: error.message,
-    });
-  }
-};
-
-export const deleteSchedule = async (req, res) => {
-  try {
-    const deletedSchedule = await Schedule.findOneAndDelete({
-      _id: req.params.scheduleId,
-      userId: req.user.id,
-    });
-
-    if (!deletedSchedule) {
-      return res
-        .status(404)
-        .json({ message: "Schedule not found or unauthorized" });
-    }
-
-    res.json({ message: "Schedule deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting schedule:", error);
-    res.status(500).json({
-      message: "Error deleting schedule",
-      error: error.message,
-    });
-  }
-};
-
-// Utility function for event validation
-export const validateScheduleEvents = (events) => {
-  if (!Array.isArray(events)) return false;
-
-  return events.every((event) => {
-    return (
-      event.title &&
-      event.start &&
-      event.end &&
-      new Date(event.start) <= new Date(event.end)
-    );
-  });
 };

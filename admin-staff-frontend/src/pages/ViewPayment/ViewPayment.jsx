@@ -101,7 +101,17 @@ const ImageViewer = ({ imageUrl, onClose }) => (
       <button className="close-button" onClick={onClose}>
         ×
       </button>
-      <img src={imageUrl} alt="Payment proof" />
+      <img
+        src={`${import.meta.env.VITE_API_URL}/payments/proof/${
+          payment.payment_proof
+        }`}
+        alt="Payment proof"
+        className="proof-image"
+        onError={(e) => {
+          console.error("Image load error:", e);
+          e.target.src = "/placeholder-image.png";
+        }}
+      />
     </div>
   </div>
 );
@@ -213,7 +223,7 @@ const ViewPayment = () => {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="select"
         >
-          <option value="all">All Statuses</option>
+          <option value="all">All Status</option>
           <option value="Pending">Pending</option>
           <option value="Paid">Paid</option>
           <option value="Failed">Failed</option>
@@ -275,11 +285,20 @@ const ViewPayment = () => {
                     <div className="payment-proof">
                       <div className="proof-preview">
                         <img
-                          src={`/api/payments/proof/${payment.payment_proof}`}
+                          src={`${
+                            import.meta.env.VITE_API_URL
+                          }/payments/proof/${payment.payment_proof}`}
                           alt="Payment proof thumbnail"
+                          className="payment-proof-image"
+                          onError={(e) => {
+                            console.error("Image load error:", e);
+                            e.target.src = "/placeholder-image.png";
+                          }}
                           onClick={() =>
                             setExpandedImage(
-                              `/api/payments/proof/${payment.payment_proof}`
+                              `${import.meta.env.VITE_API_URL}/payments/proof/${
+                                payment.payment_proof
+                              }`
                             )
                           }
                         />
