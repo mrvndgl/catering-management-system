@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Pencil, Archive, Trash2, ArchiveRestore, Users } from "lucide-react";
 import "./ViewAccounts.css";
 
 const ViewAccounts = () => {
@@ -16,10 +17,16 @@ const ViewAccounts = () => {
     address: "",
     password: "",
   });
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedAccounts, setArchivedAccounts] = useState([]);
 
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    if (showArchived) {
+      fetchArchivedAccounts();
+    } else {
+      fetchAccounts();
+    }
+  }, [showArchived]);
 
   useEffect(() => {
     if (accounts.length > 0) {
@@ -27,6 +34,78 @@ const ViewAccounts = () => {
       console.log("First account properties:", Object.keys(accounts[0]));
     }
   }, [accounts]);
+
+  const fetchArchivedAccounts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/employees/staff/archived", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      setArchivedAccounts(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleArchiveAccount = async (id) => {
+    try {
+      if (
+        !window.confirm(
+          "Are you sure you want to archive this account? The user will no longer be able to access the system."
+        )
+      ) {
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authorization token found");
+      }
+
+      const response = await fetch(`/api/employees/staff/archive/${id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to archive account");
+      }
+
+      // Update both local states
+      setAccounts((prevAccounts) =>
+        prevAccounts.filter((account) => account._id !== id)
+      );
+      setArchivedAccounts((prevArchived) => [...prevArchived, data.employee]);
+
+      // Show success message
+      alert("Account archived successfully");
+    } catch (err) {
+      console.error("Archive error:", err);
+      setError(err.message);
+    }
+  };
+
+  const handleUnarchiveAccount = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/employees/staff/unarchive/${id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to unarchive account");
+      await fetchArchivedAccounts();
+      await fetchAccounts();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const fetchAccounts = async () => {
     try {
@@ -177,53 +256,35 @@ const ViewAccounts = () => {
     e.preventDefault();
     setLoading(true);
 
-    console.log("Form submission:", {
-      isEditing,
-      editingId,
-      formData: newAccount,
-    });
-
     try {
       const token = localStorage.getItem("token");
-      let url, method;
+      const url = isEditing
+        ? `/api/employees/staff/${editingId}`
+        : "/api/employees/staff/create";
 
-      if (isEditing) {
-        url = `/api/employees/staff/${editingId}`;
-        method = "PUT";
-      } else {
-        url = "/api/employees/staff/create";
-        method = "POST";
-      }
-
-      const dataToSend = {
-        ...newAccount,
-        employeeType: "staff",
-      };
-
-      console.log("Sending data to server:", dataToSend);
+      const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify({
+          ...newAccount,
+          employeeType: "staff",
+        }),
       });
 
-      const responseData = await response.json();
-      console.log("Server response:", responseData);
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          responseData.message ||
-            (isEditing
-              ? "Failed to update account"
-              : "Failed to create account")
+          data.message || `Failed to ${isEditing ? "update" : "create"} account`
         );
       }
 
-      // After success, fetch fresh data instead of trying to update state
+      // Refresh accounts list
       await fetchAccounts();
 
       // Reset form
@@ -237,11 +298,14 @@ const ViewAccounts = () => {
         password: "",
       });
 
-      // Exit editing mode
+      // Exit editing mode if editing
       if (isEditing) {
         setIsEditing(false);
         setEditingId(null);
       }
+
+      // Show success message
+      alert(`Staff account ${isEditing ? "updated" : "created"} successfully!`);
     } catch (err) {
       console.error("Submit error:", err);
       setError(err.message);
@@ -279,7 +343,10 @@ const ViewAccounts = () => {
 
       <div className="add-account-section">
         <h2>{isEditing ? "Edit Staff Account" : "Add New Staff Account"}</h2>
-        <form onSubmit={handleSubmit} className="account-form">
+        <form
+          onSubmit={isEditing ? handleSubmit : handleAddAccount}
+          className="account-form"
+        >
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="firstName">First Name</label>
@@ -391,7 +458,23 @@ const ViewAccounts = () => {
       </div>
 
       <div className="accounts-table-section">
-        <h2>Current Accounts</h2>
+        <div className="table-header">
+          <h2>{showArchived ? "Archived Accounts" : "Current Accounts"}</h2>
+          <button
+            className="toggle-view-button"
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived ? (
+              <>
+                <Users size={18} /> View Active Accounts
+              </>
+            ) : (
+              <>
+                <Archive size={18} /> View Archived Accounts
+              </>
+            )}
+          </button>
+        </div>
         <div className="table-container">
           <table>
             <thead>
@@ -405,34 +488,52 @@ const ViewAccounts = () => {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => (
+              {(showArchived ? archivedAccounts : accounts).map((account) => (
                 <tr key={account._id || account.employee_id}>
                   <td>{account.employee_id || "N/A"}</td>
                   <td>
-                    {account.firstName || account.lastName
-                      ? `${account.firstName || ""} ${
-                          account.lastName || ""
-                        }`.trim()
-                      : "N/A"}
+                    {`${account.firstName || ""} ${
+                      account.lastName || ""
+                    }`.trim() || "N/A"}
                   </td>
                   <td>{account.username || "N/A"}</td>
                   <td>{account.email || "N/A"}</td>
                   <td>{account.contactNumber || "N/A"}</td>
                   <td>
                     <div className="actions-cell">
+                      {!showArchived && (
+                        <>
+                          <button
+                            className="icon-button edit"
+                            onClick={() => handleUpdateAccount(account._id)}
+                            title="Edit"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button
+                            className="icon-button archive"
+                            onClick={() => handleArchiveAccount(account._id)}
+                            title="Archive"
+                          >
+                            <Archive size={18} />
+                          </button>
+                        </>
+                      )}
+                      {showArchived && (
+                        <button
+                          className="icon-button unarchive"
+                          onClick={() => handleUnarchiveAccount(account._id)}
+                          title="Unarchive"
+                        >
+                          <ArchiveRestore size={18} />
+                        </button>
+                      )}
                       <button
-                        className="edit-button"
-                        onClick={() => handleUpdateAccount(account._id)}
-                        disabled={loading}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="delete-button"
+                        className="icon-button delete"
                         onClick={() => handleDeleteAccount(account._id)}
-                        disabled={loading}
+                        title="Delete"
                       >
-                        Delete
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>

@@ -204,9 +204,33 @@ const AdminReservations = () => {
   };
 
   const formatTimestamp = (timestamp) => {
-    if (!timestamp) return "N/A";
-    const date = new Date(timestamp);
-    return date.toLocaleString();
+    if (!timestamp) {
+      return "N/A";
+    }
+
+    try {
+      // Parse the ISO string to Date object
+      const date = new Date(timestamp);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date:", timestamp);
+        return "N/A";
+      }
+
+      // Format the date
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (error) {
+      console.error("Error formatting timestamp:", error);
+      return "N/A";
+    }
   };
 
   useEffect(() => {
@@ -278,6 +302,7 @@ const AdminReservations = () => {
       }
 
       const data = await response.json();
+      console.log("Reservation data from API:", data);
       setReservations(data);
     } catch (error) {
       console.error("Fetch failed:", error);
@@ -449,7 +474,7 @@ const AdminReservations = () => {
                 <td>{reservation.reservation_id}</td>
                 <td>{reservation.name}</td>
                 <td>{formatDate(reservation.reservation_date)}</td>
-                <td>{formatTimestamp(reservation.createdAt)}</td>
+                <td>{reservation.timeSlot}</td>
                 <td>{reservation.numberOfPax}</td>
                 <td>₱{reservation.total_amount?.toLocaleString()}</td>
                 <td>
@@ -506,9 +531,7 @@ const AdminReservations = () => {
                   </p>
                   <p>
                     <strong>Reservation Made:</strong>{" "}
-                    {selectedReservation.createdAt
-                      ? new Date(selectedReservation.createdAt).toLocaleString()
-                      : "N/A"}
+                    {formatTimestamp(selectedReservation?.createdAt)}
                   </p>
                   <p>
                     <strong>Number of Guests:</strong>{" "}

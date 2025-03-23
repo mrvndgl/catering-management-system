@@ -270,12 +270,12 @@ export const createReservation = async (req, res) => {
     // Create new reservation
     const newReservation = new Reservation({
       reservation_id,
-      customer_id: req.user.userId, // Add this line to store the customer ID
+      customer_id: req.user.userId,
       name,
       phoneNumber,
       numberOfPax,
       timeSlot,
-      created_at: req.body.createdAt,
+      createdAt: new Date(),
       paymentMode,
       reservation_date: new Date(reservation_date),
       venue,
@@ -355,11 +355,41 @@ export const getAllReservations = async (req, res) => {
   console.log("getAllReservations called");
   try {
     console.log("Attempting to fetch all reservations");
-    const reservations = await Reservation.find().sort({ reservation_id: 1 });
-    console.log(`Found ${reservations.length} reservations`);
+    const reservations = await Reservation.find()
+      .select({
+        reservation_id: 1,
+        name: 1,
+        phoneNumber: 1,
+        numberOfPax: 1,
+        timeSlot: 1,
+        createdAt: 1,
+        paymentMode: 1,
+        reservation_date: 1,
+        venue: 1,
+        selectedProducts: 1,
+        additionalItems: 1,
+        total_amount: 1,
+        reservation_status: 1,
+        specialNotes: 1,
+        customer_id: 1,
+      })
+      .sort({ reservation_id: 1 });
 
-    res.status(200).json(reservations);
-    console.log("Successfully sent reservations response");
+    // Transform the dates safely
+    const transformedReservations = reservations.map((reservation) => {
+      const reservationObj = reservation.toObject();
+      return {
+        ...reservationObj,
+        createdAt: reservationObj.createdAt
+          ? new Date(reservationObj.createdAt).toISOString()
+          : null,
+        reservation_date: reservationObj.reservation_date
+          ? new Date(reservationObj.reservation_date).toISOString()
+          : null,
+      };
+    });
+
+    res.status(200).json(transformedReservations);
   } catch (error) {
     console.error("Error in getAllReservations:", error);
     res.status(500).json({

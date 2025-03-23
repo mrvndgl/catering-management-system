@@ -112,25 +112,26 @@ employeeRouter.post("/login", async (req, res) => {
   try {
     const { username, password, employeeType } = req.body;
 
-    console.log("Login attempt:", { username, employeeType });
-
-    // Find employee by username and type
     const employee = await Employee.findOne({ username });
-    console.log("Employee found:", employee ? "Yes" : "No");
 
     if (!employee) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, employee.password);
-    console.log("Password match:", isMatch);
+    // Check if account is archived
+    if (employee.isArchived) {
+      return res.status(403).json({
+        message:
+          "This account has been archived. Please contact your administrator.",
+      });
+    }
 
+    // Continue with existing login logic
+    const isMatch = await bcrypt.compare(password, employee.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       {
         userId: employee._id,
@@ -281,6 +282,65 @@ employeeRouter.put("/staff/:id", adminAuth, async (req, res) => {
       message: "Staff updated successfully",
       employee: updatedEmployee,
     });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+employeeRouter.patch("/staff/archive/:id", adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employee = await Employee.findOneAndUpdate(
+      { _id: id, employeeType: "staff" },
+      { isArchived: true },
+      { new: true }
+    ).select("-password");
+
+    if (!employee) {
+      return res.status(404).json({ message: "Staff member not found" });
+    }
+
+    res.json({
+      message: "Staff archived successfully",
+      employee,
+    });
+  } catch (error) {
+    console.error("Archive error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+});
+
+// Unarchive staff account
+employeeRouter.patch("/staff/unarchive/:id", adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employee = await Employee.findOneAndUpdate(
+      { _id: id, employeeType: "staff" },
+      { isArchived: false },
+      { new: true }
+    ).select("-password");
+
+    if (!employee) {
+      return res.status(404).json({ message: "Staff member not found" });
+    }
+
+    res.json({ message: "Staff unarchived successfully", employee });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Get archived staff accounts
+employeeRouter.get("/staff/archived", adminAuth, async (req, res) => {
+  try {
+    const archivedStaff = await Employee.find({
+      employeeType: "staff",
+      isArchived: true,
+    }).select("-password -photo");
+    res.json(archivedStaff);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

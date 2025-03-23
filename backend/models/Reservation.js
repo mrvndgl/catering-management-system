@@ -9,6 +9,11 @@ const reservationSchema = new mongoose.Schema(
     phoneNumber: { type: String, required: true },
     numberOfPax: { type: Number, required: true },
     timeSlot: { type: String, required: true },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      immutable: true,
+    },
     paymentMode: { type: String, required: true },
     reservation_date: { type: Date, required: true },
     venue: { type: String, required: true },

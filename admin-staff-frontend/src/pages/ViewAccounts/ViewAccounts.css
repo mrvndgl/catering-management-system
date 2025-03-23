@@ -157,9 +157,8 @@
   
   .actions-cell {
     display: flex;
-    gap: 0.4rem; 
-    align-items: center;
-    justify-content: flex-start;
+    gap: 0.5rem;
+    justify-content: center;
   }
   
 .edit-button,
@@ -279,6 +278,128 @@ td:last-child {
 .add-account-section.editing {
   background-color: #f0f9ff;
   border-left: 4px solid #3b82f6;
+}
+
+/* Add these styles to your existing ViewAccounts.css */
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.toggle-view-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.icon-button.edit {
+  color: #1976d2;
+}
+
+.icon-button.edit:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.icon-button.archive {
+  color: #f57c00;
+}
+
+.icon-button.archive:hover {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.icon-button.unarchive {
+  color: #388e3c;
+}
+
+.icon-button.unarchive:hover {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.icon-button.delete {
+  color: #d32f2f;
+}
+
+.icon-button.delete:hover {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.toggle-view-button {
+  background-color: #A5D6A7; 
+  color: #ffffff; 
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.toggle-view-button:hover {
+  background-color: #4CAF50;
+  color: #ffffff;
+}
+
+.icon-button.archive {
+  color: #f59e0b;
+  transition: all 0.2s ease;
+}
+
+.icon-button.archive:hover {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.icon-button.unarchive {
+  color: #10b981;
+  transition: all 0.2s ease;
+}
+
+.icon-button.unarchive:hover {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+/* Animation for removing archived accounts */
+.accounts-table-section tr {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.accounts-table-section tr.fade-out {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.no-accounts-message {
+  padding: 2rem;
+  text-align: center;
+  color: #777;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-top: 1rem;
 }
 
   @media (max-width: 768px) {

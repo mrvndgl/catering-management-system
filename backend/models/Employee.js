@@ -13,7 +13,7 @@ const employeeSchema = new mongoose.Schema({
   firstName: {
     type: String,
     required: true,
-    default: "", // Provide default values
+    default: "",
   },
   lastName: {
     type: String,
@@ -30,7 +30,7 @@ const employeeSchema = new mongoose.Schema({
     contentType: String,
   },
   contactNumber: {
-    type: String, // Change to String to handle formatting
+    type: String,
     required: true,
     default: "",
   },
@@ -47,6 +47,10 @@ const employeeSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+  },
+  isArchived: {
+    type: Boolean,
+    default: false,
   },
 });
 

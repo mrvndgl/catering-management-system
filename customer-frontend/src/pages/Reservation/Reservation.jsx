@@ -182,7 +182,6 @@ const Reservation = () => {
       additionalItems: selectedAdditionalItems,
       specialNotes: formData.specialNotes,
       totalAmount: totalAmount,
-      createdAt: new Date().toISOString(),
     };
 
     try {
@@ -197,6 +196,8 @@ const Reservation = () => {
         });
         return;
       }
+
+      console.log("Sending reservation data:", reservationData);
 
       const response = await fetch("/api/reservations", {
         method: "POST",
