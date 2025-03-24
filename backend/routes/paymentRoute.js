@@ -8,6 +8,7 @@ import {
   uploadPaymentProof,
   getPaymentProof,
   getPaymentStatuses,
+  cancelReservation,
 } from "../controllers/paymentController.js";
 import multer from "multer";
 
@@ -36,6 +37,7 @@ router.post(
   upload.single("payment_proof"),
   uploadPaymentProof
 );
+router.put("/:reservationId/cancel", auth, cancelReservation);
 
 // Add these routes to your paymentRoute.js
 router.get("/status", auth, getPaymentStatuses); // You'll need to create this controller function

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./StaffReservations.css";
+import "./AdminReservations.css";
 
 const StaffReservations = () => {
   const [reservations, setReservations] = useState([]);
@@ -9,8 +9,16 @@ const StaffReservations = () => {
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [paymentStatuses, setPaymentStatuses] = useState({});
   const [filterStatus, setFilterStatus] = useState("all");
+  const [declineNote, setDeclineNote] = useState("");
+  const [showDeclineNoteModal, setShowDeclineNoteModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState({ type: "", id: null });
 
-  const handleReservationAction = async (reservationId, status) => {
+  const handleReservationAction = async (
+    reservationId,
+    status,
+    note = null
+  ) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -19,7 +27,16 @@ const StaffReservations = () => {
 
       setIsLoading(true);
 
-      // Update reservation status using the correct endpoint from reservationRoute.js
+      // Prepare request body
+      const requestBody = {
+        reservation_status: status,
+      };
+
+      if (status === "Declined" && note) {
+        requestBody.decline_reason = note;
+      }
+
+      // Update reservation status
       const updateResponse = await fetch(
         `${import.meta.env.VITE_API_URL}/reservations/${reservationId}`,
         {
@@ -28,18 +45,13 @@ const StaffReservations = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            reservation_status: status,
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!updateResponse.ok) {
         const errorData = await updateResponse.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Failed to update reservation (Status: ${updateResponse.status})`
-        );
+        throw new Error(errorData.message || `Failed to update reservation`);
       }
 
       const updatedReservation = await updateResponse.json();
@@ -48,84 +60,123 @@ const StaffReservations = () => {
       setReservations((prev) =>
         prev.map((reservation) =>
           reservation.reservation_id === reservationId
-            ? { ...reservation, reservation_status: status }
+            ? {
+                ...reservation,
+                reservation_status: status,
+                decline_reason:
+                  status === "Declined" && note
+                    ? note
+                    : reservation.decline_reason,
+              }
             : reservation
         )
       );
 
-      // If accepted, update payment status
+      // Show success message based on action
       if (status === "Accepted") {
-        try {
-          // Update payment status using the correct endpoint
-          const paymentResponse = await fetch(
-            `${
-              import.meta.env.VITE_API_URL
-            }/reservations/${reservationId}/payment`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                payment_status: "Pending",
-                payment_required: true,
-              }),
-            }
-          );
-
-          if (!paymentResponse.ok) {
-            console.warn(
-              "Failed to mark payment as required:",
-              await paymentResponse.text()
-            );
-          }
-
-          // Send notification if you have a notifications endpoint
-          // Note: You'll need to add a notifications route to your backend
-          try {
-            const notificationResponse = await fetch(
-              `${import.meta.env.VITE_API_URL}/notifications`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  reservation_id: reservationId,
-                  type: "PAYMENT_REQUIRED",
-                  message:
-                    "Your reservation has been accepted. Please proceed with the payment.",
-                  user_id: updatedReservation.customer_id,
-                }),
-              }
-            );
-
-            if (!notificationResponse.ok) {
-              console.warn(
-                "Failed to send notification:",
-                await notificationResponse.text()
-              );
-            }
-          } catch (notificationError) {
-            console.error("Error sending notification:", notificationError);
-          }
-        } catch (error) {
-          console.error("Error in post-acceptance actions:", error);
-        }
+        Swal.fire({
+          title: "Reservation Accepted!",
+          text: "The customer will be notified to proceed with payment.",
+          icon: "success",
+          confirmButtonColor: "#28a745",
+        });
+        await handlePaymentSetup(reservationId, updatedReservation.customer_id);
+      } else if (status === "Declined") {
+        Swal.fire({
+          title: "Reservation Declined",
+          text: `Reservation has been declined. Reason: ${
+            note || "Not specified"
+          }`,
+          icon: "info",
+          confirmButtonColor: "#dc3545",
+        });
       }
 
       setError(null);
-      await Promise.all([fetchReservations(), fetchPaymentStatuses()]);
+      await fetchReservations();
     } catch (err) {
       console.error("Error updating reservation:", err);
-      setError(
-        err.message ||
-          "Failed to update reservation. Please check your connection and try again."
-      );
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to update reservation",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
+      setError(err.message || "Failed to update reservation");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeclineWithNote = () => {
+    if (selectedReservation) {
+      handleReservationAction(
+        selectedReservation.reservation_id,
+        "Declined",
+        declineNote
+      );
+      setShowDeclineNoteModal(false);
+      setDeclineNote("");
+      closeReservationDetails();
+    }
+  };
+
+  const openDeclineNoteModal = () => {
+    setShowDeclineNoteModal(true);
+  };
+
+  const closeDeclineNoteModal = () => {
+    setShowDeclineNoteModal(false);
+    setDeclineNote("");
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction.type === "accept") {
+      handleReservationAction(selectedReservation.reservation_id, "Accepted");
+      closeReservationDetails();
+    } else if (confirmAction.type === "decline") {
+      openDeclineNoteModal();
+    }
+    setShowConfirmModal(false);
+  };
+
+  const openConfirmModal = (type) => {
+    setConfirmAction({ type, id: selectedReservation.reservation_id });
+    setShowConfirmModal(true);
+  };
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setConfirmAction({ type: "", id: null });
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) {
+      return "N/A";
+    }
+
+    try {
+      // Parse the ISO string to Date object
+      const date = new Date(timestamp);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date:", timestamp);
+        return "N/A";
+      }
+
+      // Format the date
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (error) {
+      console.error("Error formatting timestamp:", error);
+      return "N/A";
     }
   };
 
@@ -198,6 +249,7 @@ const StaffReservations = () => {
       }
 
       const data = await response.json();
+      console.log("Reservation data from API:", data);
       setReservations(data);
     } catch (error) {
       console.error("Fetch failed:", error);
@@ -264,24 +316,51 @@ const StaffReservations = () => {
     setSelectedReservation(null);
   };
 
-  const getPaymentStatusDisplay = (reservationId) => {
+  const getPaymentStatusDisplay = (reservationId, paymentMode) => {
     const status = paymentStatuses[reservationId];
-    if (!status) return "No Payment";
 
-    switch (status) {
-      case "Pending":
-        return <span className="payment-status pending">Payment Pending</span>;
-      case "Paid":
-        return <span className="payment-status paid">Paid</span>;
-      case "Failed":
-        return <span className="payment-status failed">Payment Failed</span>;
-      case "Declined":
-        return (
-          <span className="payment-status declined">Payment Declined</span>
-        );
-      default:
-        return <span className="payment-status">Unknown</span>;
+    // If there's a payment mode but no status yet
+    if (paymentMode && !status) {
+      return (
+        <span className="payment-status pending">
+          Payment Mode: {paymentMode}
+        </span>
+      );
     }
+
+    // If there's a status, show both payment mode and status
+    if (status) {
+      switch (status) {
+        case "Pending":
+          return (
+            <span className="payment-status pending">
+              Pending ({paymentMode})
+            </span>
+          );
+        case "Paid":
+          return (
+            <span className="payment-status paid">Paid ({paymentMode})</span>
+          );
+        case "Failed":
+          return (
+            <span className="payment-status failed">
+              Failed ({paymentMode})
+            </span>
+          );
+        case "Declined":
+          return (
+            <span className="payment-status declined">
+              Declined ({paymentMode})
+            </span>
+          );
+        default:
+          return (
+            <span className="payment-status">Unknown ({paymentMode})</span>
+          );
+      }
+    }
+
+    return <span className="payment-status">No Payment Method Selected</span>;
   };
 
   const filteredReservations =
@@ -352,16 +431,19 @@ const StaffReservations = () => {
                     {reservation.reservation_status}
                   </span>
                 </td>
-                <td>{getPaymentStatusDisplay(reservation.reservation_id)}</td>
+                <td>
+                  {getPaymentStatusDisplay(
+                    reservation.reservation_id,
+                    reservation.paymentMode
+                  )}
+                </td>
                 <td className="actions-cell">
-                  <div className="action-buttons">
-                    <button
-                      className="view-btn"
-                      onClick={() => viewReservationDetails(reservation)}
-                    >
-                      View
-                    </button>
-                  </div>
+                  <button
+                    className="view-btn"
+                    onClick={() => viewReservationDetails(reservation)}
+                  >
+                    View
+                  </button>
                 </td>
               </tr>
             ))}
@@ -395,6 +477,10 @@ const StaffReservations = () => {
                     <strong>Time Slot:</strong> {selectedReservation.timeSlot}
                   </p>
                   <p>
+                    <strong>Reservation Made:</strong>{" "}
+                    {formatTimestamp(selectedReservation?.createdAt)}
+                  </p>
+                  <p>
                     <strong>Number of Guests:</strong>{" "}
                     {selectedReservation.numberOfPax}
                   </p>
@@ -419,12 +505,12 @@ const StaffReservations = () => {
                       {selectedReservation.reservation_status}
                     </span>
                   </p>
-                  <p>
-                    <strong>Payment Status:</strong>{" "}
-                    {getPaymentStatusDisplay(
-                      selectedReservation.reservation_id
-                    )}
-                  </p>
+                  {selectedReservation.decline_reason && (
+                    <p>
+                      <strong>Decline Reason:</strong>{" "}
+                      {selectedReservation.decline_reason}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -471,30 +557,79 @@ const StaffReservations = () => {
                   <div className="reservation-action-buttons">
                     <button
                       className="accept-btn"
-                      onClick={() => {
-                        handleReservationAction(
-                          selectedReservation.reservation_id,
-                          "Accepted"
-                        );
-                        closeReservationDetails();
-                      }}
+                      onClick={() => openConfirmModal("accept")}
                     >
                       Accept
                     </button>
                     <button
                       className="decline-btn"
-                      onClick={() => {
-                        handleReservationAction(
-                          selectedReservation.reservation_id,
-                          "Declined"
-                        );
-                        closeReservationDetails();
-                      }}
+                      onClick={() => openConfirmModal("decline")}
                     >
                       Decline
                     </button>
                   </div>
                 )}
+
+              {showConfirmModal && (
+                <div className="confirmation-modal">
+                  <div className="modal-content">
+                    <h2>Confirm Action</h2>
+                    <p>
+                      Are you sure you want to {confirmAction.type} this
+                      reservation?
+                    </p>
+                    <div className="modal-actions">
+                      <button
+                        className={`confirm-btn ${confirmAction.type}`}
+                        onClick={handleConfirmAction}
+                      >
+                        Yes,{" "}
+                        {confirmAction.type === "accept" ? "Accept" : "Decline"}
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={closeConfirmModal}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showDeclineNoteModal && (
+                <div className="decline-note-modal">
+                  <div className="modal-content">
+                    <h2>Decline Reservation</h2>
+                    <p>
+                      Please provide a reason for declining this reservation:
+                    </p>
+                    <textarea
+                      className="decline-note-textarea"
+                      value={declineNote}
+                      onChange={(e) => setDeclineNote(e.target.value)}
+                      placeholder="Enter reason for declining (e.g., Venue unavailable, Fully booked, etc.)"
+                      rows={4}
+                    />
+                    <div className="modal-actions">
+                      <button
+                        className="confirm-btn"
+                        onClick={handleDeclineWithNote}
+                        disabled={!declineNote.trim()}
+                      >
+                        Confirm Decline
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={closeDeclineNoteModal}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button className="close-btn" onClick={closeReservationDetails}>
                 Close
               </button>

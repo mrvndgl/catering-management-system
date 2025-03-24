@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import "./Auth.css";
+import Swal from "sweetalert2";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Login = () => {
@@ -53,6 +54,15 @@ const Login = () => {
       localStorage.setItem("userId", data.user._id);
 
       setIsAuthenticated(true);
+
+      Swal.fire({
+        icon: "success",
+        title: "Login Successful",
+        text: "Welcome back!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       navigate("/dashboard");
     } catch (err) {
       console.error("Login error details:", {
@@ -60,6 +70,13 @@ const Login = () => {
         response: err.response,
         stack: err.stack,
       });
+
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: err.message || "Invalid credentials. Please try again.",
+      });
+
       setError(err.message || "Login failed. Please check your credentials.");
     }
   };

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
+import Swal from "sweetalert2";
 import {
   LayoutDashboard,
   Utensils,
@@ -16,7 +17,18 @@ import "./Navbar.css";
 const Navbar = () => {
   const { logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   const menuItems = [
     {
@@ -51,16 +63,31 @@ const Navbar = () => {
   };
 
   const openLogoutConfirm = () => {
-    setShowLogoutConfirm(true);
-  };
-
-  const closeLogoutConfirm = () => {
-    setShowLogoutConfirm(false);
+    Swal.fire({
+      title: "Confirm Logout",
+      text: "Are you sure you want to log out?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Logout",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleLogout();
+      }
+    });
   };
 
   const handleLogout = () => {
-    logout();
-    setShowLogoutConfirm(false);
+    Toast.fire({
+      icon: "success",
+      title: "Logged out successfully",
+    });
+
+    setTimeout(() => {
+      logout();
+    }, 1000);
   };
 
   return (
@@ -96,23 +123,6 @@ const Navbar = () => {
             </li>
           </ul>
         </div>
-
-        {showLogoutConfirm && (
-          <div className="logout-confirm-overlay">
-            <div className="logout-confirm-dialog">
-              <h2>Confirm Logout</h2>
-              <p>Are you sure you want to log out?</p>
-              <div className="logout-dialog-buttons">
-                <button className="confirm-btn" onClick={handleLogout}>
-                  Yes, Logout
-                </button>
-                <button className="cancel-btn" onClick={closeLogoutConfirm}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );

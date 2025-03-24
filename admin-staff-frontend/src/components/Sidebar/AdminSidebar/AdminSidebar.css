@@ -73,18 +73,6 @@
   min-width: 24px;
 }
 
-.logout-link {
-  margin-top: auto;
-  border-top: 1px solid #333;
-  padding-top: 1rem;
-  font-size: 16px; 
-}
-
-.logout-link:hover {
-  background-color: #F1F8E9  !important;
-  color: #4CAF50;
-}
-
 /* Customer Sidebar */
 .sidebar {
   width: 280px;
@@ -164,17 +152,4 @@
   border-top: 1px solid #ffffff;
   display: flex;
   justify-content: center;
-}
-
-.modal .logout-confirm-btn {
-  background-color: #DA1D1D;
-  color: white;
-}
-
-.logout-confirm-btn:hover {
-  background-color: #9a0f0f !important;
-}
-
-.logout-modal-content h2 {
-  color: #263238 !important;
 }

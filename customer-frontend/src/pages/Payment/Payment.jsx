@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Payment.css";
+import Swal from "sweetalert2";
 
 const Payment = () => {
   const [notifications, setNotifications] = useState([]);
@@ -12,6 +13,7 @@ const Payment = () => {
   const [paymentProof, setPaymentProof] = useState(null);
   const [products, setProducts] = useState({});
   const [paymentStatuses, setPaymentStatuses] = useState({});
+  const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
     fetchAcceptedReservations();
@@ -20,69 +22,187 @@ const Payment = () => {
   }, []);
 
   useEffect(() => {
-    const checkNotifications = async () => {
+    const checkReservationStatus = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/notifications/unread", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        if (!token) {
+          console.error("No authentication token found");
+          return;
+        }
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.length > 0) {
-            setNotifications(data);
-            // Refresh the payments list if there are new notifications
-            fetchAcceptedReservations();
-            fetchPaymentStatuses();
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/reservations/my-reservations`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.data && data.data.length > 0) {
+          const latestReservation = data.data[0];
+
+          switch (latestReservation.reservation_status) {
+            case "Accepted":
+              Swal.fire({
+                title: "Reservation Accepted!",
+                text: "Your reservation has been accepted. Please proceed with the payment.",
+                icon: "success",
+                confirmButtonColor: "#28a745",
+              });
+              await fetchAcceptedReservations();
+              break;
+            case "Declined":
+              Swal.fire({
+                title: "Reservation Declined",
+                text:
+                  latestReservation.decline_reason ||
+                  "Your reservation has been declined.",
+                icon: "error",
+                confirmButtonColor: "#dc3545",
+              });
+              break;
           }
         }
       } catch (error) {
-        console.error("Error checking notifications:", error);
+        console.error("Error checking reservation status:", error);
+        // Only show error alert if it's not a network connectivity issue
+        if (error.message !== "Failed to fetch") {
+          Swal.fire({
+            title: "Error",
+            text: "Failed to check reservation status. Please try again later.",
+            icon: "error",
+            confirmButtonColor: "#dc3545",
+          });
+        }
       }
     };
 
-    // Check for notifications every 30 seconds
-    const intervalId = setInterval(checkNotifications, 30000);
-
     // Initial check
-    checkNotifications();
+    checkReservationStatus();
 
-    // Cleanup
+    // Set up interval with a longer delay to prevent too many requests
+    const intervalId = setInterval(checkReservationStatus, 30000); // Changed to 30 seconds
+
+    // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
 
   const fetchPaymentStatuses = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/payments/status", {
-        // Match the route in your router
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/payments/status`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to fetch payment statuses"
-        );
+        throw new Error("Failed to fetch payment statuses");
       }
 
       const data = await response.json();
-      // Your backend returns data in { success: true, data: [...] } format
+
       if (data.success && Array.isArray(data.data)) {
-        const statusMap = data.data.reduce((acc, payment) => {
-          acc[payment.reservation_id] = payment.payment_status;
-          return acc;
-        }, {});
+        const statusMap = {};
+        data.data.forEach((payment) => {
+          statusMap[payment.reservation_id] = {
+            status: payment.payment_status,
+            method: payment.payment_method,
+            amount: payment.amount,
+            date: payment.created_at,
+            proof: payment.payment_proof,
+          };
+        });
         setPaymentStatuses(statusMap);
       }
     } catch (error) {
       console.error("Error fetching payment statuses:", error);
+      setError("Failed to fetch payment history");
     }
+  };
+
+  const filterReservations = (reservations) => {
+    if (!Array.isArray(reservations)) return [];
+
+    return reservations.filter((reservation) => {
+      const paymentStatus = paymentStatuses[reservation.reservation_id];
+      if (activeTab === "pending") {
+        return !paymentStatus || paymentStatus.status === "Pending";
+      }
+      return (
+        paymentStatus && ["Accepted", "Paid"].includes(paymentStatus.status)
+      );
+    });
+  };
+
+  const getStatusDisplay = (payment) => {
+    const statusClasses = {
+      Pending: "pending",
+      Accepted: "accepted",
+      Paid: "completed",
+      Declined: "declined",
+    };
+
+    return (
+      <div className={`status-badge ${statusClasses[payment.status] || ""}`}>
+        {payment.status === "Pending" && "Payment Pending"}
+        {payment.status === "Accepted" && "Payment Accepted"}
+        {payment.status === "Paid" && "Payment Completed"}
+        {payment.status === "Declined" && "Payment Declined"}
+      </div>
+    );
+  };
+
+  // Add this helper function to display payment details
+  const getPaymentDetails = (reservation) => {
+    const payment = paymentStatuses[reservation.reservation_id];
+    if (!payment) return null;
+
+    return (
+      <div className="payment-history-details">
+        <p>
+          <span className="label">Payment Status:</span>{" "}
+          {getStatusDisplay(payment.status)}
+        </p>
+        <p>
+          <span className="label">Payment Method:</span> {payment.method}
+        </p>
+        <p>
+          <span className="label">Payment Date:</span>{" "}
+          {new Date(payment.date).toLocaleDateString()}
+        </p>
+        {payment.proof && (
+          <div className="payment-proof">
+            <span className="label">Payment Proof:</span>
+            <img
+              src={`${import.meta.env.VITE_API_URL}/api/payments/proof/${
+                payment.proof
+              }`}
+              alt="Payment proof"
+              className="proof-thumbnail"
+              onClick={() => {
+                /* Add image preview handler */
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
   };
 
   const fetchProducts = async () => {
@@ -91,12 +211,15 @@ const Payment = () => {
       console.log("Fetching products..."); // Debug log
 
       // First, get all products
-      const response = await fetch("/api/products", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || ""}/api/products`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -126,16 +249,20 @@ const Payment = () => {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch("/api/reservations/my-accepted", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-        credentials: "include",
-      });
+      // Fix for the 404 error - add the /api prefix to match your routes
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || ""}/api/reservations/my-accepted`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -171,7 +298,12 @@ const Payment = () => {
   const handleGCashSubmit = async (reservationId) => {
     try {
       if (!paymentProof) {
-        setError("Please upload your payment screenshot");
+        Swal.fire({
+          title: "Error!",
+          text: "Please upload your payment screenshot",
+          icon: "error",
+          confirmButtonColor: "#dc3545",
+        });
         return;
       }
 
@@ -184,13 +316,18 @@ const Payment = () => {
       formData.append("payment_method", "GCash");
 
       const token = localStorage.getItem("token");
-      const response = await fetch(`/api/payments/${reservationId}/proof`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL || ""
+        }/api/payments/${reservationId}/proof`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -198,18 +335,24 @@ const Payment = () => {
       }
 
       const data = await response.json();
-      setSuccessMessage("Payment proof uploaded successfully!");
+      Swal.fire({
+        title: "Success!",
+        text: "Payment proof uploaded successfully!",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+      });
+
       setPaymentMethod(null);
       setSelectedReservation(null);
       setPaymentProof(null);
-
-      setPaymentStatuses((prev) => ({
-        ...prev,
-        [reservationId]: "Pending",
-      }));
-
       await fetchAcceptedReservations();
     } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: error.message || "Failed to upload payment proof",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
       console.error("Payment error:", error);
       setError(error.message || "Failed to upload payment proof");
 
@@ -223,18 +366,33 @@ const Payment = () => {
 
   const handleCashPayment = async (reservationId) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      // Show loading alert
+      Swal.fire({
+        title: "Processing",
+        text: "Submitting payment information...",
+        icon: "info",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
         },
-        body: JSON.stringify({
-          reservation_id: reservationId,
-          payment_method: "Cash",
-        }),
       });
+
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || ""}/api/payments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reservation_id: reservationId,
+            payment_method: "Cash",
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -244,9 +402,16 @@ const Payment = () => {
       }
 
       const data = await response.json();
-      setSuccessMessage(
-        "Cash payment information submitted successfully! The owner will contact you shortly."
-      );
+
+      // Success alert
+      Swal.fire({
+        title: "Success!",
+        text: "Cash payment information submitted successfully! The owner will contact you shortly.",
+        icon: "success",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#3085d6",
+      });
+
       setPaymentMethod(null);
       setSelectedReservation(null);
 
@@ -259,20 +424,103 @@ const Payment = () => {
       await fetchAcceptedReservations();
     } catch (error) {
       console.error("Payment error:", error);
+
+      // Error alert
+      Swal.fire({
+        title: "Error!",
+        text: error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        confirmButtonColor: "#d33",
+      });
+
       setError(error.message);
     }
   };
 
-  const getStatusDisplay = (status) => {
-    switch (status) {
-      case "Pending":
-        return <div className="status-badge pending">Payment Pending</div>;
-      case "Accepted":
-        return <div className="status-badge accepted">Payment Accepted</div>;
-      case "Declined":
-        return <div className="status-badge declined">Payment Declined</div>;
-      default:
-        return null;
+  const handleCancelReservation = async (reservationId) => {
+    try {
+      // Confirm with user first
+      const result = await Swal.fire({
+        title: "Cancel Reservation",
+        text: "Are you sure you want to cancel this reservation? This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#007BFF",
+        confirmButtonText: "Yes, cancel it!",
+        cancelButtonText: "No, keep it",
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      // Show loading state
+      Swal.fire({
+        title: "Processing",
+        text: "Cancelling your reservation...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Make the API call to cancel the reservation
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/reservations/${reservationId}/cancel`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to cancel reservation");
+      }
+
+      // Show success message
+      await Swal.fire({
+        title: "Success!",
+        text: "Your reservation has been cancelled successfully.",
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+      });
+
+      // Refresh the data
+      await Promise.all([fetchAcceptedReservations(), fetchPaymentStatuses()]);
+
+      // Update local state to reflect cancellation
+      setAcceptedReservations((prev) =>
+        prev.map((res) =>
+          res.reservation_id === reservationId
+            ? { ...res, reservation_status: "Cancelled" }
+            : res
+        )
+      );
+    } catch (error) {
+      console.error("Error cancelling reservation:", error);
+
+      // Show error message
+      await Swal.fire({
+        title: "Error!",
+        text:
+          error.message || "An error occurred while cancelling the reservation",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
     }
   };
 
@@ -310,9 +558,21 @@ const Payment = () => {
           ))}
         </div>
       )}
+
       <div className="payments-card">
-        <div className="card-header">
-          <h2>Your Payments</h2>
+        <div className="payment-tabs">
+          <button
+            className={`tab-button ${activeTab === "pending" ? "active" : ""}`}
+            onClick={() => setActiveTab("pending")}
+          >
+            Pending Payments
+          </button>
+          <button
+            className={`tab-button ${activeTab === "paid" ? "active" : ""}`}
+            onClick={() => setActiveTab("paid")}
+          >
+            Payment History
+          </button>
         </div>
 
         <div className="card-content">
@@ -321,14 +581,15 @@ const Payment = () => {
             <div className="success-alert">{successMessage}</div>
           )}
 
-          {acceptedReservations.length === 0 ? (
+          {filterReservations(acceptedReservations).length === 0 ? (
             <p className="no-payments-message">
-              No pending payments found. All your accepted reservations are
-              paid.
+              {activeTab === "pending"
+                ? "No pending payments found."
+                : "No payment history found."}
             </p>
           ) : (
             <div className="reservations-grid">
-              {acceptedReservations.map((reservation) => (
+              {filterReservations(acceptedReservations).map((reservation) => (
                 <div
                   key={reservation.reservation_id}
                   className="reservation-card"
@@ -435,6 +696,17 @@ const Payment = () => {
                             Pay in Cash
                           </button>
                         </div>
+                      )}
+
+                      {!paymentStatuses[reservation.reservation_id] && (
+                        <button
+                          className="cancel-button"
+                          onClick={() =>
+                            handleCancelReservation(reservation.reservation_id)
+                          }
+                        >
+                          Cancel Reservation
+                        </button>
                       )}
 
                       {paymentMethod === "Cash" &&

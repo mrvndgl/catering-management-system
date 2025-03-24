@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider"; // Import useAuth
 import "./Auth.css";
 import "./Signup.css";
+import Swal from "sweetalert2";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Signup = () => {
@@ -35,8 +36,14 @@ const Signup = () => {
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
+      Swal.fire({
+        icon: "error",
+        title: "Signup Failed",
+        text: "Passwords do not match",
+      });
       return;
     }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/customers/signup`,
@@ -54,19 +61,28 @@ const Signup = () => {
         throw new Error(data.message || "Signup failed");
       }
 
-      // Show success message
       setSuccess("Account created successfully! Redirecting...");
 
-      // Redirect to login page after a short delay
+      Swal.fire({
+        icon: "success",
+        title: "Account Created",
+        text: "Redirecting to login...",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-
-      // Don't set authentication here - let the user log in properly
-      // Don't store token here - it should be stored after login
     } catch (err) {
       console.error("Signup error:", err);
       setError(err.message || "Signup failed");
+
+      Swal.fire({
+        icon: "error",
+        title: "Signup Failed",
+        text: err.message || "An error occurred. Please try again.",
+      });
     }
   };
 

@@ -103,27 +103,6 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Logout Button Styles */
-.logout-button {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  padding: 15px 20px;
-  background: none;
-  border: none;
-  color: white;
-  text-align: left;
-  cursor: pointer;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logout-button:hover {
-  background-color: #34495e;
-}
-
 /* Media Queries */
 @media (max-width: 768px) {
   .sidebar {

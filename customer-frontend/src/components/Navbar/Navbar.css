@@ -98,50 +98,6 @@
   background-color: rgba(0, 0, 0, 0.2); /* Example: Darken slightly on hover */
 }
 
-/* Logout confirmation styles */
-/* Logout confirmation styles */
-.logout-confirm-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.logout-confirm-dialog {
-  background-color: white;
-  border-radius: 8px;
-  padding: 30px;
-  width: 400px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  text-align: center;
-}
-
-.logout-confirm-dialog h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 28px;
-  color: #333;
-  font-weight: 600;
-}
-
-.logout-confirm-dialog p {
-  margin-bottom: 30px;
-  color: #333;
-  font-size: 18px;
-}
-
-.logout-dialog-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-
 .cancel-btn {
   padding: 12px 30px;
   background: #a9a9a9;

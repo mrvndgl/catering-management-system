@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ViewPayment.css";
+import { X } from "lucide-react";
+import Swal from "sweetalert2";
 
 // Payment details modal component
-const PaymentDetailsModal = ({ payment, onClose, getStatusClass }) => {
+const PaymentDetailsModal = ({
+  payment,
+  onClose,
+  getStatusClass,
+  onStatusUpdate,
+}) => {
   if (!payment) return null;
 
   return (
@@ -11,8 +18,8 @@ const PaymentDetailsModal = ({ payment, onClose, getStatusClass }) => {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Payment #{payment.payment_id} Details</h2>
-          <button className="close-button" onClick={onClose}>
-            ×
+          <button className="close-button" onClick={onClose} aria-label="Close">
+            <X size={24} />
           </button>
         </div>
 
@@ -85,9 +92,22 @@ const PaymentDetailsModal = ({ payment, onClose, getStatusClass }) => {
         </div>
 
         <div className="modal-footer">
-          <button className="modal-close-btn" onClick={onClose}>
-            Close
-          </button>
+          {payment.payment_status === "Pending" && (
+            <div className="payment-action-buttons">
+              <button
+                className="accept-payment-btn"
+                onClick={() => onStatusUpdate(payment.payment_id, "Paid")}
+              >
+                Accept Payment
+              </button>
+              <button
+                className="reject-payment-btn"
+                onClick={() => onStatusUpdate(payment.payment_id, "Failed")}
+              >
+                Reject Payment
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -128,6 +148,71 @@ const ViewPayment = () => {
   useEffect(() => {
     fetchPayments();
   }, []);
+
+  const handlePaymentStatusUpdate = async (paymentId, newStatus) => {
+    try {
+      const result = await Swal.fire({
+        title: "Confirm Payment Update",
+        text: `Are you sure you want to mark this payment as ${newStatus}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#28a745",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, update it!",
+        cancelButtonText: "Cancel",
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/payments/admin/payments/${paymentId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ payment_status: newStatus }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update payment status");
+      }
+
+      // Update local state
+      setPayments((prevPayments) =>
+        prevPayments.map((payment) =>
+          payment.payment_id === paymentId
+            ? { ...payment, payment_status: newStatus }
+            : payment
+        )
+      );
+
+      Swal.fire({
+        title: "Success!",
+        text: `Payment has been marked as ${newStatus}`,
+        icon: "success",
+        confirmButtonColor: "#28a745",
+      });
+
+      // Refresh payments list
+      await fetchPayments();
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      Swal.fire({
+        title: "Error!",
+        text: error.message || "Failed to update payment status",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
+    }
+  };
 
   const fetchPayments = async () => {
     try {
@@ -336,18 +421,8 @@ const ViewPayment = () => {
           payment={selectedPaymentDetails}
           onClose={() => setSelectedPaymentDetails(null)}
           getStatusClass={getStatusClass}
+          onStatusUpdate={handlePaymentStatusUpdate}
         />
-      )}
-
-      {expandedImage && (
-        <div className="expanded-image-overlay" onClick={handleCloseImage}>
-          <div className="expanded-image-container">
-            <button className="close-image-button" onClick={handleCloseImage}>
-              ×
-            </button>
-            <img src={expandedImage} alt="Expanded Payment Proof" />
-          </div>
-        </div>
       )}
     </div>
   );

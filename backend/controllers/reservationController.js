@@ -224,7 +224,7 @@ export const createReservation = async (req, res) => {
         }
 
         // Use the MongoDB _id of the found product
-        processedProducts[category] = product._id;
+        processedProducts[category] = Number(productId);
       } catch (error) {
         console.error(
           `Error processing product for category ${category}:`,
@@ -279,8 +279,8 @@ export const createReservation = async (req, res) => {
       paymentMode,
       reservation_date: new Date(reservation_date),
       venue,
-      selectedProducts: processedProducts,
-      additionalItems: processedAdditionalItems,
+      selectedProducts: processedProducts, // Store numeric IDs
+      additionalItems: additionalItems.map((id) => Number(id)), // Convert to numbers
       total_amount: totalAmount,
       reservation_status: "Pending",
       specialNotes: specialNotes,
@@ -394,6 +394,102 @@ export const getAllReservations = async (req, res) => {
     console.error("Error in getAllReservations:", error);
     res.status(500).json({
       message: "Error fetching reservations",
+      error: error.message,
+    });
+  }
+};
+
+export const getMyReservations = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log("Fetching reservations for user:", userId);
+
+    const reservations = await Reservation.find({ customer_id: userId })
+      .sort({ createdAt: -1 })
+      .lean(); // Remove populate since we're storing IDs directly
+
+    // Add debug logging
+    console.log("Raw reservations:", JSON.stringify(reservations, null, 2));
+
+    // Transform the data to ensure proper format
+    const transformedReservations = reservations.map((reservation) => ({
+      ...reservation,
+      selectedProducts: reservation.selectedProducts || {},
+      additionalItems: reservation.additionalItems || [],
+    }));
+
+    console.log(
+      "Transformed reservations:",
+      JSON.stringify(transformedReservations, null, 2)
+    );
+
+    res.status(200).json({
+      success: true,
+      count: transformedReservations.length,
+      data: transformedReservations,
+    });
+  } catch (error) {
+    console.error("Error in getMyReservations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching reservations",
+      error: error.message,
+    });
+  }
+};
+
+export const getPaidReservations = async (req, res) => {
+  try {
+    const paidReservations = await Reservation.aggregate([
+      {
+        $lookup: {
+          from: "payments",
+          localField: "reservation_id",
+          foreignField: "reservation_id",
+          as: "payment",
+        },
+      },
+      {
+        $match: {
+          "payment.payment_status": "Paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "customer_id",
+          foreignField: "user_id",
+          as: "customer",
+        },
+      },
+      {
+        $project: {
+          reservation_id: 1,
+          customer_name: { $arrayElemAt: ["$customer.name", 0] },
+          reservation_date: 1,
+          timeSlot: 1,
+          numberOfPax: 1,
+          venue: 1,
+          total_amount: 1,
+          payment_status: { $arrayElemAt: ["$payment.payment_status", 0] },
+          payment_method: { $arrayElemAt: ["$payment.payment_method", 0] },
+          payment_date: { $arrayElemAt: ["$payment.created_at", 0] },
+        },
+      },
+      {
+        $sort: { payment_date: -1 },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: paidReservations,
+    });
+  } catch (error) {
+    console.error("Error fetching paid reservations:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch paid reservations",
       error: error.message,
     });
   }

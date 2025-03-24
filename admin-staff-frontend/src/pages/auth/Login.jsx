@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import "./Login.css";
-import assets from "../../assets/index.js";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,6 +11,19 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Configure the Toast notification
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   // Simplified handleChange function
   const handleChange = (e) => {
@@ -49,12 +62,26 @@ const Login = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("employeeType", data.employeeType);
 
-      if (data.employeeType === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/staff/dashboard");
-      }
+      // Show success toast notification
+      Toast.fire({
+        icon: "success",
+        title: "Signed in successfully",
+      });
+
+      // Navigate after showing the toast
+      setTimeout(() => {
+        if (data.employeeType === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/staff/dashboard");
+        }
+      }, 1000); // Short delay to see the toast before navigation
     } catch (err) {
+      // Show error toast notification instead of error state
+      Toast.fire({
+        icon: "error",
+        title: err.message || "Login failed",
+      });
       setError(err.message);
       setTimeout(() => setError(""), 5000);
     } finally {

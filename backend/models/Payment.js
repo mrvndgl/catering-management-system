@@ -21,7 +21,7 @@ const PaymentSchema = new mongoose.Schema({
   },
   payment_status: {
     type: String,
-    enum: ["Pending", "Paid", "Failed", "Refunded"],
+    enum: ["Pending", "Paid", "Failed", "Refunded", "Cancelled"],
     default: "Pending",
   },
   payment_method: {
@@ -30,7 +30,7 @@ const PaymentSchema = new mongoose.Schema({
     required: true,
   },
   payment_proof: {
-    type: String, // URL or file path to the proof of payment
+    type: String,
     default: null,
   },
   payment_date: {

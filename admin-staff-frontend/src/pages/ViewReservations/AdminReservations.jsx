@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./AdminReservations.css";
+import Swal from "sweetalert2";
 
 const AdminReservations = () => {
   const [reservations, setReservations] = useState([]);
@@ -11,6 +12,8 @@ const AdminReservations = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [declineNote, setDeclineNote] = useState("");
   const [showDeclineNoteModal, setShowDeclineNoteModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState({ type: "", id: null });
 
   const handleReservationAction = async (
     reservationId,
@@ -25,17 +28,16 @@ const AdminReservations = () => {
 
       setIsLoading(true);
 
-      // Prepare request body with optional decline note
+      // Prepare request body
       const requestBody = {
         reservation_status: status,
       };
 
-      // Add the decline reason if provided and status is "Declined"
       if (status === "Declined" && note) {
         requestBody.decline_reason = note;
       }
 
-      // Update reservation status using the correct endpoint from reservationRoute.js
+      // Update reservation status
       const updateResponse = await fetch(
         `${import.meta.env.VITE_API_URL}/reservations/${reservationId}`,
         {
@@ -50,10 +52,7 @@ const AdminReservations = () => {
 
       if (!updateResponse.ok) {
         const errorData = await updateResponse.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Failed to update reservation (Status: ${updateResponse.status})`
-        );
+        throw new Error(errorData.message || `Failed to update reservation`);
       }
 
       const updatedReservation = await updateResponse.json();
@@ -74,110 +73,66 @@ const AdminReservations = () => {
         )
       );
 
-      // If accepted, update payment status
+      // Show success message based on action
       if (status === "Accepted") {
-        try {
-          // Update payment status using the correct endpoint
-          const paymentResponse = await fetch(
-            `${
-              import.meta.env.VITE_API_URL
-            }/reservations/${reservationId}/payment`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                payment_status: "Pending",
-                payment_required: true,
-              }),
-            }
-          );
-
-          if (!paymentResponse.ok) {
-            console.warn(
-              "Failed to mark payment as required:",
-              await paymentResponse.text()
-            );
-          }
-
-          // Send notification if you have a notifications endpoint
-          try {
-            const notificationResponse = await fetch(
-              `${import.meta.env.VITE_API_URL}/notifications`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  reservation_id: reservationId,
-                  type: "PAYMENT_REQUIRED",
-                  message:
-                    "Your reservation has been accepted. Please proceed with the payment.",
-                  user_id: updatedReservation.customer_id,
-                }),
-              }
-            );
-
-            if (!notificationResponse.ok) {
-              console.warn(
-                "Failed to send notification:",
-                await notificationResponse.text()
-              );
-            }
-          } catch (notificationError) {
-            console.error("Error sending notification:", notificationError);
-          }
-        } catch (error) {
-          console.error("Error in post-acceptance actions:", error);
-        }
-      } else if (status === "Declined" && note) {
-        // Send notification with decline reason
-        try {
-          const notificationResponse = await fetch(
-            `${import.meta.env.VITE_API_URL}/notifications`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                reservation_id: reservationId,
-                type: "RESERVATION_DECLINED",
-                message: `Your reservation has been declined. Reason: ${note}`,
-                user_id: updatedReservation.customer_id,
-              }),
-            }
-          );
-
-          if (!notificationResponse.ok) {
-            console.warn(
-              "Failed to send decline notification:",
-              await notificationResponse.text()
-            );
-          }
-        } catch (notificationError) {
-          console.error(
-            "Error sending decline notification:",
-            notificationError
-          );
-        }
+        Swal.fire({
+          title: "Reservation Accepted!",
+          text: "The customer will be notified to proceed with payment.",
+          icon: "success",
+          confirmButtonColor: "#28a745",
+        });
+        await handlePaymentSetup(reservationId, updatedReservation.customer_id);
+      } else if (status === "Declined") {
+        Swal.fire({
+          title: "Reservation Declined",
+          text: `Reservation has been declined. Reason: ${
+            note || "Not specified"
+          }`,
+          icon: "info",
+          confirmButtonColor: "#dc3545",
+        });
       }
 
       setError(null);
-      await Promise.all([fetchReservations(), fetchPaymentStatuses()]);
+      await fetchReservations();
     } catch (err) {
       console.error("Error updating reservation:", err);
-      setError(
-        err.message ||
-          "Failed to update reservation. Please check your connection and try again."
-      );
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to update reservation",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
+      setError(err.message || "Failed to update reservation");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Add this helper function for payment setup
+  const handlePaymentSetup = async (reservationId, customerId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const paymentResponse = await fetch(
+        `${import.meta.env.VITE_API_URL}/reservations/${reservationId}/payment`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            payment_status: "Pending",
+            payment_required: true,
+          }),
+        }
+      );
+
+      if (!paymentResponse.ok) {
+        throw new Error("Failed to initialize payment requirements");
+      }
+    } catch (error) {
+      console.error("Error setting up payment:", error);
     }
   };
 
@@ -201,6 +156,26 @@ const AdminReservations = () => {
   const closeDeclineNoteModal = () => {
     setShowDeclineNoteModal(false);
     setDeclineNote("");
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction.type === "accept") {
+      handleReservationAction(selectedReservation.reservation_id, "Accepted");
+      closeReservationDetails();
+    } else if (confirmAction.type === "decline") {
+      openDeclineNoteModal();
+    }
+    setShowConfirmModal(false);
+  };
+
+  const openConfirmModal = (type) => {
+    setConfirmAction({ type, id: selectedReservation.reservation_id });
+    setShowConfirmModal(true);
+  };
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setConfirmAction({ type: "", id: null });
   };
 
   const formatTimestamp = (timestamp) => {
@@ -315,13 +290,11 @@ const AdminReservations = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem("token");
-
+      // Update the API endpoint to match server route
       const response = await fetch("/api/products", {
-        method: "GET",
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -330,21 +303,28 @@ const AdminReservations = () => {
       }
 
       const data = await response.json();
+      console.log("Raw products data:", data); // Debug log
+
+      // Create a lookup object with proper product IDs
       const productsLookup = data.reduce((acc, product) => {
         acc[product._id] = product;
         return acc;
       }, {});
 
       setProducts(productsLookup);
+      console.log("Products lookup:", productsLookup); // Debug log
     } catch (error) {
-      console.error("Failed to fetch products:", error);
+      console.error("Error fetching products:", error);
       setError(error.message);
     }
   };
 
   const getProductName = (productId) => {
+    console.log("Looking up product ID:", productId); // Debug log
     const product = products[productId];
-    return product ? product.product_name : "Loading...";
+    return product
+      ? product.product_name
+      : `Product not found (ID: ${productId})`;
   };
 
   const formatDate = (dateString) => {
@@ -558,13 +538,6 @@ const AdminReservations = () => {
                       {selectedReservation.reservation_status}
                     </span>
                   </p>
-                  <p>
-                    <strong>Payment Status:</strong>{" "}
-                    {getPaymentStatusDisplay(
-                      selectedReservation.reservation_id,
-                      selectedReservation.paymentMode
-                    )}
-                  </p>
                   {selectedReservation.decline_reason && (
                     <p>
                       <strong>Decline Reason:</strong>{" "}
@@ -589,19 +562,20 @@ const AdminReservations = () => {
                 </div>
               </div>
 
-              {selectedReservation.additionalItems &&
-                selectedReservation.additionalItems.length > 0 && (
-                  <div className="additional-items-section">
-                    <h3>Additional Items</h3>
-                    <div className="additional-items-list">
-                      {selectedReservation.additionalItems.map(
-                        (productId, index) => (
-                          <p key={index}>{getProductName(productId)}</p>
-                        )
-                      )}
-                    </div>
+              {selectedReservation?.additionalItems?.length > 0 && (
+                <div className="additional-items-section">
+                  <h3>Additional Items</h3>
+                  <div className="additional-items-list">
+                    {selectedReservation.additionalItems.map(
+                      (productId, index) => (
+                        <p key={`additional-${productId}-${index}`}>
+                          {getProductName(productId)}
+                        </p>
+                      )
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
               {selectedReservation.specialNotes && (
                 <p>
@@ -617,54 +591,81 @@ const AdminReservations = () => {
                   <div className="reservation-action-buttons">
                     <button
                       className="accept-btn"
-                      onClick={() => {
-                        handleReservationAction(
-                          selectedReservation.reservation_id,
-                          "Accepted"
-                        );
-                        closeReservationDetails();
-                      }}
+                      onClick={() => openConfirmModal("accept")}
                     >
                       Accept
                     </button>
                     <button
                       className="decline-btn"
-                      onClick={openDeclineNoteModal}
+                      onClick={() => openConfirmModal("decline")}
                     >
                       Decline
                     </button>
                   </div>
                 )}
+
+              {showConfirmModal && (
+                <div className="confirmation-modal">
+                  <div className="modal-content">
+                    <h2>Confirm Action</h2>
+                    <p>
+                      Are you sure you want to {confirmAction.type} this
+                      reservation?
+                    </p>
+                    <div className="modal-actions">
+                      <button
+                        className={`confirm-btn ${confirmAction.type}`}
+                        onClick={handleConfirmAction}
+                      >
+                        Yes,{" "}
+                        {confirmAction.type === "accept" ? "Accept" : "Decline"}
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={closeConfirmModal}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showDeclineNoteModal && (
+                <div className="decline-note-modal">
+                  <div className="modal-content">
+                    <h2>Decline Reservation</h2>
+                    <p>
+                      Please provide a reason for declining this reservation:
+                    </p>
+                    <textarea
+                      className="decline-note-textarea"
+                      value={declineNote}
+                      onChange={(e) => setDeclineNote(e.target.value)}
+                      placeholder="Enter reason for declining (e.g., Venue unavailable, Fully booked, etc.)"
+                      rows={4}
+                    />
+                    <div className="modal-actions">
+                      <button
+                        className="confirm-btn"
+                        onClick={handleDeclineWithNote}
+                        disabled={!declineNote.trim()}
+                      >
+                        Confirm Decline
+                      </button>
+                      <button
+                        className="cancel-btn"
+                        onClick={closeDeclineNoteModal}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button className="close-btn" onClick={closeReservationDetails}>
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDeclineNoteModal && (
-        <div className="decline-note-modal">
-          <div className="modal-content">
-            <h2>Decline Reservation</h2>
-            <p>Please provide a reason for declining this reservation:</p>
-            <textarea
-              className="decline-note-textarea"
-              value={declineNote}
-              onChange={(e) => setDeclineNote(e.target.value)}
-              placeholder="Enter reason for declining (e.g., Venue unavailable, Fully booked, etc.)"
-              rows={4}
-            />
-            <div className="modal-actions">
-              <button
-                className="confirm-btn"
-                onClick={handleDeclineWithNote}
-                disabled={!declineNote.trim()}
-              >
-                Confirm Decline
-              </button>
-              <button className="cancel-btn" onClick={closeDeclineNoteModal}>
-                Cancel
               </button>
             </div>
           </div>

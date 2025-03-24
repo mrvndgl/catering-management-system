@@ -18,14 +18,24 @@ const reservationSchema = new mongoose.Schema(
     reservation_date: { type: Date, required: true },
     venue: { type: String, required: true },
     selectedProducts: {
-      type: Map,
-      of: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
+      type: Object,
+      required: true,
+      default: {},
+      // Add validation to ensure values are numbers
+      validate: {
+        validator: function (obj) {
+          return Object.values(obj).every((val) => typeof val === "number");
+        },
+        message: "Product IDs must be numbers",
+      },
     },
-    additionalItems: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+    additionalItems: {
+      type: [Number],
+      default: [],
+    },
     total_amount: { type: Number, required: true },
     specialNotes: { type: String, default: "" },
-    customer_id: { type: String, required: true }, // Added customer_id field
+    customer_id: { type: String, required: true },
   },
   {
     toJSON: { virtuals: true },

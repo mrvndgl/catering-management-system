@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -20,6 +21,19 @@ const AdminSidebar = () => {
   const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activePage, setActivePage] = useState("dashboard");
+
+  // Configure SweetAlert Toast
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    },
+  });
 
   const navItems = [
     {
@@ -81,37 +95,45 @@ const AdminSidebar = () => {
   };
 
   const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
+    // Replace modal with SweetAlert2 confirmation
+    Swal.fire({
+      title: "Confirm Logout",
+      text: "Are you sure you want to log out?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Logout",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        confirmLogout();
+      }
+    });
   };
 
   const confirmLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("employeeType");
-    navigate("/login");
+
+    // Show success toast notification
+    Toast.fire({
+      icon: "success",
+      title: "Logged out successfully",
+    });
+
+    // Navigate after a short delay to show the toast
+    setTimeout(() => {
+      navigate("/login");
+    }, 1000);
   };
 
   const cancelLogout = () => {
     setShowLogoutConfirm(false);
   };
+
   return (
     <>
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <h2>Confirm Logout</h2>
-            <p>Are you sure you want to log out?</p>
-            <div className="logout-modal-actions">
-              <button className="logout-confirm-btn" onClick={confirmLogout}>
-                Yes, Logout
-              </button>
-              <button className="logout-cancel-btn" onClick={cancelLogout}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div
         className={`dashboard-sidebar ${isSidebarCollapsed ? "collapsed" : ""}`}
       >

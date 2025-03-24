@@ -100,7 +100,7 @@
 }
 
 .status-badge.declined {
-  background-color: #d9534f;
+  background-color: #dc3545;
   color: white;
 }
 
@@ -173,14 +173,14 @@
   white-space: nowrap;
   border: none;
   border-radius: 4px;
-  background-color: #17a2b8;
-  color: white;
+  background-color: #007BFF;
+  color: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .view-btn:hover {
-  background-color: #138496;
+  background-color: #0056b3;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -330,6 +330,148 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Confirmation Modal specific styles */
+.confirmation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.confirmation-modal .modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.confirmation-modal .modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.confirmation-modal .confirm-btn.accept {
+  background: #28a745;
+}
+
+.confirmation-modal .confirm-btn.decline {
+  background: #dc3545;
+}
+
+.confirmation-modal .confirm-btn {
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirmation-modal .cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Decline Note Modal specific styles */
+.decline-note-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.decline-note-modal .modal-content {
+  background-color: white;
+  padding: 25px;
+  border-radius: 8px;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.decline-note-modal h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+  color: #333;
+}
+
+.decline-note-modal p {
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.decline-note-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.decline-note-textarea:focus {
+  outline: none;
+  border-color: #17a2b8;
+  box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.2);
+}
+
+.decline-note-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.decline-note-modal .confirm-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.decline-note-modal .confirm-btn:hover {
+  background-color: #218838;
+}
+
+.decline-note-modal .confirm-btn:disabled {
+  background-color: #a0c8a9;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.decline-note-modal .cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.decline-note-modal .cancel-btn:hover {
+  background-color: #5a6268;
+}
+
 /* Responsive Design */
 @media screen and (max-width: 1024px) {
   .admin-reservations-container {
@@ -455,6 +597,20 @@
   .modal-actions button {
     width: 100%;
     min-width: auto;
+  }
+  .decline-note-modal .modal-content {
+    padding: 20px;
+    margin: 15px;
+    max-width: 95%;
+  }
+  
+  .decline-note-modal .modal-actions {
+    flex-direction: column;
+  }
+  
+  .decline-note-modal .modal-actions button {
+    width: 100%;
+    margin-bottom: 8px;
   }
 }
 

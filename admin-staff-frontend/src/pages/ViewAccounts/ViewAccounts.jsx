@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Pencil, Archive, Trash2, ArchiveRestore, Users } from "lucide-react";
 import "./ViewAccounts.css";
+import Swal from "sweetalert2";
 
 const ViewAccounts = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -38,24 +39,47 @@ const ViewAccounts = () => {
   const fetchArchivedAccounts = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/employees/staff/archived", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (!token) {
+        throw new Error("No authorization token found");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/employees/staff/archived`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       setArchivedAccounts(data);
     } catch (err) {
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to fetch archived accounts",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
       setError(err.message);
     }
   };
 
   const handleArchiveAccount = async (id) => {
     try {
-      if (
-        !window.confirm(
-          "Are you sure you want to archive this account? The user will no longer be able to access the system."
-        )
-      ) {
+      const result = await Swal.fire({
+        title: "Archive Account",
+        text: "Are you sure you want to archive this account? The user will no longer be able to access the system.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, archive it!",
+      });
+
+      if (!result.isConfirmed) {
         return;
       }
 
@@ -64,13 +88,16 @@ const ViewAccounts = () => {
         throw new Error("No authorization token found");
       }
 
-      const response = await fetch(`/api/employees/staff/archive/${id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/employees/staff/archive/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await response.json();
 
@@ -78,31 +105,95 @@ const ViewAccounts = () => {
         throw new Error(data.message || "Failed to archive account");
       }
 
-      // Update both local states
+      // Update local states
       setAccounts((prevAccounts) =>
         prevAccounts.filter((account) => account._id !== id)
       );
       setArchivedAccounts((prevArchived) => [...prevArchived, data.employee]);
 
       // Show success message
-      alert("Account archived successfully");
+      Swal.fire({
+        title: "Success!",
+        text: "Account archived successfully",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+      });
     } catch (err) {
       console.error("Archive error:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to archive account",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
       setError(err.message);
     }
   };
 
   const handleUnarchiveAccount = async (id) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/employees/staff/unarchive/${id}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
+      // Show confirmation dialog
+      const result = await Swal.fire({
+        title: "Unarchive Account",
+        text: "Are you sure you want to unarchive this account? The user will be able to access the system again.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#28a745",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, unarchive it!",
       });
-      if (!response.ok) throw new Error("Failed to unarchive account");
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authorization token found");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/employees/staff/unarchive/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to unarchive account");
+      }
+
+      // Update local states
+      setArchivedAccounts((prevArchived) =>
+        prevArchived.filter((account) => account._id !== id)
+      );
+      setAccounts((prevAccounts) => [...prevAccounts, data.employee]);
+
+      // Show success message
+      Swal.fire({
+        title: "Success!",
+        text: "Account unarchived successfully",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+      });
+
+      // Refresh both lists
       await fetchArchivedAccounts();
       await fetchAccounts();
     } catch (err) {
+      console.error("Unarchive error:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to unarchive account",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
       setError(err.message);
     }
   };
@@ -110,31 +201,55 @@ const ViewAccounts = () => {
   const fetchAccounts = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authorization token found");
+      }
+
       console.log("Fetching accounts...");
-      const response = await fetch("/api/employees/staff", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/employees/staff`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await response.json();
       console.log("Accounts fetched:", data);
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // Handle unauthorized access
+          Swal.fire({
+            title: "Session Expired",
+            text: "Please log in again to continue.",
+            icon: "error",
+            confirmButtonColor: "#dc3545",
+          });
+          // Optionally redirect to login page
+          window.location.href = "/login";
+          return;
+        }
         throw new Error(data.message || "Failed to fetch accounts");
       }
 
       // Validate data structure
       if (Array.isArray(data)) {
         console.log(`Received ${data.length} accounts`);
-        if (data.length > 0) {
-          console.log("First account:", data[0]);
-        }
         setAccounts(data);
       } else {
-        console.error("Expected array but received:", typeof data);
-        setError("Invalid data format received from server");
+        throw new Error("Invalid data format received from server");
       }
     } catch (err) {
-      console.error("Failed to fetch accounts", err);
+      console.error("Failed to fetch accounts:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.message || "Failed to fetch accounts",
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
       setError(err.message);
     } finally {
       setLoading(false);

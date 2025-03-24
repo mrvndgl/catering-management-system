@@ -90,8 +90,8 @@
 }
 
 .status-paid {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: #007BFF;
+  color: #ffffff;
 }
 
 .status-failed {
@@ -173,6 +173,40 @@
   justify-content: flex-end;
 }
 
+.payment-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.accept-payment-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reject-payment-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.accept-payment-btn:hover {
+  background-color: #218838;
+}
+
+.reject-payment-btn:hover {
+  background-color: #c82333;
+}
+
 /* View details button */
 .view-details-button {
   padding: 8px 16px;
@@ -233,7 +267,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
   top: 0;
   background-color: #fff;
   border-radius: 8px 8px 0 0;
@@ -247,17 +280,17 @@
 }
 
 .close-button {
-  background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #777;
-  padding: 4px 8px;
+  color: #263238;
+  padding: 4px 4px;
   transition: color 0.2s ease;
+  background: none;
 }
 
 .close-button:hover {
-  color: #333;
+  color: #5b5b5b;
   background: none;
 }
 
@@ -336,20 +369,6 @@
   border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
-}
-
-.modal-close-btn {
-  padding: 8px 16px;
-  background-color: #4CAF50;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.modal-close-btn:hover {
-  background-color: #45a049;
 }
 
 .modal-confirm-btn {
