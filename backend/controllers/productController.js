@@ -65,8 +65,8 @@ export const createProduct = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({ product_id: 1 });
-    res.status(200).json(products);
+    const products = await Product.find();
+    res.json(products);
   } catch (error) {
     res
       .status(500)
@@ -76,15 +76,27 @@ export const getAllProducts = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
+    console.log("Received Update Request:", {
+      params: req.params,
+      body: req.body,
+      files: req.files,
+    });
+
     const { product_id } = req.params;
     const updateData = {
       ...req.body,
-      images:
-        req.body.images?.map((img) => ({
-          url: img.url,
-          is_primary: img.is_primary || false,
-        })) || [],
+      images: req.body.images
+        ? (typeof req.body.images === "string"
+            ? JSON.parse(req.body.images)
+            : req.body.images
+          ).map((img) => ({
+            url: img.url,
+            is_primary: img.is_primary || false,
+          }))
+        : [],
     };
+
+    console.log("Processed Update Data:", updateData);
 
     // Convert numeric fields
     if (updateData.category_id) {
@@ -113,9 +125,64 @@ export const updateProduct = async (req, res) => {
 
     res.status(200).json(updatedProduct);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating product", error: error.message });
+    console.error("Detailed error updating product:", error);
+    res.status(500).json({
+      message: "Error updating product",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
+export const archiveProduct = async (req, res) => {
+  try {
+    const { product_id } = req.params;
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { product_id: parseInt(product_id) },
+      { archived: true },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({
+      message: "Product archived successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error archiving product",
+      error: error.message,
+    });
+  }
+};
+
+export const unarchiveProduct = async (req, res) => {
+  try {
+    const { product_id } = req.params;
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { product_id: parseInt(product_id) },
+      { archived: false },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({
+      message: "Product unarchived successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error unarchiving product",
+      error: error.message,
+    });
   }
 };
 

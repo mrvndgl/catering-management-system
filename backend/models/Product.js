@@ -25,16 +25,14 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    archived: {
+      type: Boolean,
+      default: false,
+    },
     images: [
       {
-        url: {
-          type: String,
-          required: true,
-        },
-        is_primary: {
-          type: Boolean,
-          default: false,
-        },
+        url: { type: String },
+        is_primary: { type: Boolean, default: false },
       },
     ],
   },

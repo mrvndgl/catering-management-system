@@ -237,9 +237,7 @@
   font-weight: 600;
   width: 100%;
 }
-.cancel-button:hover {
-  background-color: #e1e1e1;
-}
+
 
 /* Table container styles to prevent overflow */
 .table-container {
