@@ -65,21 +65,46 @@ const processImages = (req, res, next) => {
       return res.status(400).json({ message: err.message });
     }
 
-    if (req.files && req.files.length > 0) {
-      const imageData = req.files.map((file, index) => ({
-        url: `/uploads/${file.filename}`,
-        is_primary: index === 0,
-      }));
-
+    try {
+      // Parse existing images from request body
       const existingImages = Array.isArray(req.body.images)
         ? req.body.images
         : req.body.images
         ? JSON.parse(req.body.images)
         : [];
-      req.body.images = [...existingImages, ...imageData];
-    }
 
-    next();
+      // Ensure all existing images have proper URL structure
+      const formattedExistingImages = existingImages.map((img) => ({
+        ...img,
+        url:
+          img.url && !img.url.startsWith("/uploads")
+            ? `/uploads/${img.filename || path.basename(img.url)}`
+            : img.url,
+      }));
+
+      // Process newly uploaded files
+      const newImageData = req.files
+        ? req.files.map((file, index) => ({
+            url: `/uploads/${file.filename}`,
+            filename: file.filename,
+            is_primary: index === 0,
+          }))
+        : [];
+
+      // Combine existing and new images
+      req.body.images = [
+        ...formattedExistingImages.filter((img) => !img.isNew),
+        ...newImageData,
+      ];
+
+      next();
+    } catch (parseError) {
+      console.error("Image processing error:", parseError);
+      return res.status(400).json({
+        message: "Error processing images",
+        error: parseError.message,
+      });
+    }
   });
 };
 

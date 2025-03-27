@@ -154,126 +154,77 @@ const ProductManagement = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
+  // ...existing code...
+
+  // Replace the existing handleImageUpload function
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     const maxSize = 5 * 1024 * 1024; // 5MB limit
 
-    const validFiles = files.filter((file) => {
-      if (file.size > maxSize) {
-        setError(`File ${file.name} is too large. Maximum size is 5MB`);
-        return false;
-      }
-      return true;
-    });
-
-    const newImages = validFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      is_primary: productImages.length === 0,
-      isNew: true, // Flag to indicate this is a new upload
-    }));
-
-    setProductImages((prev) => [...prev, ...newImages]);
-  };
-
-  //replace an image //
-  const handleReplaceImage = async (imageUrl) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const maxSize = 5 * 1024 * 1024; // 5MB limit
-
+    const processedImages = files
+      .map((file, index) => {
+        // Validate file size
         if (file.size > maxSize) {
-          setError("File is too large. Maximum size is 5MB");
-          return;
+          setError(`File ${file.name} is too large. Maximum size is 5MB`);
+          return null;
         }
 
-        try {
-          // Create a new URL for the file preview
-          const newImageUrl = URL.createObjectURL(file);
+        // Create a preview URL that we can revoke later
+        const previewUrl = URL.createObjectURL(file);
 
-          // Update the images array with the new file
-          setProductImages((prev) =>
-            prev.map((img) =>
-              img.url === imageUrl
-                ? {
-                    ...img,
-                    url: newImageUrl,
-                    file: file,
-                    isNew: true,
-                  }
-                : img
-            )
-          );
-        } catch (error) {
-          console.error("Error replacing image:", error);
-          setError("Failed to replace image");
+        return {
+          file,
+          url: previewUrl,
+          is_primary: productImages.length === 0 || index === 0,
+          isNew: true,
+          originalName: file.name,
+        };
+      })
+      .filter(Boolean); // Remove any null entries
+
+    // Update state with new images
+    setProductImages((prev) => {
+      // Clean up old blob URLs before adding new ones
+      prev.forEach((img) => {
+        if (img.url.startsWith("blob:")) {
+          URL.revokeObjectURL(img.url);
         }
-      }
-    };
+      });
 
-    input.click();
+      return [...prev, ...processedImages];
+    });
   };
+
+  // Add this cleanup effect right after the handleImageUpload function
+  useEffect(() => {
+    return () => {
+      productImages.forEach((img) => {
+        if (img.url.startsWith("blob:")) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, [productImages]);
 
   const handleSetPrimaryImage = (imageUrl) => {
-    setProductImages((prev) =>
-      prev.map((img) => ({
+    console.log("Setting primary image with URL:", imageUrl);
+    console.log("Current images before update:", productImages);
+
+    setProductImages((prev) => {
+      const updatedImages = prev.map((img) => ({
         ...img,
         is_primary: img.url === imageUrl,
-      }))
-    );
+        file: img.file,
+        isNew: img.isNew,
+      }));
+
+      console.log("Updated images:", updatedImages);
+      return updatedImages;
+    });
   };
 
   const handleRemoveImage = (imageUrl) => {
     setProductImages((prev) => prev.filter((img) => img.url !== imageUrl));
-  };
-
-  const uploadImage = async (file) => {
-    try {
-      // Create FormData to send file
-      const formData = new FormData();
-      formData.append("product_name", productForm.product_name);
-      formData.append("category_id", productForm.category_id);
-      formData.append("product_details", productForm.product_details);
-
-      // Append existing image URLs if updating
-      if (productImages.length > 0) {
-        formData.append(
-          "images",
-          JSON.stringify(
-            productImages.map((img) => ({
-              url: img.url,
-              is_primary: img.is_primary,
-            }))
-          )
-        );
-      }
-
-      // Append new image files
-      productImages.forEach((image) => {
-        if (image.file) {
-          formData.append("images", image.file);
-        }
-      });
-
-      const response = await fetch(url, {
-        method: isEditing ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      return data.imageUrl; // Assumes backend returns uploaded image URL
-    } catch (error) {
-      console.error("Image upload error:", error);
-      throw error;
-    }
   };
 
   const handleEditProduct = (product) => {
@@ -309,31 +260,48 @@ const ProductManagement = () => {
         ? `${import.meta.env.VITE_API_URL}/products/${productForm.product_id}`
         : `${import.meta.env.VITE_API_URL}/products/create`;
 
-      console.log("Submission Details:", {
-        url,
-        isEditing,
-        productForm,
-        productImages,
-      });
-
       const formData = new FormData();
+
+      // Append product details
       formData.append("product_id", productForm.product_id);
       formData.append("category_id", productForm.category_id);
       formData.append("product_name", productForm.product_name);
       formData.append("product_details", productForm.product_details);
 
       // Handle images
-      const imageData = productImages.map((image) => ({
-        url: image.url,
-        is_primary: image.is_primary || false,
-      }));
-      formData.append("images", JSON.stringify(imageData));
+      const processedImages = await Promise.all(
+        productImages.map(async (image, index) => {
+          // If it's a new file (has file property), upload it
+          if (image.file) {
+            // If it's a blob URL or local file, upload
+            if (image.url.startsWith("blob:") || image.file instanceof File) {
+              return {
+                is_primary: index === 0,
+                isNew: true,
+                file: image.file,
+              };
+            }
+          }
 
-      // Append image files
-      productImages.forEach((image) => {
-        if (image.file) {
-          formData.append("images", image.file);
-        }
+          // If it's an existing image with a server URL
+          return {
+            url: image.url,
+            is_primary: image.is_primary || index === 0,
+            isNew: false,
+          };
+        })
+      );
+
+      // Separate new files and existing image URLs
+      const newFiles = processedImages.filter((img) => img.file);
+      const existingImages = processedImages.filter((img) => img.url);
+
+      // Append existing image URLs
+      formData.append("images", JSON.stringify(existingImages));
+
+      // Append new image files
+      newFiles.forEach((imageData, index) => {
+        formData.append("images", imageData.file);
       });
 
       const token = localStorage.getItem("token");
@@ -368,8 +336,18 @@ const ProductManagement = () => {
       setProductImages([]);
       setIsEditing(false);
 
+      // Trigger frontend update
+      window.dispatchEvent(new CustomEvent("productUpdate"));
+
       // Refetch products to update list
       await fetchProducts();
+
+      // Show success message
+      Swal.fire({
+        title: "Success!",
+        text: "Product updated successfully",
+        icon: "success",
+      });
     } catch (error) {
       console.error("Submission Error:", error);
       setError(error.message);

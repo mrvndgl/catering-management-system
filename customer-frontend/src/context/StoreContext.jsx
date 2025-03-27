@@ -8,6 +8,23 @@ export const StoreContext = createContext(null);
 const StoreContextProvider = (props) => {
   const [foodList, setFoodList] = useState([]);
 
+  const processImageUrl = (imageUrl) => {
+    // Ignore blob URLs
+    if (imageUrl.startsWith("blob:")) {
+      return assets.placeholderImage;
+    }
+
+    // If it's a relative path, prepend API URL
+    if (imageUrl.startsWith("/")) {
+      return `${API_URL}${
+        imageUrl.startsWith("/") ? imageUrl : "/" + imageUrl
+      }`;
+    }
+
+    // If it's already a full URL, return as is
+    return imageUrl;
+  };
+
   const fetchFoodItems = async () => {
     try {
       const response = await fetch(`${API_URL}/api/products`);
@@ -21,14 +38,11 @@ const StoreContextProvider = (props) => {
         images: item.images
           ? item.images.map((img) => ({
               ...img,
-              url: img.url.startsWith("blob:")
-                ? img.url
-                : `${API_URL}${img.url}`,
+              url: processImageUrl(img.url),
             }))
           : [],
       }));
 
-      console.log("Formatted food items:", formattedData); // Debug log
       setFoodList(formattedData);
     } catch (error) {
       console.error("Error fetching food items:", error);
@@ -39,7 +53,6 @@ const StoreContextProvider = (props) => {
   useEffect(() => {
     fetchFoodItems();
 
-    // Listen for product updates from admin panel
     const handleProductUpdate = () => {
       fetchFoodItems();
     };

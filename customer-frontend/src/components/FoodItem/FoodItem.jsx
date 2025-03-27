@@ -1,42 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./FoodItem.css";
 import { assets } from "../../assets";
 
 const API_URL = "http://localhost:4000";
 
 const FoodItem = ({ name, description, images }) => {
+  const [imageUrl, setImageUrl] = useState(assets.placeholderImage);
   const [imageError, setImageError] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
 
-  useEffect(() => {
-    setImageError(false);
-
-    if (!images || !images.length) {
-      setImageUrl(assets.placeholderImage);
-      return;
+  // Memoize image URL processing
+  const processedImageUrl = useMemo(() => {
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return assets.placeholderImage;
     }
 
-    // Find primary image or use first available
-    const primaryImage = images.find((img) => img.is_primary);
-    const imageToUse = primaryImage || images[0];
+    // Find primary image or first image
+    const primaryImage = images.find((img) => img?.is_primary) || images[0];
 
     // Handle different URL types
-    if (imageToUse.url.startsWith("blob:")) {
-      setImageUrl(imageToUse.url);
-    } else if (imageToUse.url.startsWith("http")) {
-      setImageUrl(imageToUse.url);
-    } else {
-      setImageUrl(`${API_URL}${imageToUse.url}`);
+    if (!primaryImage?.url) {
+      return assets.placeholderImage;
     }
 
-    console.log("Setting image URL:", imageUrl); // Debug log
+    // If it's a blob URL or invalid URL, return placeholder
+    try {
+      new URL(primaryImage.url);
+      if (primaryImage.url.startsWith("blob:")) {
+        return assets.placeholderImage;
+      }
+    } catch {
+      // If URL is invalid or relative
+      if (primaryImage.url.startsWith("/")) {
+        return `${API_URL}${primaryImage.url}`;
+      }
+      return assets.placeholderImage;
+    }
+
+    // If we got here, it's a valid full URL
+    return primaryImage.url;
   }, [images]);
 
+  useEffect(() => {
+    if (processedImageUrl !== imageUrl) {
+      setImageUrl(processedImageUrl);
+      setImageError(false); // Reset error state when URL changes
+    }
+  }, [processedImageUrl, imageUrl]);
+
   const handleImageError = (e) => {
-    console.error("Image failed to load:", e.target.src);
+    console.error("Image failed to load:", {
+      src: e.target.src,
+      originalUrl: images?.[0]?.url,
+      imageProps: images?.[0],
+    });
     setImageError(true);
     setImageUrl(assets.placeholderImage);
   };
+
+  // ...existing code...
 
   return (
     <div className="food-item">

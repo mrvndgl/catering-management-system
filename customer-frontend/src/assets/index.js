@@ -35,11 +35,11 @@ export const menu_list = [
     menu_image: menu_3,
   },
   {
-    menu_name: "Vegetable",
+    menu_name: "Vegetables",
     menu_image: menu_4,
   },
   {
-    menu_name: "Seafoods",
+    menu_name: "Seafood",
     menu_image: menu_5,
   },
   {

@@ -32,6 +32,7 @@ const productSchema = new mongoose.Schema(
     images: [
       {
         url: { type: String },
+        filename: { type: String },
         is_primary: { type: Boolean, default: false },
       },
     ],

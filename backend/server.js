@@ -2,11 +2,13 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import { mkdir } from "fs/promises";
+import { mkdir, chmod } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+
+// Import routes
 import Category from "./models/Category.js";
 import customerRoutes from "./routes/customerRoute.js";
 import employeeRoutes from "./routes/employeeRoute.js";
@@ -21,37 +23,40 @@ import reportRoutes from "./routes/reportRoute.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Initialize express app
 dotenv.config();
 const app = express();
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, "uploads");
-if (!existsSync(uploadDir)) {
-  try {
-    await mkdir(uploadDir, { recursive: true });
-    console.log("Uploads directory created successfully");
-  } catch (error) {
-    console.error("Error creating uploads directory:", error);
+// Create required directories
+async function initializeDirectories() {
+  const directories = [
+    path.join(__dirname, "uploads"),
+    path.join(__dirname, "uploads", "payments"),
+  ];
+
+  for (const dir of directories) {
+    if (!existsSync(dir)) {
+      try {
+        await mkdir(dir, { recursive: true });
+        await chmod(dir, 0o755);
+        console.log(`Directory created successfully: ${dir}`);
+      } catch (error) {
+        console.error(`Error creating directory ${dir}:`, error);
+      }
+    }
   }
 }
 
-const paymentsUploadDir = path.join(__dirname, "uploads", "payments");
-if (!existsSync(paymentsUploadDir)) {
-  try {
-    await mkdir(paymentsUploadDir, { recursive: true });
-    console.log("Payments uploads directory created successfully");
-  } catch (error) {
-    console.error("Error creating payments uploads directory:", error);
-  }
-}
+// Initialize directories
+await initializeDirectories();
 
-// Logging middleware should be first
+// Global middleware
 app.use((req, res, next) => {
-  console.log(`Received ${req.method} request to ${req.path}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// CORS middleware
+// CORS configuration
 app.use(
   cors({
     origin: [
@@ -61,13 +66,50 @@ app.use(
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
-// Add this before your routes
-app.use((req, res, next) => {
-  res.header("Content-Type", "application/json");
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static file serving middleware
+app.use("/uploads", (req, res, next) => {
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=3600",
+    "Access-Control-Allow-Methods": "GET",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Content-Type": "image/*",
+  });
+  console.log("Image request received:", {
+    path: req.path,
+    method: req.method,
+    headers: req.headers,
+  });
   next();
+});
+
+// Serve static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/api/payments/proof",
+  express.static(path.join(__dirname, "uploads", "payments"))
+);
+
+// Debug endpoints
+app.get("/api/debug/image/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "uploads", req.params.filename);
+  const exists = existsSync(filePath);
+  res.json({
+    exists,
+    filePath,
+    requestedFile: req.params.filename,
+    fullUrl: `${req.protocol}://${req.get("host")}/uploads/${
+      req.params.filename
+    }`,
+  });
 });
 
 app.get("/api/debug/payment-proof/:filename", (req, res) => {
@@ -85,30 +127,7 @@ app.get("/api/debug/payment-proof/:filename", (req, res) => {
   });
 });
 
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve static files from uploads directory
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Update static file serving (add before routes)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use(
-  "/api/payments/proof",
-  express.static(path.join(__dirname, "uploads", "payments"))
-);
-
-app.use("/api/payments/proof", (req, res, next) => {
-  res.set({
-    "Access-Control-Allow-Origin": "*",
-    "Cache-Control": "public, max-age=3600",
-    Vary: "Origin",
-  });
-  next();
-});
-
-// Routes
+// API Routes
 app.use("/api/customers", customerRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);
@@ -118,6 +137,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/reports", reportRoutes);
 
+// Predefined categories
 const predefinedCategories = [
   {
     category_id: 1,
@@ -149,13 +169,9 @@ const predefinedCategories = [
     category_name: "Vegetables",
     category_details: "All vegetable dishes",
   },
-  {
-    category_id: 7,
-    category_name: "Dessert",
-    category_details: "All desserts",
-  },
 ];
 
+// Initialize categories
 async function initializeCategories() {
   try {
     for (const category of predefinedCategories) {
@@ -201,6 +217,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
