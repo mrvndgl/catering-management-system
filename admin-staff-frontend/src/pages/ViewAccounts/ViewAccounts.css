@@ -348,7 +348,7 @@ td:last-child {
 }
 
 .toggle-view-button {
-  background-color: #A5D6A7; 
+  background-color: #ff9800; 
   color: #ffffff; 
   border: none;
   padding: 10px 15px;
@@ -357,7 +357,7 @@ td:last-child {
 }
 
 .toggle-view-button:hover {
-  background-color: #4CAF50;
+  background-color: #f57c00;
   color: #ffffff;
 }
 

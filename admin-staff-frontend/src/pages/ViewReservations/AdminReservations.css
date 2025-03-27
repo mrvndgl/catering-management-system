@@ -100,8 +100,13 @@
 }
 
 .status-badge.declined {
-  background-color: #dc3545;
+  background-color: #fd7e14;
   color: white;
+}
+
+.status-badge.cancelled {
+  background-color: #dc3545;
+  color: #ffffff;
 }
 
 /* Payment status styles */
