@@ -288,6 +288,10 @@ button[type="submit"]:hover {
   color: #263238 
 }
 
+.swal2-confirm.swal2-styled:hover {
+  background-color: #6c63ff; 
+}
+
 .icon-button.unarchive:hover {
   background-color: rgba(44, 62, 80, 0.1);
 }
