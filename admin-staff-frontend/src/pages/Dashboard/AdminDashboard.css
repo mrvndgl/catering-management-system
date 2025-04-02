@@ -2,6 +2,7 @@
   display: flex;
   height: 100vh;
   position: relative; 
+  background-color: #F1F8E9 !important;
 }
 
 .main-content {
@@ -27,6 +28,7 @@
   position: sticky; 
   top: 0; 
   z-index: 90; 
+  border-radius: 8px;
 }
 
 .page-title {
@@ -50,7 +52,7 @@
 .dashboard-card {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color:  #FBC02D !important;
+  background-color:  #ABC8A2!important;
 }
 
 .stat-content h3 {

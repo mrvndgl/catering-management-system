@@ -1,11 +1,16 @@
 .schedules-container {
-  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  min-width: 80%;
+  max-width: 1200px;
+  margin-top: 110px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 80px; /* Added margin-top to prevent navbar overlap */
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .unavailable-dates-title {
@@ -18,6 +23,9 @@
   padding-bottom: 10px;
   text-align: center;
   width: 100%;
+  background-color: #fff; /* White background for title */
+  padding: 10px; /* Add padding around title */
+  border-radius: 8px 8px 0 0; /* Rounded top corners */
 }
 
 .dates-container {
@@ -26,9 +34,8 @@
 
 .dates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
 }
 
 .date-card {
@@ -58,15 +65,18 @@
 }
 
 .status-badge {
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+  text-align: center;
 }
 
 .status-badge.booked {
   background-color: #FBC02D;
-  color: #263238;
+  color: #ffffff;
+  border-radius: 24px;
 }
 
 .loading-container {
@@ -76,7 +86,7 @@
   min-height: 200px;
   color: #666;
   font-size: 18px;
-  margin-top: 80px; /* Added margin-top to prevent navbar overlap */
+  margin-top: 80px; /* Adjusted margin */
 }
 
 .error-container {
@@ -89,7 +99,7 @@
   text-align: center;
   width: 100%;
   max-width: 800px;
-  margin-top: 80px; /* Added margin-top to prevent navbar overlap */
+  margin-top: 80px; /* Adjusted margin */
 }
 
 .no-schedules {

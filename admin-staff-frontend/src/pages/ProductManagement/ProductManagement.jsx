@@ -12,7 +12,10 @@ const ProductManagement = () => {
   const [categories, setCategories] = useState([]);
   const [productImages, setProductImages] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [menuItems, setMenuItems] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [productForm, setProductForm] = useState({
     product_id: "",
     category_id: "",
@@ -25,21 +28,225 @@ const ProductManagement = () => {
     category_details: "",
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState("");
 
-  const predefinedCategories = [
-    { category_id: 1, category_name: "Beef" },
-    { category_id: 2, category_name: "Pork" },
-    { category_id: 3, category_name: "Chicken" },
-    { category_id: 4, category_name: "Seafood" },
-    { category_id: 5, category_name: "Noodles" },
-    { category_id: 6, category_name: "Vegetables" },
-    { category_id: 7, category_name: "Dessert" },
-  ];
+  const [pricingSettings, setPricingSettings] = useState({
+    basePax: 50,
+    pricePerHead: 350,
+    additionalItemPrice: 35,
+  });
+
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setError("No authentication token found - please log in");
+        setCategories([]);
+        return;
+      }
+
+      const response = await fetch("http://localhost:4000/api/categories", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(
+          `HTTP Error Response: ${response.status} ${response.statusText}`
+        );
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          throw new Error("Authentication required - please log in");
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            "Categories endpoint not found - please check API route configuration"
+          );
+        }
+
+        throw new Error(
+          `Failed to fetch categories (Status: ${response.status})`
+        );
+      }
+
+      const data = await response.json();
+      setCategories(data.length > 0 ? data : []);
+      setError("");
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+      setError(`Failed to fetch categories - ${error.message}`);
+    }
+  };
+
+  const fetchMenuItems = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await fetch("http://localhost:4000/api/products", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.status}`);
+      }
+
+      const products = await response.json();
+
+      // Get categories
+      const categoriesResponse = await fetch(
+        "http://localhost:4000/api/categories",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!categoriesResponse.ok) {
+        throw new Error(
+          `Failed to fetch categories: ${categoriesResponse.status}`
+        );
+      }
+
+      const categories = await categoriesResponse.json();
+
+      // Organize products by category
+      const organizedMenu = {};
+
+      categories.forEach((category) => {
+        const categoryProducts = products.filter(
+          (product) =>
+            product.category_id === category.category_id && !product.archived
+        );
+
+        if (categoryProducts.length > 0) {
+          organizedMenu[category.category_name] = categoryProducts.map(
+            (product) => ({
+              product_id: product.product_id,
+              category_id: product.category_id,
+              product_name: product.product_name,
+            })
+          );
+        }
+      });
+
+      setMenuItems(organizedMenu);
+      setLoading(false); // Set loading to false on success
+    } catch (error) {
+      console.error("Error fetching menu items:", error);
+      setError(error.message);
+      setLoading(false); // Also set loading to false on error
+    }
+  };
+
+  // Fetch pricing settings from API
+  const fetchPricingSettings = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      console.log("Using Token:", token); // Debugging
+
+      const response = await fetch(
+        "http://localhost:4000/api/settings/pricing",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Response Status:", response.status); // Debugging
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.warn("Pricing settings not found, using defaults.");
+          return;
+        }
+        throw new Error(`Failed to fetch pricing settings: ${response.status}`);
+      }
+
+      const settings = await response.json();
+      console.log("Fetched Settings:", settings); // Debugging
+      setPricingSettings(settings);
+    } catch (error) {
+      console.error("Error fetching pricing settings:", error);
+    }
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setPricingSettings({
+      ...pricingSettings,
+      [name]: Number(value),
+    });
+  };
+
+  // Save pricing settings
+  const savePricingSettings = async (e) => {
+    e.preventDefault();
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        "http://localhost:4000/api/settings/pricing",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(pricingSettings),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to save pricing settings: ${response.status}`);
+      }
+
+      Swal.fire("Success!", "Pricing settings saved successfully!", "success"); // Using Swal here
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      console.error("Error saving pricing settings:", error);
+      setError(error.message);
+      Swal.fire("Error!", error.message, "error"); // Using Swal here
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const basePrice = pricingSettings.basePax * pricingSettings.pricePerHead;
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    const fetchAllData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchProducts(),
+          fetchCategories(),
+          fetchMenuItems(),
+          fetchPricingSettings(),
+        ]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
   }, [showArchived]);
 
   const getNextProductId = () => {
@@ -57,70 +264,6 @@ const ProductManagement = () => {
       setProductImages([]);
     }
   }, [products, isEditing]);
-
-  const fetchCategories = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("No authentication token found - please log in");
-        setCategories(predefinedCategories);
-        return;
-      }
-
-      const response = await fetch(
-        "http://localhost:4000/api/products/categories",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        console.error(
-          `HTTP Error Response: ${response.status} ${response.statusText}`
-        );
-
-        if (response.status === 401) {
-          // Clear invalid token
-          localStorage.removeItem("token");
-          throw new Error("Authentication required - please log in");
-        }
-
-        if (response.status === 404) {
-          throw new Error(
-            "Categories endpoint not found - please check API route configuration"
-          );
-        }
-
-        throw new Error(
-          `Failed to fetch categories (Status: ${response.status})`
-        );
-      }
-
-      const data = await response.json();
-
-      // Keep the original structure from the API
-      const formattedCategories = data.map((category) => ({
-        category_id: category.category_id,
-        category_name: category.category_name,
-        category_details: category.category_details,
-      }));
-
-      setCategories(
-        formattedCategories.length > 0
-          ? formattedCategories
-          : predefinedCategories
-      );
-      setError("");
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setCategories(predefinedCategories);
-      setError(`Using default categories - ${error.message}`);
-    }
-  };
 
   // If you need to create a new category
   const createNewCategory = async (categoryData) => {
@@ -154,9 +297,6 @@ const ProductManagement = () => {
     }
   };
 
-  // ...existing code...
-
-  // Replace the existing handleImageUpload function
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     const maxSize = 5 * 1024 * 1024; // 5MB limit
@@ -172,10 +312,12 @@ const ProductManagement = () => {
         // Create a preview URL that we can revoke later
         const previewUrl = URL.createObjectURL(file);
 
+        console.log(`Created blob URL for preview: ${previewUrl}`);
+
         return {
           file,
-          url: previewUrl,
-          is_primary: productImages.length === 0 || index === 0,
+          url: previewUrl, // This is a blob URL for preview
+          is_primary: productImages.length === 0 && index === 0, // Only make primary if it's the first image
           isNew: true,
           originalName: file.name,
         };
@@ -184,9 +326,14 @@ const ProductManagement = () => {
 
     // Update state with new images
     setProductImages((prev) => {
+      // If there are no images yet and we're adding new ones, make the first one primary
+      if (prev.length === 0 && processedImages.length > 0) {
+        processedImages[0].is_primary = true;
+      }
+
       // Clean up old blob URLs before adding new ones
       prev.forEach((img) => {
-        if (img.url.startsWith("blob:")) {
+        if (img.url && img.url.startsWith("blob:")) {
           URL.revokeObjectURL(img.url);
         }
       });
@@ -223,6 +370,47 @@ const ProductManagement = () => {
     });
   };
 
+  const handleReplaceImage = (imageUrl) => {
+    // Find the image index
+    const imageIndex = productImages.findIndex((img) => img.url === imageUrl);
+    if (imageIndex === -1) return;
+
+    // Create a file input element
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+
+    // Handle file selection
+    fileInput.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const newUrl = URL.createObjectURL(file);
+
+        // Update the image in the state
+        const updatedImages = [...productImages];
+        const isPrimary = updatedImages[imageIndex].is_primary;
+
+        // Revoke old blob URL if it exists
+        if (updatedImages[imageIndex].url.startsWith("blob:")) {
+          URL.revokeObjectURL(updatedImages[imageIndex].url);
+        }
+
+        updatedImages[imageIndex] = {
+          file,
+          url: newUrl,
+          is_primary: isPrimary,
+          isNew: true,
+          originalName: file.name,
+        };
+
+        setProductImages(updatedImages);
+      }
+    };
+
+    // Trigger click on the file input
+    fileInput.click();
+  };
+
   const handleRemoveImage = (imageUrl) => {
     setProductImages((prev) => prev.filter((img) => img.url !== imageUrl));
   };
@@ -235,19 +423,34 @@ const ProductManagement = () => {
       product_details: product.product_details,
     });
 
-    // Convert product images to the required format
-    if (product.images && Array.isArray(product.images)) {
-      const formattedImages = product.images.map((image) => ({
-        url: image.url.startsWith("/uploads")
-          ? image.url
-          : `/uploads/${image.filename}`,
-        is_primary: image.is_primary,
-        file: null,
-        isNew: false,
-      }));
+    // Process images consistently
+    if (
+      product.images &&
+      Array.isArray(product.images) &&
+      product.images.length > 0
+    ) {
+      const formattedImages = product.images
+        .map((image) => {
+          // If no URL information at all, skip this image
+          if (!image.url && !image.filename) {
+            return null;
+          }
+
+          // Create a standardized image object
+          return {
+            url:
+              image.url ||
+              (image.filename ? `/uploads/${image.filename}` : null),
+            is_primary: Boolean(image.is_primary),
+            file: null, // No file object for existing images
+            isNew: false,
+          };
+        })
+        .filter(Boolean); // Remove null entries
+
       setProductImages(formattedImages);
     } else {
-      setProductImages([]); // Reset images if none exist
+      setProductImages([]);
     }
 
     setIsEditing(true);
@@ -403,11 +606,11 @@ const ProductManagement = () => {
       }
 
       setProducts(data);
-      setIsLoading(false);
+      setLoading(false); // Set loading to false on success
     } catch (error) {
       console.error("Error fetching products:", error);
       setError(error.message);
-      setIsLoading(false);
+      setLoading(false); // Also set loading to false on error
     }
   };
 
@@ -582,6 +785,8 @@ const ProductManagement = () => {
     }
   };
 
+  if (loading) return <div className="loading">Loading...</div>;
+
   return (
     <div className="product-management">
       {error && <div className="error-message">{error}</div>}
@@ -647,7 +852,13 @@ const ProductManagement = () => {
                     }`}
                   >
                     <img
-                      src={image.isNew ? image.url : `${API_URL}${image.url}`}
+                      src={
+                        image.isNew
+                          ? image.url
+                          : image.url
+                          ? `${API_URL}${image.url}`
+                          : PLACEHOLDER_IMAGE
+                      }
                       alt={`Product ${index + 1}`}
                       className="product-image"
                       onError={(e) => {
@@ -709,6 +920,71 @@ const ProductManagement = () => {
           </form>
         </div>
 
+        <div className="pricing-management-container">
+          <h2>Pricing Management</h2>
+
+          {error && <div className="error-message">{error}</div>}
+          {successMessage && (
+            <div className="success-message">{successMessage}</div>
+          )}
+
+          <form onSubmit={savePricingSettings} className="pricing-form">
+            <div className="form-group">
+              <label htmlFor="basePax">Base Number of Guests:</label>
+              <input
+                id="basePax"
+                type="number"
+                name="basePax"
+                value={pricingSettings.basePax}
+                onChange={handleInputChange}
+                min="1"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="pricePerHead">Price Per Person (₱):</label>
+              <input
+                id="pricePerHead"
+                type="number"
+                name="pricePerHead"
+                value={pricingSettings.pricePerHead}
+                onChange={handleInputChange}
+                min="1"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="additionalItemPrice">
+                Additional Item Price (₱):
+              </label>
+              <input
+                id="additionalItemPrice"
+                type="number"
+                name="additionalItemPrice"
+                value={pricingSettings.additionalItemPrice}
+                onChange={handleInputChange}
+                min="1"
+                required
+              />
+            </div>
+
+            <div className="price-summary">
+              <p>
+                <strong>
+                  Base Package Price: ₱{basePrice.toLocaleString()}
+                </strong>{" "}
+                (for {pricingSettings.basePax} guests)
+              </p>
+            </div>
+
+            <button type="submit" className="save-button">
+              Save Pricing Settings
+            </button>
+          </form>
+        </div>
+
         <div className="category-form">
           <h2>Add Category</h2>
           <form onSubmit={handleCategorySubmit}>
@@ -764,7 +1040,7 @@ const ProductManagement = () => {
             )}
           </button>
         </div>
-        {isLoading ? (
+        {loading ? (
           <div className="loading">Loading products...</div>
         ) : error ? (
           <div className="error-message">{error}</div>

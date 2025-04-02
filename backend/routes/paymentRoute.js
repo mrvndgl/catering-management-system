@@ -8,8 +8,8 @@ import {
   uploadPaymentProof,
   getPaymentProof,
   getPaymentStatuses,
-  cancelReservation,
 } from "../controllers/paymentController.js";
+import { cancelReservation } from "../controllers/reservationController.js";
 import multer from "multer";
 
 const router = express.Router();

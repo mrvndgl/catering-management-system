@@ -11,10 +11,9 @@ import {
   getAllProducts,
   updateProduct,
   deleteProduct,
-  createCategory,
-  getAllCategories,
   archiveProduct,
   unarchiveProduct,
+  getArchivedProducts,
 } from "../controllers/productController.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -73,30 +72,41 @@ const processImages = (req, res, next) => {
         ? JSON.parse(req.body.images)
         : [];
 
-      // Ensure all existing images have proper URL structure
-      const formattedExistingImages = existingImages.map((img) => ({
-        ...img,
-        url:
-          img.url && !img.url.startsWith("/uploads")
-            ? `/uploads/${img.filename || path.basename(img.url)}`
-            : img.url,
-      }));
+      console.log("Processing existing images:", existingImages);
+
+      // Ensure all existing images have proper URL structure and keep needed properties
+      const formattedExistingImages = existingImages
+        .filter((img) => !img.isNew && img.url) // Filter out new images (they'll be uploaded) and ensure URL exists
+        .map((img) => ({
+          url: img.url.startsWith("/uploads/") ? img.url : img.url,
+          filename: img.filename || path.basename(img.url),
+          is_primary: !!img.is_primary,
+        }));
 
       // Process newly uploaded files
       const newImageData = req.files
         ? req.files.map((file, index) => ({
             url: `/uploads/${file.filename}`,
             filename: file.filename,
-            is_primary: index === 0,
+            is_primary: existingImages.length === 0 && index === 0, // Only primary if first image and no existing
           }))
         : [];
 
-      // Combine existing and new images
-      req.body.images = [
-        ...formattedExistingImages.filter((img) => !img.isNew),
-        ...newImageData,
-      ];
+      // Take primary flag into account when combining
+      const combinedImages = [...formattedExistingImages, ...newImageData];
 
+      // If there's no primary image, set the first one as primary
+      if (
+        !combinedImages.some((img) => img.is_primary) &&
+        combinedImages.length > 0
+      ) {
+        combinedImages[0].is_primary = true;
+      }
+
+      // Set processed images to request body
+      req.body.images = combinedImages;
+
+      console.log("Final processed images:", req.body.images);
       next();
     } catch (parseError) {
       console.error("Image processing error:", parseError);
@@ -112,24 +122,9 @@ const processImages = (req, res, next) => {
 router.post("/create", adminStaffAuth, processImages, createProduct);
 router.put("/:product_id", adminStaffAuth, processImages, updateProduct);
 router.delete("/:product_id", adminStaffAuth, deleteProduct);
+router.get("/archived", getArchivedProducts);
 router.put("/:product_id/archive", adminStaffAuth, archiveProduct);
 router.put("/:product_id/unarchive", adminStaffAuth, unarchiveProduct);
 router.get("/", getAllProducts);
-
-// ===== Category Routes =====
-router.post("/category/create", adminStaffAuth, createCategory);
-router.get("/categories", adminStaffAuth, getAllCategories);
-router.get("/categories-distinct", adminStaffAuth, async (req, res) => {
-  try {
-    const categories = await Product.distinct("category");
-    res.json({ success: true, data: categories });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching categories",
-      error: error.message,
-    });
-  }
-});
 
 export default router;

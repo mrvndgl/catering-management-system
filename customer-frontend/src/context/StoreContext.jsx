@@ -9,20 +9,32 @@ const StoreContextProvider = (props) => {
   const [foodList, setFoodList] = useState([]);
 
   const processImageUrl = (imageUrl) => {
-    // Ignore blob URLs
-    if (imageUrl.startsWith("blob:")) {
+    if (!imageUrl) {
       return assets.placeholderImage;
     }
 
-    // If it's a relative path, prepend API URL
-    if (imageUrl.startsWith("/")) {
-      return `${API_URL}${
-        imageUrl.startsWith("/") ? imageUrl : "/" + imageUrl
-      }`;
+    // Handle data URLs directly
+    if (imageUrl.startsWith("data:")) {
+      return imageUrl;
     }
 
-    // If it's already a full URL, return as is
-    return imageUrl;
+    // Handle blob URLs
+    if (imageUrl.startsWith("blob:")) {
+      return imageUrl; // During editing, we want to keep blob URLs
+    }
+
+    // Handle absolute URLs
+    if (imageUrl.startsWith("http")) {
+      return imageUrl;
+    }
+
+    // Handle relative paths from backend
+    if (imageUrl.startsWith("/uploads/")) {
+      return `${API_URL}${imageUrl}`;
+    }
+
+    // Fallback to placeholder
+    return assets.placeholderImage;
   };
 
   const fetchFoodItems = async () => {

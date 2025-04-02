@@ -56,8 +56,8 @@
 }
 
 .status.cancelled {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: #dc3545;
+  color: #ffffff;
 }
 
 .status.accepted {
@@ -65,19 +65,14 @@
   color: #ffffff;
 }
 
+.status.declined {
+  background-color: #fd7e14;
+  color: #ffffff;
+}
+
 .reservation-details p {
   margin: 0.5rem 0;
   line-height: 1.5;
-}
-
-.total-amount {
-  font-size: 1.1rem;
-  background-color: #4CAF50;
-  color: #ffffff;
-  margin: 1rem 0;
-  padding: 0.5rem 0;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
 }
 
 .menu-section {
@@ -388,12 +383,13 @@
 /* Total amount */
 .total-amount {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
   margin: 2rem 0;
   text-align: center;
-  color: white;
+  color: #4CAF50;
   padding: 0.5rem;
-  background: #4CAF50;
+  background: #F1F8E9;
   border-radius: 24px;
 }
 

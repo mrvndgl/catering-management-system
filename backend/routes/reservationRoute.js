@@ -12,8 +12,8 @@ import {
   updatePaymentStatus,
   getPaidReservations,
   getMyReservations,
+  cancelReservation,
 } from "../controllers/reservationController.js";
-import { cancelReservation } from "../controllers/paymentController.js"; // Fixed import path
 import { auth, adminStaffAuth } from "../middleware/auth.js";
 
 const router = express.Router();

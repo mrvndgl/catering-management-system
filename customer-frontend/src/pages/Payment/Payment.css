@@ -1,21 +1,17 @@
 .payments-container {
-  max-width: 100%;
-  margin-left: 0; /* Remove left margin */
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center; 
-  margin-top: 90px; 
-}
-
-.payments-card {
-  background: white;
+  margin-left: 0;
+  margin: 0 auto;
+  min-width: 80%;
+  max-width: 1200px;
+  margin-top: 110px;
+  align-items: center;
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%; 
-  max-width: 1200px; 
-  margin: 0 auto; 
 }
+
 
 .payment-tabs {
   display: flex;
@@ -280,14 +276,16 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 20px;
+  border-radius: 8px;
+  padding: 4px;
 }
 
-.submit-button {
+.cash-button {
   background: #28a745;
   color: white;
   border: none;
-  padding: 12px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
 }
@@ -296,8 +294,8 @@
   background: #dc3545;
   color: white;
   border: none;
-  padding: 12px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
 }

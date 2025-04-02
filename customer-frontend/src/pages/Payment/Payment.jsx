@@ -30,6 +30,12 @@ const Payment = () => {
           return;
         }
 
+        console.log("API URL:", import.meta.env.VITE_API_URL);
+        console.log(
+          "Full Fetch URL:",
+          `${import.meta.env.VITE_API_URL}/api/reservations/my-reservations`
+        );
+
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/reservations/my-reservations`,
           {
@@ -37,17 +43,29 @@ const Payment = () => {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
-              "Cache-Control": "no-cache, no-store, must-revalidate",
             },
             credentials: "include",
           }
         );
 
+        // Log full response details
+        console.log("Response Status:", response.status);
+        console.log(
+          "Response Headers:",
+          Object.fromEntries(response.headers.entries())
+        );
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Try to get error details from response
+          const errorText = await response.text();
+          console.error("Error Response Text:", errorText);
+          throw new Error(
+            `HTTP error! status: ${response.status}, details: ${errorText}`
+          );
         }
 
         const data = await response.json();
+        console.log("Received Data:", data);
 
         if (data.success && data.data && data.data.length > 0) {
           const latestReservation = data.data[0];
@@ -75,12 +93,25 @@ const Payment = () => {
           }
         }
       } catch (error) {
-        console.error("Error checking reservation status:", error);
-        // Only show error alert if it's not a network connectivity issue
-        if (error.message !== "Failed to fetch") {
+        console.error("Detailed Error Checking Reservation Status:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          apiUrl: import.meta.env.VITE_API_URL,
+        });
+
+        // Differentiate between different types of network errors
+        if (error instanceof TypeError) {
+          Swal.fire({
+            title: "Network Error",
+            text: "Unable to connect to the server. Please check your internet connection.",
+            icon: "error",
+            confirmButtonColor: "#dc3545",
+          });
+        } else {
           Swal.fire({
             title: "Error",
-            text: "Failed to check reservation status. Please try again later.",
+            text: `Failed to check reservation status: ${error.message}`,
             icon: "error",
             confirmButtonColor: "#dc3545",
           });
@@ -488,6 +519,10 @@ const Payment = () => {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("Cancellation Error Response:", {
+          status: response.status,
+          body: data,
+        });
         throw new Error(data.message || "Failed to cancel reservation");
       }
 
@@ -511,13 +546,17 @@ const Payment = () => {
         )
       );
     } catch (error) {
-      console.error("Error cancelling reservation:", error);
+      console.error("Detailed Cancellation Error:", {
+        message: error.message,
+        reservationId,
+      });
 
       // Show error message
       await Swal.fire({
         title: "Error!",
         text:
-          error.message || "An error occurred while cancelling the reservation",
+          error.message ||
+          "An unexpected error occurred while cancelling the reservation",
         icon: "error",
         confirmButtonColor: "#d33",
       });
@@ -728,7 +767,7 @@ const Payment = () => {
                             </p>
                             <div className="action-buttons">
                               <button
-                                className="submit-button"
+                                className="cash-button"
                                 onClick={() =>
                                   handleCashPayment(reservation.reservation_id)
                                 }

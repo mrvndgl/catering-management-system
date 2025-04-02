@@ -1,79 +1,80 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import "./FoodItem.css";
 import { assets } from "../../assets";
 
-const API_URL = "http://localhost:4000";
-
 const FoodItem = ({ name, description, images }) => {
-  const [imageUrl, setImageUrl] = useState(assets.placeholderImage);
   const [imageError, setImageError] = useState(false);
 
-  // Memoize image URL processing
-  const processedImageUrl = useMemo(() => {
+  // Define a proper placeholder image
+  const PLACEHOLDER_IMAGE =
+    assets.placeholderImage ||
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3Ctext x='50%' y='50%' font-family='sans-serif' font-size='14' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  // Find primary image or first available image
+  const primaryImage = useMemo(() => {
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return assets.placeholderImage;
+      return null;
     }
-
-    // Find primary image or first image
-    const primaryImage = images.find((img) => img?.is_primary) || images[0];
-
-    // Handle different URL types
-    if (!primaryImage?.url) {
-      return assets.placeholderImage;
-    }
-
-    // If it's a blob URL or invalid URL, return placeholder
-    try {
-      new URL(primaryImage.url);
-      if (primaryImage.url.startsWith("blob:")) {
-        return assets.placeholderImage;
-      }
-    } catch {
-      // If URL is invalid or relative
-      if (primaryImage.url.startsWith("/")) {
-        return `${API_URL}${primaryImage.url}`;
-      }
-      return assets.placeholderImage;
-    }
-
-    // If we got here, it's a valid full URL
-    return primaryImage.url;
+    // Find primary image or fallback to first image
+    return images.find((img) => img?.is_primary) || images[0];
   }, [images]);
 
-  useEffect(() => {
-    if (processedImageUrl !== imageUrl) {
-      setImageUrl(processedImageUrl);
-      setImageError(false); // Reset error state when URL changes
+  // Process the image URL - validate URL is valid
+  const imageUrl = useMemo(() => {
+    if (imageError) return PLACEHOLDER_IMAGE;
+
+    // If no primary image or no URL property
+    if (!primaryImage || !primaryImage.url) {
+      console.warn("Missing image or URL in FoodItem:", { name, primaryImage });
+      return PLACEHOLDER_IMAGE;
     }
-  }, [processedImageUrl, imageUrl]);
+
+    // Check for undefined or invalid URL patterns
+    if (
+      primaryImage.url === "undefined" ||
+      primaryImage.url.includes("/undefined") ||
+      primaryImage.url.includes("null")
+    ) {
+      console.warn("Invalid image URL detected:", primaryImage.url);
+      return PLACEHOLDER_IMAGE;
+    }
+
+    return primaryImage.url;
+  }, [primaryImage, imageError, PLACEHOLDER_IMAGE, name]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log(`FoodItem "${name}" - Image info:`, {
+      primaryImage,
+      processedUrl: imageUrl,
+      allImages: images,
+    });
+  }, [primaryImage, imageUrl, images, name]);
 
   const handleImageError = (e) => {
-    console.error("Image failed to load:", {
-      src: e.target.src,
-      originalUrl: images?.[0]?.url,
-      imageProps: images?.[0],
+    console.error(`Image failed to load for "${name}":`, {
+      image: primaryImage,
+      attemptedUrl: imageUrl,
+      error: e,
     });
     setImageError(true);
-    setImageUrl(assets.placeholderImage);
   };
-
-  // ...existing code...
 
   return (
     <div className="food-item">
       <div className="food-item-img-container">
         <img
           className="food-item-image"
-          src={imageError ? assets.placeholderImage : imageUrl}
-          alt={name}
+          src={imageUrl}
+          alt={name || "Product image"}
           onError={handleImageError}
         />
       </div>
       <div className="food-item-info">
         <div className="food-item-name">
-          <p>{name}</p>
+          <p>{name || "Unnamed product"}</p>
         </div>
-        <p className="food-item-desc">{description}</p>
+        <p className="food-item-desc">{description || ""}</p>
       </div>
     </div>
   );

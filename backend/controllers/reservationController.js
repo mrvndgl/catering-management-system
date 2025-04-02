@@ -402,37 +402,27 @@ export const getAllReservations = async (req, res) => {
 export const getMyReservations = async (req, res) => {
   try {
     const userId = req.user.userId;
+
     console.log("Fetching reservations for user:", userId);
 
-    const reservations = await Reservation.find({ customer_id: userId })
-      .sort({ createdAt: -1 })
-      .lean(); // Remove populate since we're storing IDs directly
+    // Fetch reservations, sorting by most recent first
+    const reservations = await Reservation.find({
+      customer_id: userId,
+    }).sort({ createdAt: -1 }); // Assuming you want most recent first
 
-    // Add debug logging
-    console.log("Raw reservations:", JSON.stringify(reservations, null, 2));
+    console.log("Found Reservations:", reservations);
 
-    // Transform the data to ensure proper format
-    const transformedReservations = reservations.map((reservation) => ({
-      ...reservation,
-      selectedProducts: reservation.selectedProducts || {},
-      additionalItems: reservation.additionalItems || [],
-    }));
-
-    console.log(
-      "Transformed reservations:",
-      JSON.stringify(transformedReservations, null, 2)
-    );
-
-    res.status(200).json({
+    // Standardize response format
+    return res.status(200).json({
       success: true,
-      count: transformedReservations.length,
-      data: transformedReservations,
+      data: reservations,
+      message: "Reservations retrieved successfully",
     });
   } catch (error) {
-    console.error("Error in getMyReservations:", error);
+    console.error("Error fetching my reservations:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching reservations",
+      message: "Error retrieving reservations",
       error: error.message,
     });
   }
@@ -670,5 +660,93 @@ export const updatePaymentStatus = async (req, res) => {
     res.json(reservation);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const cancelReservation = async (req, res) => {
+  try {
+    const { reservationId } = req.params;
+    const userId = req.user.userId;
+
+    console.log("Cancellation Request Details:", {
+      reservationId,
+      userId,
+    });
+
+    // Validate input
+    if (!reservationId) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation ID is required",
+      });
+    }
+
+    // Find the reservation
+    const reservation = await Reservation.findOne({
+      reservation_id: reservationId,
+      customer_id: userId,
+    });
+
+    // Detailed logging for reservation finding
+    if (!reservation) {
+      console.warn(
+        `Reservation not found: ID ${reservationId}, User ${userId}`
+      );
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found or unauthorized",
+      });
+    }
+
+    // Cancellation status checks
+    if (reservation.reservation_status === "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation is already cancelled",
+      });
+    }
+
+    if (["Completed", "Declined"].includes(reservation.reservation_status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel a ${reservation.reservation_status} reservation`,
+      });
+    }
+
+    // Update reservation status
+    reservation.reservation_status = "Cancelled";
+
+    try {
+      await reservation.save();
+    } catch (saveError) {
+      console.error("Error saving cancelled reservation:", saveError);
+      return res.status(500).json({
+        success: false,
+        message: "Error updating reservation status",
+        error: saveError.message,
+      });
+    }
+
+    console.log("Successfully cancelled reservation:", reservationId);
+    res.status(200).json({
+      success: true,
+      message: "Reservation cancelled successfully",
+      data: {
+        reservation_id: reservation.reservation_id,
+        status: reservation.reservation_status,
+      },
+    });
+  } catch (error) {
+    console.error("Unexpected error in cancelReservation:", {
+      error: error.message,
+      stack: error.stack,
+      reservationId: req.params.reservationId,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Unexpected error cancelling reservation",
+      error: error.message,
+    });
   }
 };

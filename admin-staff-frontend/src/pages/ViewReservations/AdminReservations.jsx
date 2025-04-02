@@ -290,41 +290,66 @@ const AdminReservations = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem("token");
-      // Update the API endpoint to match server route
       const response = await fetch("/api/products", {
+        method: "GET", // Explicitly set method
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
 
+      // Log full response details
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
+      // Check for different error scenarios
+      if (response.status === 401) {
+        throw new Error("Unauthorized: Please log in again");
+      }
+
+      if (response.status === 403) {
+        throw new Error(
+          "Forbidden: You don't have permission to access products"
+        );
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch products: ${response.status} - ${errorText}`
+        );
       }
 
       const data = await response.json();
-      console.log("Raw products data:", data); // Debug log
+      console.log("Raw products data:", data);
 
-      // Create a lookup object with proper product IDs
+      // Use product_id instead of _id for lookup
       const productsLookup = data.reduce((acc, product) => {
-        acc[product._id] = product;
+        acc[product.product_id] = product;
         return acc;
       }, {});
 
       setProducts(productsLookup);
-      console.log("Products lookup:", productsLookup); // Debug log
+      console.log("Products lookup:", productsLookup);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Comprehensive error fetching products:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
       setError(error.message);
     }
   };
 
   const getProductName = (productId) => {
-    console.log("Looking up product ID:", productId); // Debug log
-    const product = products[productId];
-    return product
-      ? product.product_name
-      : `Product not found (ID: ${productId})`;
+    console.log("Fetching product:", productId);
+    const product = products.find(
+      (p) => String(p.product_id) === String(productId)
+    );
+    return product ? product.product_name : `Unknown Product ${productId}`;
   };
 
   const formatDate = (dateString) => {

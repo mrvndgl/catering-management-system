@@ -336,6 +336,92 @@ button[type="submit"]:hover {
   color: white;
 }
 
+.pricing-management-container {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+  position: relative;
+  scrollbar-gutter: stable both-edges;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.pricing-form input,
+.pricing-form select,
+.pricing-form button {
+  box-sizing: border-box;
+  transition: none; /* Remove animations that might cause shifts */
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+  color: #666;
+} 
+
+.pricing-form {
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.form-group label {
+  width: 200px;
+  font-weight: bold;
+  color: #555;
+}
+
+.form-group input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.price-summary {
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.save-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.save-button:hover {
+  background-color: #388e3c;
+}
+
 /* Product list section */
 
 .product-list-header {
@@ -426,19 +512,10 @@ tr:hover {
   }
 }
 
-@media (max-width: 480px) {
-  .image-preview-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  th, td {
-    padding: 8px;
-    font-size: 14px;
-  }
-  
-  button {
-    padding: 8px 12px;
-    font-size: 13px;
+@media (max-width: 900px) {
+  .pricing-management-container {
+    max-width: 95%;
+    padding: 15px;
   }
 }
 
@@ -458,4 +535,51 @@ tr:hover {
       overflow-x: auto;
     }
   }
+
+@media (max-width: 600px) {
+  .pricing-management-container {
+    max-width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+  }
   
+  .form-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .form-group label {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .form-group input {
+    width: 100%;
+  }
+  
+  .save-button {
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-preview-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pricing-management-container {
+    padding: 10px;
+    min-height: 400px;
+  }
+  
+  th, td {
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}

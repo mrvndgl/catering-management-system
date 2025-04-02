@@ -13,6 +13,8 @@ import Category from "./models/Category.js";
 import customerRoutes from "./routes/customerRoute.js";
 import employeeRoutes from "./routes/employeeRoute.js";
 import productRoutes from "./routes/productRoute.js";
+import categoryRoutes from "./routes/categoryRoute.js";
+import settingsRoutes from "./routes/settingsRoute.js";
 import reservationRoutes from "./routes/reservationRoute.js";
 import paymentRoutes from "./routes/paymentRoute.js";
 import feedbackRoutes from "./routes/feedbackRoute.js";
@@ -63,9 +65,16 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
+      "http://127.0.0.1:5173",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cache-Control",
+      "Pragma",
+      "Expires",
+    ],
     credentials: true,
   })
 );
@@ -75,18 +84,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static file serving middleware
+// Enhanced CORS for image resources
 app.use("/uploads", (req, res, next) => {
+  // Set appropriate headers for images
   res.set({
     "Access-Control-Allow-Origin": "*",
     "Cache-Control": "public, max-age=3600",
     "Access-Control-Allow-Methods": "GET",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "image/*",
-  });
-  console.log("Image request received:", {
-    path: req.path,
-    method: req.method,
-    headers: req.headers,
   });
   next();
 });
@@ -131,11 +135,25 @@ app.get("/api/debug/payment-proof/:filename", (req, res) => {
 app.use("/api/customers", customerRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/settings", settingsRoutes);
+
+// Add this to your server.js
+app.get("/api/test-upload-access", (req, res) => {
+  const uploadDir = path.join(__dirname, "uploads");
+  const files = fs.readdirSync(uploadDir);
+  res.json({
+    message: "Upload directory access test",
+    uploadDir,
+    files,
+    accessUrl: `${req.protocol}://${req.get("host")}/uploads/`,
+  });
+});
 
 // Predefined categories
 const predefinedCategories = [

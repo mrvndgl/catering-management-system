@@ -65,12 +65,42 @@ export const createProduct = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
   try {
+    // Add more detailed logging
+    console.log("Fetching all products");
+
     const products = await Product.find();
-    res.json(products);
+
+    console.log("Products found:", products.length);
+
+    // Comprehensive error checking
+    if (!products || products.length === 0) {
+      console.warn("No products found in database");
+      return res.status(404).json({
+        message: "No products found",
+        totalProducts: 0,
+      });
+    }
+
+    // Log some product details for debugging
+    products.forEach((product) => {
+      console.log(
+        `Product: ID=${product.product_id}, Name=${product.product_name}`
+      );
+    });
+
+    res.status(200).json(products);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching products", error: error.message });
+    console.error("Detailed error fetching products:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+
+    res.status(500).json({
+      message: "Error fetching products",
+      error: error.message,
+      details: error.stack,
+    });
   }
 };
 
@@ -78,22 +108,37 @@ export const updateProduct = async (req, res) => {
   try {
     console.log("Received Update Request:", {
       params: req.params,
-      body: req.body,
+      body: { ...req.body, images: req.body.images },
       files: req.files,
     });
 
     const { product_id } = req.params;
+
+    // Make sure images are properly formatted
+    let processedImages = req.body.images;
+
+    // If images came as a string, parse them
+    if (typeof req.body.images === "string") {
+      try {
+        processedImages = JSON.parse(req.body.images);
+      } catch (parseError) {
+        console.error("Error parsing images JSON:", parseError);
+        processedImages = [];
+      }
+    }
+
+    // Ensure images have the required fields
+    const validImages = Array.isArray(processedImages)
+      ? processedImages.map((img) => ({
+          url: img.url,
+          filename: img.filename || path.basename(img.url),
+          is_primary: !!img.is_primary,
+        }))
+      : [];
+
     const updateData = {
       ...req.body,
-      images: req.body.images
-        ? (typeof req.body.images === "string"
-            ? JSON.parse(req.body.images)
-            : req.body.images
-          ).map((img) => ({
-            url: img.url,
-            is_primary: img.is_primary || false,
-          }))
-        : [],
+      images: validImages,
     };
 
     console.log("Processed Update Data:", updateData);
@@ -130,6 +175,18 @@ export const updateProduct = async (req, res) => {
       message: "Error updating product",
       error: error.message,
       stack: error.stack,
+    });
+  }
+};
+
+export const getArchivedProducts = async (req, res) => {
+  try {
+    const archivedProducts = await Product.find({ archived: true });
+    res.status(200).json(archivedProducts);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching archived products",
+      error: error.message,
     });
   }
 };
@@ -203,45 +260,5 @@ export const deleteProduct = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting product", error: error.message });
-  }
-};
-
-export const createCategory = async (req, res) => {
-  try {
-    const { category_id, category_name, category_details } = req.body;
-
-    const numericCategoryId = Number(category_id);
-
-    // Check if category_id already exists
-    const existingCategory = await Category.findOne({
-      category_id: numericCategoryId,
-    });
-    if (existingCategory) {
-      return res.status(400).json({ message: "Category ID already exists" });
-    }
-
-    const newCategory = new Category({
-      category_id: numericCategoryId,
-      category_name,
-      category_details,
-    });
-
-    const savedCategory = await newCategory.save();
-    res.status(201).json(savedCategory);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating category", error: error.message });
-  }
-};
-
-export const getAllCategories = async (req, res) => {
-  try {
-    const categories = await Category.find().sort({ category_id: 1 });
-    res.status(200).json(categories);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching categories", error: error.message });
   }
 };
