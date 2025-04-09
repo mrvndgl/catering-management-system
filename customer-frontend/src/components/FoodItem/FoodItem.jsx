@@ -5,58 +5,42 @@ import { assets } from "../../assets";
 const FoodItem = ({ name, description, images }) => {
   const [imageError, setImageError] = useState(false);
 
-  // Define a proper placeholder image
+  // Create a local placeholder image in case the API path doesn't work
   const PLACEHOLDER_IMAGE =
-    assets.placeholderImage ||
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3Ctext x='50%' y='50%' font-family='sans-serif' font-size='14' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  // Find primary image or first available image
+  // Find valid primary image
   const primaryImage = useMemo(() => {
     if (!images || !Array.isArray(images) || images.length === 0) {
       return null;
     }
-    // Find primary image or fallback to first image
-    return images.find((img) => img?.is_primary) || images[0];
+
+    // Filter invalid URLs first
+    const validImages = images.filter(
+      (img) =>
+        img &&
+        img.url &&
+        !img.url.includes("/undefined") &&
+        !img.url.includes("/null")
+    );
+
+    if (validImages.length === 0) return null;
+
+    // Find primary or use first valid image
+    return validImages.find((img) => img.is_primary) || validImages[0];
   }, [images]);
 
-  // Process the image URL - validate URL is valid
+  // Get final URL to display
   const imageUrl = useMemo(() => {
-    if (imageError) return PLACEHOLDER_IMAGE;
-
-    // If no primary image or no URL property
-    if (!primaryImage || !primaryImage.url) {
-      console.warn("Missing image or URL in FoodItem:", { name, primaryImage });
+    if (imageError || !primaryImage || !primaryImage.url) {
       return PLACEHOLDER_IMAGE;
     }
-
-    // Check for undefined or invalid URL patterns
-    if (
-      primaryImage.url === "undefined" ||
-      primaryImage.url.includes("/undefined") ||
-      primaryImage.url.includes("null")
-    ) {
-      console.warn("Invalid image URL detected:", primaryImage.url);
-      return PLACEHOLDER_IMAGE;
-    }
-
     return primaryImage.url;
-  }, [primaryImage, imageError, PLACEHOLDER_IMAGE, name]);
+  }, [primaryImage, imageError, PLACEHOLDER_IMAGE]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log(`FoodItem "${name}" - Image info:`, {
-      primaryImage,
-      processedUrl: imageUrl,
-      allImages: images,
-    });
-  }, [primaryImage, imageUrl, images, name]);
-
-  const handleImageError = (e) => {
-    console.error(`Image failed to load for "${name}":`, {
-      image: primaryImage,
-      attemptedUrl: imageUrl,
-      error: e,
-    });
+  // Handle image load error
+  const handleImageError = () => {
+    console.error(`Image failed to load for "${name}": ${imageUrl}`);
     setImageError(true);
   };
 

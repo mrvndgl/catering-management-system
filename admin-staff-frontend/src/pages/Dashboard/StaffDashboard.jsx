@@ -82,7 +82,7 @@ const DashboardContent = ({ isSidebarCollapsed }) => {
                 <p className="stat-number">
                   {isLoading ? "Loading..." : acceptedReservations}
                 </p>
-                <p className="stat-label">Active Bookings</p>
+                <p className="stat-label">Accepted Bookings</p>
               </div>
             </div>
           </div>

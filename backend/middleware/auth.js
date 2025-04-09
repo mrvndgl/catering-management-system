@@ -1,3 +1,5 @@
+import fs from "fs";
+import express from "express";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
@@ -55,12 +57,18 @@ const handleAuthError = (error, res) => {
   });
 };
 
-// Base authentication middleware
-export const auth = (req, res, next) => {
+// Updated authentication middleware
+export const auth = async (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token);
-    req.user = decoded;
+
+    // Make sure decoded has the user id in the expected format
+    req.user = {
+      _id: decoded.id || decoded.userId || decoded._id,
+      // Include other user properties if needed
+    };
+
     next();
   } catch (error) {
     handleAuthError(error, res);
@@ -112,16 +120,41 @@ export const adminStaffAuth = (req, res, next) => {
 };
 
 // Configure multer storage
+// Update your multer configuration to handle filename generation better
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/"); // Make sure this directory exists
+    const uploadDir = path.join(__dirname, "uploads");
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+    // Make sure we have a valid filename
+    if (!file.originalname) {
+      cb(new Error("File has no name"), null);
+      return;
+    }
+
+    // Create a safe filename with timestamp
+    const timestamp = Date.now();
+    const safeFilename = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+    cb(null, `${timestamp}-${safeFilename}`);
   },
 });
 
-const upload = multer({ storage: storage });
+// Create a more robust upload middleware
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    // Reject files without names
+    if (!file.originalname || file.originalname === "undefined") {
+      cb(new Error("Invalid filename"), false);
+      return;
+    }
+
+    // Accept the file
+    cb(null, true);
+  },
+});
 
 // Middleware to handle file uploads - Fixed version
 const handleImageUpload = upload.array("images", 5);
@@ -132,10 +165,6 @@ const processImages = (req, res, next) => {
     }
 
     try {
-      // Parse existing images from request body - FIXED handling of existingImages and images fields
-      let existingImages = [];
-
-      // First check if existingImages field exists (our improved API client now uses this)
       if (req.body.existingImages) {
         try {
           existingImages = JSON.parse(req.body.existingImages);
@@ -201,3 +230,5 @@ const processImages = (req, res, next) => {
     }
   });
 };
+
+export { processImages };

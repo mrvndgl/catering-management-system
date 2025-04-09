@@ -175,59 +175,54 @@ export const fetchMenuItemsByCategory = async (includeArchived = false) => {
   }
 };
 
+// Add this utility function
+export const ensureValidImageUrl = (url) => {
+  if (!url) return null;
+
+  // Check for invalid URL patterns
+  if (
+    url === "undefined" ||
+    url.includes("/undefined") ||
+    url.includes("/null") ||
+    url === "[object Object]"
+  ) {
+    return null;
+  }
+
+  // Make sure server paths have the full URL
+  if (url.startsWith("/uploads/")) {
+    const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
+    return `${baseUrl}${url}`;
+  }
+
+  return url;
+};
+
+// Then use this in your fetch functions
 export const fetchProducts = async () => {
   try {
     const response = await axios.get(`${API_URL}/products`, {
       headers: createAuthHeaders(),
     });
 
-    // Process image URLs to ensure they have full paths
     const processedData = response.data.map((product) => {
-      // Safely process images array
+      // Filter and process images
       const processedImages = Array.isArray(product.images)
         ? product.images
-            .filter((img) => img && typeof img === "object") // Ensure valid image objects
+            .filter((img) => img && typeof img === "object")
             .map((img) => {
-              // Skip invalid image objects
-              if (!img.url && !img.filename) {
-                console.warn(
-                  `Missing URL and filename for image in product ${
-                    product.product_name || product.product_id
-                  }`
-                );
-                return null;
-              }
-
-              // Construct URL properly from filename if needed
-              let imageUrl = img.url;
-              if (!imageUrl && img.filename) {
-                imageUrl = `/uploads/${img.filename}`;
-              }
-
-              // Process the URL
-              const processedUrl = getImageUrl(imageUrl);
-
-              return {
-                ...img,
-                url: processedUrl,
-              };
+              const validUrl = ensureValidImageUrl(img.url);
+              return validUrl ? { ...img, url: validUrl } : null;
             })
-            .filter(Boolean) // Remove null entries
+            .filter(Boolean) // Remove nulls
         : [];
 
-      // Log processed images for debugging
-      if (processedImages.length > 0) {
-        console.log(
-          `Processed ${processedImages.length} images for ${
-            product.product_name || product.product_id
-          }`
-        );
-      } else {
-        console.warn(
-          `No valid images found for ${
-            product.product_name || product.product_id
-          }`
-        );
+      // Set primary image
+      if (
+        processedImages.length > 0 &&
+        !processedImages.some((img) => img.is_primary)
+      ) {
+        processedImages[0].is_primary = true;
       }
 
       return {

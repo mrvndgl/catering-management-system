@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./AdminReservations.css";
+import Swal from "sweetalert2";
 
 const StaffReservations = () => {
   const [reservations, setReservations] = useState([]);
@@ -105,6 +106,33 @@ const StaffReservations = () => {
       setError(err.message || "Failed to update reservation");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Add this helper function for payment setup
+  const handlePaymentSetup = async (reservationId, customerId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const paymentResponse = await fetch(
+        `${import.meta.env.VITE_API_URL}/reservations/${reservationId}/payment`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            payment_status: "Pending",
+            payment_required: true,
+          }),
+        }
+      );
+
+      if (!paymentResponse.ok) {
+        throw new Error("Failed to initialize payment requirements");
+      }
+    } catch (error) {
+      console.error("Error setting up payment:", error);
     }
   };
 
@@ -262,36 +290,67 @@ const StaffReservations = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem("token");
-
       const response = await fetch("/api/products", {
-        method: "GET",
+        method: "GET", // Explicitly set method
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
+      // Log full response details
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
+      // Check for different error scenarios
+      if (response.status === 401) {
+        throw new Error("Unauthorized: Please log in again");
+      }
+
+      if (response.status === 403) {
+        throw new Error(
+          "Forbidden: You don't have permission to access products"
+        );
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch products: ${response.status} - ${errorText}`
+        );
       }
 
       const data = await response.json();
+      console.log("Raw products data:", data);
+
+      // Use product_id instead of _id for lookup
       const productsLookup = data.reduce((acc, product) => {
-        acc[product._id] = product;
+        acc[product.product_id] = product;
         return acc;
       }, {});
 
       setProducts(productsLookup);
+      console.log("Products lookup:", productsLookup);
     } catch (error) {
-      console.error("Failed to fetch products:", error);
+      console.error("Comprehensive error fetching products:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
       setError(error.message);
     }
   };
 
   const getProductName = (productId) => {
-    const product = products[productId];
-    return product ? product.product_name : "Loading...";
+    if (!products || typeof products !== "object") {
+      console.error("Products is not a valid object:", products);
+      return `Unknown Product ${productId}`;
+    }
+
+    return products[productId]?.product_name || `Unknown Product ${productId}`;
   };
 
   const formatDate = (dateString) => {
@@ -529,19 +588,20 @@ const StaffReservations = () => {
                 </div>
               </div>
 
-              {selectedReservation.additionalItems &&
-                selectedReservation.additionalItems.length > 0 && (
-                  <div className="additional-items-section">
-                    <h3>Additional Items</h3>
-                    <div className="additional-items-list">
-                      {selectedReservation.additionalItems.map(
-                        (productId, index) => (
-                          <p key={index}>{getProductName(productId)}</p>
-                        )
-                      )}
-                    </div>
+              {selectedReservation?.additionalItems?.length > 0 && (
+                <div className="additional-items-section">
+                  <h3>Additional Items</h3>
+                  <div className="additional-items-list">
+                    {selectedReservation.additionalItems.map(
+                      (productId, index) => (
+                        <p key={`additional-${productId}-${index}`}>
+                          {getProductName(productId)}
+                        </p>
+                      )
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
               {selectedReservation.specialNotes && (
                 <p>

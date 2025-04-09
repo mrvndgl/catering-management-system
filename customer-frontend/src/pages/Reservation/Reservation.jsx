@@ -144,29 +144,26 @@ const Reservation = () => {
       : false;
   };
 
+  // Updated getProductName function
   const getProductName = (productId) => {
-    const id = String(productId); // Ensure it's a string
-    return productsLookup[id]?.product_name || "Unknown Product";
+    // Check if the product exists in the lookup
+    const product = productsLookup[productId];
+    return product ? product.product_name : "Unknown Product";
   };
 
-  // Find product by ID from all menu items
-  const findProductById = (productId) => {
-    // Check if the product is archived
-    const isArchived = archivedProducts.some(
-      (item) => item.product_id === productId && item.archived
+  // Updated renderSelectedProducts function
+  const renderSelectedProducts = (reservation) => {
+    if (!reservation.selectedProducts) return null;
+
+    return Object.entries(reservation.selectedProducts).map(
+      ([category, productId]) => {
+        return (
+          <div key={category} className="menu-item">
+            <strong>{category}:</strong> {getProductName(productId)}
+          </div>
+        );
+      }
     );
-
-    // If archived, don't return it
-    if (isArchived) return null;
-
-    // Otherwise, look for it in all categories
-    for (const category in MENU_ITEMS) {
-      const product = MENU_ITEMS[category].find(
-        (p) => p.product_id === productId
-      );
-      if (product) return product;
-    }
-    return null;
   };
 
   //icon for category
@@ -329,6 +326,7 @@ const Reservation = () => {
 
       // Also create lookup for quick reference
       const productsLookup = nonArchivedProducts.reduce((acc, product) => {
+        // Use product_id as the key and store the entire product object
         acc[product.product_id] = product;
         return acc;
       }, {});
@@ -708,18 +706,6 @@ const Reservation = () => {
     }
   };
 
-  // Render selected products for a reservation
-  const renderSelectedProducts = (reservation) => {
-    return Object.entries(reservation.selectedProducts).map(
-      ([productId, quantity]) => (
-        <div key={productId} className="flex justify-between">
-          <span>{getProductName(String(productId))}</span>
-          <span>{quantity}</span>
-        </div>
-      )
-    );
-  };
-
   useEffect(() => {
     loadData();
   }, []);
@@ -801,6 +787,10 @@ const Reservation = () => {
 
     fetchArchivedProducts();
   }, []);
+
+  const findProductById = (itemId) => {
+    return productsLookup[itemId] || null;
+  };
 
   return (
     <div className="reservation-container">
@@ -1260,7 +1250,6 @@ const Reservation = () => {
                     </p>
 
                     <div className="menu-section">
-                      <h4>Selected Menu Items</h4>
                       <div className="selected-items">
                         {reservation.selectedProducts &&
                           Object.keys(reservation.selectedProducts).length >

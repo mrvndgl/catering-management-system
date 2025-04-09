@@ -221,7 +221,7 @@ export const uploadPaymentProof = async (req, res) => {
       amount: reservation.total_amount,
       payment_method: req.body.payment_method,
       customer_name: reservation.name,
-      payment_status: "Pending",
+      payment_status: "Paid",
       payment_proof: req.file.filename,
       payment_date: new Date(),
     });
@@ -232,7 +232,7 @@ export const uploadPaymentProof = async (req, res) => {
     await Reservation.findOneAndUpdate(
       { reservation_id },
       {
-        payment_status: "pending",
+        payment_status: "paid",
         payment_required: false,
       }
     );

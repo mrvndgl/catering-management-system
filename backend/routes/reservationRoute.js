@@ -13,6 +13,7 @@ import {
   getPaidReservations,
   getMyReservations,
   cancelReservation,
+  getAcceptedReservationsByMonth,
 } from "../controllers/reservationController.js";
 import { auth, adminStaffAuth } from "../middleware/auth.js";
 
@@ -30,6 +31,11 @@ router.delete("/:reservation_id", adminStaffAuth, deleteReservation);
 router.get("/date/:date", adminStaffAuth, getReservationsByDate);
 router.get("/accepted", adminStaffAuth, getAcceptedReservations);
 router.get("/paid", adminStaffAuth, getPaidReservations); // Add this new route
+router.get(
+  "/reservations/accepted",
+  adminStaffAuth,
+  getAcceptedReservationsByMonth
+);
 
 // Customer-only routes
 router.post("/", auth, createReservation);

@@ -312,12 +312,10 @@ const ProductManagement = () => {
         // Create a preview URL that we can revoke later
         const previewUrl = URL.createObjectURL(file);
 
-        console.log(`Created blob URL for preview: ${previewUrl}`);
-
         return {
           file,
-          url: previewUrl, // This is a blob URL for preview
-          is_primary: productImages.length === 0 && index === 0, // Only make primary if it's the first image
+          url: previewUrl,
+          is_primary: productImages.length === 0 || index === 0,
           isNew: true,
           originalName: file.name,
         };
@@ -326,18 +324,12 @@ const ProductManagement = () => {
 
     // Update state with new images
     setProductImages((prev) => {
-      // If there are no images yet and we're adding new ones, make the first one primary
-      if (prev.length === 0 && processedImages.length > 0) {
-        processedImages[0].is_primary = true;
-      }
-
       // Clean up old blob URLs before adding new ones
       prev.forEach((img) => {
-        if (img.url && img.url.startsWith("blob:")) {
+        if (img.url.startsWith("blob:")) {
           URL.revokeObjectURL(img.url);
         }
       });
-
       return [...prev, ...processedImages];
     });
   };

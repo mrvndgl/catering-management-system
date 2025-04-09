@@ -642,6 +642,39 @@ export const getAcceptedReservations = async (req, res) => {
   }
 };
 
+export const getAcceptedReservationsByMonth = async (req, res) => {
+  try {
+    const { year, month } = req.query;
+
+    // Convert query params to numbers
+    const numYear = parseInt(year);
+    const numMonth = parseInt(month);
+
+    // Create date range for the specified month
+    const startDate = new Date(numYear, numMonth - 1, 1);
+    const endDate = new Date(numYear, numMonth, 0, 23, 59, 59); // Last day of month
+
+    // Query accepted reservations for the month
+    const reservations = await Reservation.find({
+      reservation_date: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+      reservation_status: "accepted",
+    }).select(
+      "reservation_id name reservation_date timeSlot numberOfPax total_amount reservation_status"
+    );
+
+    res.status(200).json(reservations);
+  } catch (error) {
+    console.error("Error fetching accepted reservations:", error);
+    res.status(500).json({
+      message: "Failed to fetch accepted reservations",
+      error: error.message,
+    });
+  }
+};
+
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;

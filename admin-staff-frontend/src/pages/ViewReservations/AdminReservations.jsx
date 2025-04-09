@@ -345,11 +345,12 @@ const AdminReservations = () => {
   };
 
   const getProductName = (productId) => {
-    console.log("Fetching product:", productId);
-    const product = products.find(
-      (p) => String(p.product_id) === String(productId)
-    );
-    return product ? product.product_name : `Unknown Product ${productId}`;
+    if (!products || typeof products !== "object") {
+      console.error("Products is not a valid object:", products);
+      return `Unknown Product ${productId}`;
+    }
+
+    return products[productId]?.product_name || `Unknown Product ${productId}`;
   };
 
   const formatDate = (dateString) => {

@@ -66,40 +66,53 @@ const processImages = (req, res, next) => {
 
     try {
       // Parse existing images from request body
-      const existingImages = Array.isArray(req.body.images)
-        ? req.body.images
-        : req.body.images
-        ? JSON.parse(req.body.images)
+      let existingImages = [];
+
+      if (req.body.existingImages) {
+        try {
+          existingImages = JSON.parse(req.body.existingImages);
+        } catch (parseError) {
+          console.warn("Error parsing existingImages JSON:", parseError);
+        }
+      } else if (req.body.images) {
+        try {
+          existingImages = Array.isArray(req.body.images)
+            ? req.body.images
+            : JSON.parse(req.body.images);
+        } catch (parseError) {
+          console.warn("Error parsing images JSON:", parseError);
+        }
+      }
+
+      // Filter out any images with invalid URLs
+      const formattedExistingImages = Array.isArray(existingImages)
+        ? existingImages
+            .filter((img) => img && img.url && !img.url.includes("/undefined")) // Filter out invalid URLs
+            .map((img) => ({
+              url: img.url,
+              filename: img.filename || path.basename(img.url),
+              is_primary: !!img.is_primary,
+            }))
         : [];
-
-      console.log("Processing existing images:", existingImages);
-
-      // Ensure all existing images have proper URL structure and keep needed properties
-      const formattedExistingImages = existingImages
-        .filter((img) => !img.isNew && img.url) // Filter out new images (they'll be uploaded) and ensure URL exists
-        .map((img) => ({
-          url: img.url.startsWith("/uploads/") ? img.url : img.url,
-          filename: img.filename || path.basename(img.url),
-          is_primary: !!img.is_primary,
-        }));
 
       // Process newly uploaded files
       const newImageData = req.files
         ? req.files.map((file, index) => ({
             url: `/uploads/${file.filename}`,
             filename: file.filename,
-            is_primary: existingImages.length === 0 && index === 0, // Only primary if first image and no existing
+            is_primary: false, // Set to false by default
           }))
         : [];
 
-      // Take primary flag into account when combining
+      // Combine all images
       const combinedImages = [...formattedExistingImages, ...newImageData];
 
-      // If there's no primary image, set the first one as primary
-      if (
-        !combinedImages.some((img) => img.is_primary) &&
-        combinedImages.length > 0
-      ) {
+      // Ensure only one primary image - set the first one as primary
+      if (combinedImages.length > 0) {
+        // First, reset all primary flags
+        combinedImages.forEach((img) => (img.is_primary = false));
+
+        // Then set the first one as primary
         combinedImages[0].is_primary = true;
       }
 

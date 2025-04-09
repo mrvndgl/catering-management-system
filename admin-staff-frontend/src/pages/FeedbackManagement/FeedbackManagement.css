@@ -1,62 +1,315 @@
-.feedback-management {
-    padding: 2rem;
-  }
-  
+/* FeedbackManagement.css */
+
+.feedback-management-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+}
+
+.feedback-management-container h1 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eaeaea;
+  padding-bottom: 10px;
+}
+
+.error-container {
+  background-color: #fff3f3;
+  border: 1px solid #e74c3c;
+  border-radius: 5px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.error-message {
+  background-color: #fff3f3;
+  color: #e74c3c;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border-left: 4px solid #e74c3c;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #7f8c8d;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #3498db;
+  text-align: center;
+  padding: 10px;
+  z-index: 1000;
+  font-weight: bold;
+}
+
+.filter-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+.status-filter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-size: 14px;
+}
+
+.refresh-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.refresh-button:hover {
+  background-color: #45a049;
+}
+
+.retry-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+.back-button {
+  background-color: #7f8c8d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.no-feedback {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.feedback-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.feedback-item {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feedback-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.feedback-header {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedback-user {
+  flex: 1;
+  min-width: 200px;
+}
+
+.feedback-rating {
+  color: #f39c12;
+  font-size: 18px;
+}
+
+.feedback-date {
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.feedback-content {
+  padding: 20px;
+  border-bottom: 1px solid #eaeaea;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.feedback-controls {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-control select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.reply-section {
+  padding: 20px;
+}
+
+.reply-section h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.existing-reply {
+  background-color: #f1f8e9;
+  padding: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #3498db;
+}
+
+.existing-reply p {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.reply-date {
+  color: #7f8c8d;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.new-reply textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.submit-reply-button {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.submit-reply-button:hover {
+  background-color: #219653;
+}
+
+.submit-reply-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.edit-reply-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.edit-reply-button:hover {
+  background-color: #2980b9;
+}
+
+/* Status badge styles */
+.status-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.reviewed {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.addressed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .feedback-header {
-    margin-bottom: 2rem;
+    flex-direction: column;
+    gap: 5px;
   }
   
-  .feedback-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+  .feedback-controls {
+    justify-content: flex-start;
   }
   
-  .feedback-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 1.5rem;
+  .filter-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
   
-  .feedback-content h3 {
-    margin: 0 0 1rem 0;
-    color: #333;
-  }
-  
-  .feedback-text {
-    margin-bottom: 1rem;
-    line-height: 1.5;
-  }
-  
-  .feedback-meta {
-    display: flex;
-    justify-content: space-between;
-    color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-  }
-  
-  .feedback-actions {
-    border-top: 1px solid #eee;
-    padding-top: 1rem;
-  }
-  
-  .status-select {
+  .status-filter {
+    margin-left: 0;
     width: 100%;
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #ddd;
   }
   
-  .status-select.pending {
-    background-color: #fff3cd;
+  .refresh-button {
+    width: 100%;
   }
-  
-  .status-select.reviewed {
-    background-color: #d4edda;
-  }
-  
-  .status-select.addressed {
-    background-color: #cce5ff;
-  }
+}

@@ -52,6 +52,37 @@ async function initializeDirectories() {
 // Initialize directories
 await initializeDirectories();
 
+// Add this before your static file serving middleware
+app.use("/uploads", (req, res, next) => {
+  // Set headers
+  res.set({
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=3600",
+    "Access-Control-Allow-Methods": "GET",
+  });
+
+  // Check if the requested file includes "undefined" or "null"
+  if (req.path.includes("undefined") || req.path.includes("null")) {
+    console.warn(`Invalid image path requested: ${req.path}`);
+    // Send a placeholder image instead
+    return res.sendFile(
+      path.join(__dirname, "assets", "placeholder-image.png")
+    );
+  }
+
+  next();
+});
+
+// Serve static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Add a fallback for files not found
+app.use("/uploads", (req, res) => {
+  console.warn(`Image not found: ${req.path}`);
+  // Send a placeholder image as fallback
+  res.sendFile(path.join(__dirname, "assets", "placeholder-image.png"));
+});
+
 // Global middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);

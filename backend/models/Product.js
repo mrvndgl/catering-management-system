@@ -36,7 +36,12 @@ const productSchema = new mongoose.Schema(
           required: true,
           validate: {
             validator: function (v) {
-              // Allow both URLs and local paths
+              // Don't allow undefined or null in the paths
+              if (v.includes("/undefined") || v.includes("/null")) {
+                return false;
+              }
+
+              // Check for valid URL or path
               return (
                 /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v) ||
                 v.startsWith("/uploads/") ||
@@ -71,15 +76,23 @@ productSchema.index({ product_id: 1, category_id: 1 });
 
 // Validation for primary image
 productSchema.pre("validate", function (next) {
+  // Filter out any images with invalid URLs
+  this.images = this.images.filter(
+    (img) =>
+      img &&
+      img.url &&
+      !img.url.includes("/undefined") &&
+      !img.url.includes("null")
+  );
+
+  // Reset all primary flags
+  this.images.forEach((img) => (img.is_primary = false));
+
   // Ensure at least one primary image if images exist
-  if (this.images.length > 0 && !this.images.some((img) => img.is_primary)) {
+  if (this.images.length > 0) {
     this.images[0].is_primary = true;
   }
 
-  const primaryCount = this.images.filter((img) => img.is_primary).length;
-  if (primaryCount > 1) {
-    return next(new Error("Only one primary image allowed"));
-  }
   next();
 });
 

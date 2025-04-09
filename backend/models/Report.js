@@ -28,6 +28,10 @@ const reportSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    reservations_data: {
+      accepted: [{ type: mongoose.Schema.Types.Mixed }], // Store as mixed type to handle all reservation fields
+      declined: [{ type: mongoose.Schema.Types.Mixed }],
+    },
     metrics: {
       total_reservations: { type: Number, default: 0 },
       total_revenue: { type: Number, default: 0 },
@@ -37,6 +41,7 @@ const reportSchema = new mongoose.Schema(
       pending_reservations: { type: Number, default: 0 },
       canceled_reservations: { type: Number, default: 0 },
       completed_reservations: { type: Number, default: 0 },
+      declined_reservations: { type: Number, default: 0 }, // Added declined field
     },
     monthly_breakdown: [
       {
@@ -50,6 +55,22 @@ const reportSchema = new mongoose.Schema(
           pending: { type: Number, default: 0 },
           canceled: { type: Number, default: 0 },
           completed: { type: Number, default: 0 },
+          declined: { type: Number, default: 0 }, // Added declined field
+        },
+      },
+    ],
+    daily_breakdown: [
+      {
+        date: { type: Date },
+        reservation_count: { type: Number },
+        revenue: { type: Number },
+        guest_count: { type: Number },
+        status_counts: {
+          accepted: { type: Number, default: 0 },
+          pending: { type: Number, default: 0 },
+          canceled: { type: Number, default: 0 },
+          completed: { type: Number, default: 0 },
+          declined: { type: Number, default: 0 }, // Added declined field
         },
       },
     ],
