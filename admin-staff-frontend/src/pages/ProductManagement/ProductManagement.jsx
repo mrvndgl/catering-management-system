@@ -450,6 +450,21 @@ const ProductManagement = () => {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
+
+    // Check for duplicate product name
+    const duplicateProduct = checkDuplicateProductName(
+      productForm.product_name
+    );
+
+    if (duplicateProduct) {
+      Swal.fire({
+        title: "Duplicate Product",
+        text: `A product with the name "${productForm.product_name}" already exists.`,
+        icon: "warning",
+      });
+      return; // Stop form submission
+    }
+
     try {
       const url = isEditing
         ? `${import.meta.env.VITE_API_URL}/products/${productForm.product_id}`
@@ -549,12 +564,45 @@ const ProductManagement = () => {
     }
   };
 
+  // Add this function to check for duplicate product names
+  const checkDuplicateProductName = (productName) => {
+    // Normalize input by trimming whitespace and converting to lowercase
+    const normalizedName = productName.trim().toLowerCase();
+
+    // Find any product with the same name (excluding the current product if editing)
+    const existingProduct = products.find(
+      (product) =>
+        product.product_name.toLowerCase() === normalizedName &&
+        (!isEditing || product.product_id !== productForm.product_id)
+    );
+
+    return existingProduct;
+  };
+
   const handleProductInputChange = (e) => {
     const { name, value } = e.target;
     setProductForm((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Provide real-time validation for product name
+    if (name === "product_name" && value.trim() !== "") {
+      const duplicateProduct = checkDuplicateProductName(value);
+      if (duplicateProduct) {
+        // Display warning immediately below the input field
+        document.querySelector(".product-name-error")?.remove();
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "product-name-error";
+        errorDiv.textContent = "This product name already exists.";
+        errorDiv.style.color = "red";
+        errorDiv.style.fontSize = "12px";
+        e.target.parentNode.insertBefore(errorDiv, e.target.nextSibling);
+      } else {
+        // Remove warning if exists
+        document.querySelector(".product-name-error")?.remove();
+      }
+    }
   };
 
   const handleCategoryInputChange = (e) => {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./Reservation.css";
 import { Beef, Drumstick, Fish, Salad, Soup, Utensils } from "lucide-react";
 import Swal from "sweetalert2";
+import EditReservationModal from "../../components/modals/EditReservationModal";
 
 const MENU_ITEMS = {
   Beef: [
@@ -77,6 +78,7 @@ const Reservation = () => {
 
   // Menu and product data
   const [menuItems, setMenuItems] = useState({});
+  const [reservations, setReservations] = useState([]);
   const [productsLookup, setProductsLookup] = useState({});
   const [categories, setCategories] = useState();
   const [archivedProducts, setArchivedProducts] = useState([
@@ -103,6 +105,9 @@ const Reservation = () => {
   );
   const [showAdditionalItemModal, setShowAdditionalItemModal] = useState(false);
   const [selectedAdditionalItems, setSelectedAdditionalItems] = useState([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
 
   // History data
@@ -340,8 +345,163 @@ const Reservation = () => {
     }
   };
 
+  // Function to handle editing a reservation
+  const handleEditReservation = (reservation) => {
+    setSelectedReservation(reservation);
+    setEditModalOpen(true);
+  };
+
+  // Function to save edited reservation
+  const handleSaveEditedReservation = async (updatedReservation) => {
+    setIsEditSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        Swal.fire({
+          icon: "warning",
+          title: "Authentication Required",
+          text: "Please log in to update your reservation",
+          confirmButtonColor: "#3085d6",
+        });
+        setEditModalOpen(false);
+        return;
+      }
+
+      // Format data to match backend expectations - include ALL fields we want to update
+      const formattedData = {
+        // Use specific field names to avoid confusion
+        numberOfPax:
+          updatedReservation.numberOfPax || updatedReservation.number_of_guests,
+        timeSlot:
+          updatedReservation.timeSlot || updatedReservation.reservation_time,
+        specialNotes:
+          updatedReservation.specialNotes ||
+          updatedReservation.special_requests,
+        reservation_date: updatedReservation.reservation_date,
+        // Add other fields that might be needed
+      };
+
+      console.log("Sending update with data:", formattedData);
+
+      // Use the specific edit endpoint
+      const response = await fetch(
+        `/api/reservations/edit/${updatedReservation.reservation_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formattedData),
+        }
+      );
+
+      const data = await response.json();
+      console.log("API response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update reservation");
+      }
+
+      // Force a refresh of the reservation data
+      await fetchReservationData();
+
+      // Update the reservation in the local state with the returned data
+      setReservationHistory((prevHistory) =>
+        prevHistory.map((res) =>
+          res.reservation_id === updatedReservation.reservation_id
+            ? { ...res, ...data.data }
+            : res
+        )
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Success!",
+        text: "Reservation updated successfully!",
+        confirmButtonColor: "#3085d6",
+      });
+
+      setEditModalOpen(false);
+      setSelectedReservation(null);
+    } catch (error) {
+      console.error("Update error:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.message || "An unexpected error occurred. Please try again.",
+        confirmButtonColor: "#3085d6",
+      });
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  // Add this function to force a fresh fetch of data
+  const fetchReservationData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No authentication token found");
+        return;
+      }
+
+      const response = await fetch("/api/reservations/my-reservations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch updated reservation data");
+      }
+
+      const data = await response.json();
+
+      if (data.success && Array.isArray(data.data)) {
+        setReservationHistory(data.data);
+        return data.data;
+      }
+    } catch (error) {
+      console.error("Error fetching updated reservation data:", error);
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    if (menuItems) {
+      const lookup = {};
+      Object.values(menuItems).forEach((categoryProducts) => {
+        categoryProducts.forEach((product) => {
+          lookup[product.product_id] = product;
+        });
+      });
+      setProductsLookup(lookup);
+    }
+  }, [menuItems]);
+
   useEffect(() => {
     fetchAllProductData();
+  }, []);
+
+  useEffect(() => {
+    // Fetch your reservations data here
+    const fetchReservations = async () => {
+      try {
+        // Replace with your actual API endpoint
+        const response = await fetch("/api/reservations");
+        const data = await response.json();
+        setReservations(data);
+      } catch (error) {
+        console.error("Error fetching reservations:", error);
+      }
+    };
+
+    fetchReservations();
   }, []);
 
   const fetchReservationHistory = async () => {
@@ -792,6 +952,114 @@ const Reservation = () => {
     return productsLookup[itemId] || null;
   };
 
+  // Define renderReservationCard function outside the JSX return statement
+  const renderReservationCard = (reservation) => {
+    return (
+      <div key={reservation._id} className="reservation-card">
+        <div className="reservation-header">
+          <h3>Reservation #{reservation.reservation_id}</h3>
+          <span
+            className={`status ${reservation.reservation_status.toLowerCase()}`}
+          >
+            {reservation.reservation_status}
+          </span>
+        </div>
+
+        <div className="reservation-details">
+          <p>
+            <strong>Name:</strong> {reservation.name}
+          </p>
+          <p>
+            <strong>Date:</strong>{" "}
+            {new Date(reservation.reservation_date).toLocaleDateString()}
+          </p>
+          <p>
+            <strong>Time Slot:</strong> {reservation.timeSlot}
+          </p>
+          <p>
+            <strong>Venue:</strong> {reservation.venue}
+          </p>
+          <p>
+            <strong>Number of Pax:</strong> {reservation.numberOfPax}
+          </p>
+          <p>
+            <strong>Payment Mode:</strong> {reservation.paymentMode}
+          </p>
+
+          <div className="menu-section">
+            <div className="selected-items">
+              {reservation.selectedProducts &&
+                Object.keys(reservation.selectedProducts).length > 0 && (
+                  <div className="selected-products">
+                    <h4>Selected Products:</h4>
+                    {renderSelectedProducts(reservation)}
+                  </div>
+                )}
+
+              <p className="total-amount">
+                <strong>Total Amount:</strong> ₱
+                {reservation.total_amount?.toLocaleString()}
+              </p>
+            </div>
+
+            {Array.isArray(reservation.additionalItems) &&
+              reservation.additionalItems.length > 0 && (
+                <div className="additional-items">
+                  <h4>Additional Items:</h4>
+                  <div className="additional-items-list">
+                    {reservation.additionalItems.map((itemId, index) => (
+                      <div key={index} className="menu-item">
+                        {getProductName(itemId)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </div>
+
+          {reservation.specialNotes && (
+            <div className="special-notes">
+              <h4>Special Notes:</h4>
+              <p>{reservation.specialNotes}</p>
+            </div>
+          )}
+
+          {reservation.reservation_status.toLowerCase() === "pending" && (
+            <div className="reservation-actions">
+              <button
+                className="edit-button"
+                onClick={() => handleEditReservation(reservation)}
+              >
+                Edit Reservation
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => {
+                  Swal.fire({
+                    title: "Cancel Reservation",
+                    text: "Are you sure you want to cancel this reservation?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: "Yes, cancel it!",
+                    cancelButtonText: "No, keep it",
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      handleCancelReservation(reservation.reservation_id);
+                    }
+                  });
+                }}
+              >
+                Cancel Reservation
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="reservation-container">
       <div className="reservation-tabs">
@@ -1205,120 +1473,37 @@ const Reservation = () => {
           )}
         </>
       ) : (
-        // In your return statement, update the reservation history section:
-        <div className="reservation-history">
+        <div className="reservation-history-section">
           {historyLoading ? (
-            <div className="loading-message">
-              Loading reservation history...
-            </div>
-          ) : reservationHistory.length === 0 ? (
-            <div className="no-reservations">No reservations found.</div>
+            <div className="loading">Loading reservation history...</div>
+          ) : error ? (
+            <div className="error">{error}</div>
+          ) : Array.isArray(reservationHistory) &&
+            reservationHistory.length > 0 ? (
+            reservationHistory.map((reservation) =>
+              renderReservationCard(reservation)
+            )
           ) : (
-            <div className="reservations-grid">
-              {reservationHistory.map((reservation) => (
-                <div key={reservation._id} className="reservation-card">
-                  <div className="reservation-header">
-                    <h3>Reservation #{reservation.reservation_id}</h3>
-                    <span
-                      className={`status ${reservation.reservation_status.toLowerCase()}`}
-                    >
-                      {reservation.reservation_status}
-                    </span>
-                  </div>
-
-                  <div className="reservation-details">
-                    <p>
-                      <strong>Name:</strong> {reservation.name}
-                    </p>
-                    <p>
-                      <strong>Date:</strong>{" "}
-                      {new Date(
-                        reservation.reservation_date
-                      ).toLocaleDateString()}
-                    </p>
-                    <p>
-                      <strong>Time Slot:</strong> {reservation.timeSlot}
-                    </p>
-                    <p>
-                      <strong>Venue:</strong> {reservation.venue}
-                    </p>
-                    <p>
-                      <strong>Number of Pax:</strong> {reservation.numberOfPax}
-                    </p>
-                    <p>
-                      <strong>Payment Mode:</strong> {reservation.paymentMode}
-                    </p>
-
-                    <div className="menu-section">
-                      <div className="selected-items">
-                        {reservation.selectedProducts &&
-                          Object.keys(reservation.selectedProducts).length >
-                            0 && (
-                            <div className="selected-products">
-                              <h4>Selected Products:</h4>
-                              {renderSelectedProducts(reservation)}
-                            </div>
-                          )}
-
-                        <p className="total-amount">
-                          <strong>Total Amount:</strong> ₱
-                          {reservation.total_amount?.toLocaleString()}
-                        </p>
-                      </div>
-
-                      {Array.isArray(reservation.additionalItems) &&
-                        reservation.additionalItems.length > 0 && (
-                          <div className="additional-items">
-                            <h4>Additional Items:</h4>
-                            <div className="additional-items-list">
-                              {reservation.additionalItems.map(
-                                (itemId, index) => (
-                                  <div key={index} className="menu-item">
-                                    {getProductName(itemId)}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-
-                    {reservation.specialNotes && (
-                      <div className="special-notes">
-                        <h4>Special Notes:</h4>
-                        <p>{reservation.specialNotes}</p>
-                      </div>
-                    )}
-                    {reservation.reservation_status.toLowerCase() ===
-                      "pending" && (
-                      <button
-                        className="cancel-button"
-                        onClick={() => {
-                          Swal.fire({
-                            title: "Cancel Reservation",
-                            text: "Are you sure you want to cancel this reservation?",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#d33",
-                            cancelButtonColor: "#3085d6",
-                            confirmButtonText: "Yes, cancel it!",
-                            cancelButtonText: "No, keep it",
-                          }).then((result) => {
-                            if (result.isConfirmed) {
-                              handleCancelReservation(
-                                reservation.reservation_id
-                              );
-                            }
-                          });
-                        }}
-                      >
-                        Cancel Reservation
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="no-reservations">
+              <p>No reservation history found.</p>
             </div>
+          )}
+
+          {editModalOpen && selectedReservation && (
+            <EditReservationModal
+              isOpen={editModalOpen}
+              onClose={() => {
+                setEditModalOpen(false);
+                setSelectedReservation(null);
+              }}
+              reservation={selectedReservation}
+              onSave={handleSaveEditedReservation}
+              menuItems={menuItems}
+              pricingSettings={pricingSettings}
+              availableTimeSlots={availableTimeSlots}
+              productsLookup={productsLookup}
+              isSubmitting={isEditSubmitting}
+            />
           )}
         </div>
       )}

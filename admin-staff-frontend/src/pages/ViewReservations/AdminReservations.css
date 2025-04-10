@@ -6,6 +6,7 @@
 
 .admin-reservations-container .status-badge.pending {
   background-color: #FBC02D;
+  color: #ffffff;
 }
 
 .refresh-button {
@@ -122,8 +123,10 @@
 
 .payment-status.pending {
   background-color: #fff3cd;
-  color: #856404;
+  color: #FBC02D;
   border: 1px solid #ffeeba;
+  border-radius: 20px;
+  padding: 4px 10px;
 }
 
 .payment-status.paid {

@@ -82,6 +82,8 @@
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  background-color: #3498db;
+  color: white;
 }
 
 .status-pending {
@@ -210,7 +212,7 @@
 /* View details button */
 .view-details-button {
   padding: 8px 16px;
-  background-color: #4CAF50;
+  background-color: #007bff;
   border: none;
   border-radius: 4px;
   color: white;
@@ -221,7 +223,7 @@
 }
 
 .view-details-button:hover {
-  background-color: #45a049;
+  background-color: #0056b3;
 }
 
 /* Modal styles */
@@ -456,6 +458,145 @@
 .close-image-button:hover {
   color: #ffffff;
   background-color: #4CAF50;
+}
+
+/* update payment styles */
+
+.status-partial {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.status-completed {
+  background-color: #5cb85c;
+  color: white;
+}
+
+.status-cancelled {
+  background-color: #777777;
+  color: white;
+}
+
+/* Status update form in modal */
+.status-select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.status-update-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 0 auto;
+  margin-left: 10px;
+}
+
+.update-status-btn {
+  padding: 5px 15px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+}
+
+.update-status-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.cancel-update-btn {
+  padding: 10px 15px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.cancel-update-btn:hover {
+  background-color: #5a6268;
+}
+
+.update-payment-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.update-payment-btn:hover {
+  background-color: #2980b9;
+}
+
+/* Image viewer */
+.proof-image-large {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+/* Receipt section styles */
+.receipt-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid #eaeaea;
+  padding-top: 1.5rem;
+}
+
+.receipt-info {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.no-receipt {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.generate-receipt-btn, .view-receipt-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.generate-receipt-btn:hover, .view-receipt-btn:hover {
+  background-color: #388e3c;
+}
+
+.generate-receipt-btn:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.view-receipt-btn {
+  background-color: #2196f3;
+}
+
+.view-receipt-btn:hover {
+  background-color: #1976d2;
 }
 
 @media (max-width: 768px) {

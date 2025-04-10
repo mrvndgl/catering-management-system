@@ -39,7 +39,7 @@ const AdminReservations = () => {
 
       // Update reservation status
       const updateResponse = await fetch(
-        `${import.meta.env.VITE_API_URL}/reservations/${reservationId}`,
+        `${import.meta.env.VITE_API_URL}/reservations/status/${reservationId}`,
         {
           method: "PUT",
           headers: {
@@ -212,6 +212,15 @@ const AdminReservations = () => {
     fetchReservations();
     fetchProducts();
     fetchPaymentStatuses();
+
+    // Set up polling for updates every 30 seconds
+    const pollingInterval = setInterval(() => {
+      fetchReservations();
+      fetchPaymentStatuses();
+    }, 30000); // 30 seconds
+
+    // Clean up on component unmount
+    return () => clearInterval(pollingInterval);
   }, []);
 
   const fetchPaymentStatuses = async () => {
@@ -380,11 +389,7 @@ const AdminReservations = () => {
 
     // If there's a payment mode but no status yet
     if (paymentMode && !status) {
-      return (
-        <span className="payment-status pending">
-          Payment Mode: {paymentMode}
-        </span>
-      );
+      return <span className="payment-status pending">{paymentMode}</span>;
     }
 
     // If there's a status, show both payment mode and status

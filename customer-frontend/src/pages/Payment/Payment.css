@@ -81,6 +81,21 @@
   text-align: center;
 }
 
+.status-badge.completed {
+  background-color: #4CAF50;
+  color: #ffffff;
+}
+
+.status-badge.partial {
+  background-color: #ff9800;
+  color: white;
+}
+
+.status-badge.refunded {
+  background-color: #607d8b;
+  color: white;
+}
+
 .status-badge.pending {
   background-color: #FBC02D;
   color: #ffffff;

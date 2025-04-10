@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ViewPayment.css";
-import { X } from "lucide-react";
+import { X, FileText } from "lucide-react";
 import Swal from "sweetalert2";
 
 // Payment details modal component
@@ -10,8 +10,101 @@ const PaymentDetailsModal = ({
   onClose,
   getStatusClass,
   onStatusUpdate,
+  onGenerateReceipt,
 }) => {
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [generatingReceipt, setGeneratingReceipt] = useState(false);
+
   if (!payment) return null;
+
+  const handleUpdateClick = () => {
+    setUpdatingStatus(true);
+  };
+
+  const handleStatusSubmit = () => {
+    if (selectedStatus) {
+      onStatusUpdate(payment.payment_id, selectedStatus);
+      setUpdatingStatus(false);
+    }
+  };
+
+  const renderStatusUpdateOptions = () => {
+    // Determine which status options to show based on current status
+    if (payment.payment_status === "Pending") {
+      return (
+        <>
+          <select
+            className="status-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="">Select status</option>
+            <option value="Fully Paid">Fully Paid</option>
+            <option value="Downpayment">Downpayment</option>
+            <option value="Failed">Failed</option>
+          </select>
+          <div className="status-update-actions">
+            <button
+              className="update-status-btn"
+              onClick={handleStatusSubmit}
+              disabled={!selectedStatus}
+            >
+              Update
+            </button>
+            <button
+              className="cancel-update-btn"
+              onClick={() => setUpdatingStatus(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      );
+    } else if (
+      payment.payment_status === "Fully Paid" ||
+      payment.payment_status === "Downpayment"
+    ) {
+      return (
+        <>
+          <select
+            className="status-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="">Select status</option>
+            <option value="Completed">Completed</option>
+            {payment.payment_status === "Downpayment" && (
+              <option value="Fully Paid">Fully Paid</option>
+            )}
+            <option value="Refunded">Refunded</option>
+          </select>
+          <div className="status-update-actions">
+            <button
+              className="update-status-btn"
+              onClick={handleStatusSubmit}
+              disabled={!selectedStatus}
+            >
+              Confirm Update
+            </button>
+            <button
+              className="cancel-update-btn"
+              onClick={() => setUpdatingStatus(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      );
+    }
+    return null;
+  };
+
+  // Determine if receipt can be generated
+  const canGenerateReceipt =
+    payment.payment_status === "Fully Paid" ||
+    payment.payment_status === "Downpayment" ||
+    payment.payment_status === "Completed";
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -92,22 +185,19 @@ const PaymentDetailsModal = ({
         </div>
 
         <div className="modal-footer">
-          {payment.payment_status === "Pending" && (
-            <div className="payment-action-buttons">
+          {!updatingStatus &&
+            (payment.payment_status === "Pending" ||
+              payment.payment_status === "Fully Paid" ||
+              payment.payment_status === "Downpayment") && (
               <button
-                className="accept-payment-btn"
-                onClick={() => onStatusUpdate(payment.payment_id, "Paid")}
+                className="update-payment-btn"
+                onClick={handleUpdateClick}
               >
-                Accept Payment
+                Update Payment Status
               </button>
-              <button
-                className="reject-payment-btn"
-                onClick={() => onStatusUpdate(payment.payment_id, "Failed")}
-              >
-                Reject Payment
-              </button>
-            </div>
-          )}
+            )}
+
+          {updatingStatus && renderStatusUpdateOptions()}
         </div>
       </div>
     </div>
@@ -153,7 +243,7 @@ const ViewPayment = () => {
     try {
       const result = await Swal.fire({
         title: "Confirm Payment Update",
-        text: `Are you sure you want to mark this payment as ${newStatus}?`,
+        text: `Are you sure you want to update this payment status to "${newStatus}"?`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#28a745",
@@ -194,9 +284,20 @@ const ViewPayment = () => {
         )
       );
 
+      // Update the selected payment details if open
+      if (
+        selectedPaymentDetails &&
+        selectedPaymentDetails.payment_id === paymentId
+      ) {
+        setSelectedPaymentDetails({
+          ...selectedPaymentDetails,
+          payment_status: newStatus,
+        });
+      }
+
       Swal.fire({
         title: "Success!",
-        text: `Payment has been marked as ${newStatus}`,
+        text: `Payment has been updated to "${newStatus}"`,
         icon: "success",
         confirmButtonColor: "#28a745",
       });
@@ -217,12 +318,15 @@ const ViewPayment = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/payments/admin/payments", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/payments/admin/payments`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch payments");
@@ -231,10 +335,21 @@ const ViewPayment = () => {
       const result = await response.json();
       if (result.success) {
         const latestPayments = result.data.reduce((acc, payment) => {
+          // Priority order for displaying payments by reservation
+          const priorityOrder = {
+            Completed: 1,
+            "Fully Paid": 2,
+            Downpayment: 3,
+            Pending: 4,
+            Failed: 5,
+            Refunded: 6,
+            Cancelled: 7,
+          };
+
           if (
             !acc[payment.reservation_id] ||
-            (payment.payment_status === "Paid" &&
-              acc[payment.reservation_id].payment_status !== "Paid")
+            priorityOrder[payment.payment_status] <
+              priorityOrder[acc[payment.reservation_id].payment_status]
           ) {
             acc[payment.reservation_id] = payment;
           }
@@ -253,12 +368,18 @@ const ViewPayment = () => {
     switch (status) {
       case "Pending":
         return "status-pending";
-      case "Paid":
+      case "Fully Paid":
         return "status-paid";
+      case "Downpayment":
+        return "status-partial";
+      case "Completed":
+        return "status-completed";
       case "Failed":
         return "status-failed";
       case "Refunded":
         return "status-refunded";
+      case "Cancelled":
+        return "status-cancelled";
       default:
         return "";
     }
@@ -310,9 +431,12 @@ const ViewPayment = () => {
         >
           <option value="all">All Status</option>
           <option value="Pending">Pending</option>
-          <option value="Paid">Paid</option>
+          <option value="Downpayment">Downpayment</option>
+          <option value="Fully Paid">Fully Paid</option>
+          <option value="Completed">Completed</option>
           <option value="Failed">Failed</option>
           <option value="Refunded">Refunded</option>
+          <option value="Cancelled">Cancelled</option>
         </select>
       </div>
 
@@ -423,6 +547,29 @@ const ViewPayment = () => {
           getStatusClass={getStatusClass}
           onStatusUpdate={handlePaymentStatusUpdate}
         />
+      )}
+
+      {/* Image viewer modal */}
+      {expandedImage && (
+        <div className="image-viewer-overlay" onClick={handleCloseImage}>
+          <div
+            className="image-viewer-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="close-button" onClick={handleCloseImage}>
+              <X size={24} />
+            </button>
+            <img
+              src={expandedImage}
+              alt="Payment proof"
+              className="proof-image-large"
+              onError={(e) => {
+                console.error("Image load error:", e);
+                e.target.src = "/placeholder-image.png";
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
