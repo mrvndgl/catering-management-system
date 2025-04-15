@@ -90,8 +90,8 @@ export const generateMonthlyReport = async (req, res) => {
             existingReport.metrics.avg_pax_per_reservation,
           monthly_sales: monthlySales,
         },
-        acceptedReservations,
-        declinedReservations,
+        acceptedReservations, // Renamed for frontend consistency
+        declinedReservations, // Renamed for frontend consistency
       });
     }
 
@@ -196,7 +196,9 @@ export const generateMonthlyReport = async (req, res) => {
     });
 
     // Generate a report ID
-    const reportId = Report.generateReportId("monthly", startDate, endDate);
+    const reportId = Report.generateReportId
+      ? Report.generateReportId("monthly", startDate, endDate)
+      : `monthly_${startDate.toISOString()}_${endDate.toISOString()}`;
 
     const monthName = new Date(numYear, numMonth - 1, 1).toLocaleString(
       "default",
@@ -228,17 +230,18 @@ export const generateMonthlyReport = async (req, res) => {
       },
       daily_breakdown: dailyBreakdown,
       summary: `Monthly report for ${monthName} ${numYear}. Total reservations: ${monthlyTotals.totalReservations}, Total revenue: ${monthlyTotals.totalRevenue}`,
-      reservations_data: {
-        accepted: acceptedReservations,
-        declined: declinedReservations,
-      },
     };
 
-    // Save report to database (upsert)
-    if (existingReport) {
-      await Report.findByIdAndUpdate(existingReport._id, reportData);
-    } else {
-      await new Report(reportData).save();
+    try {
+      // Save report to database (upsert)
+      if (existingReport) {
+        await Report.findByIdAndUpdate(existingReport._id, reportData);
+      } else {
+        await new Report(reportData).save();
+      }
+    } catch (dbError) {
+      console.error("Error saving report to database:", dbError);
+      // Continue processing even if DB save fails
     }
 
     // Format daily data for the chart (monthlySales)
@@ -266,21 +269,22 @@ export const generateMonthlyReport = async (req, res) => {
       year: numYear,
       metrics: {
         total_reservations: monthlyTotals.totalReservations,
-        acceptedReservations,
-        declinedReservations,
+        accepted_reservations: monthlyTotals.acceptedReservations,
+        declined_reservations: monthlyTotals.declinedReservations,
         canceled_reservations: monthlyTotals.cancelledReservations,
         total_revenue: monthlyTotals.totalRevenue,
         avg_pax_per_reservation: monthlyTotals.avgPaxPerReservation,
         monthly_sales: monthlySales,
       },
-      acceptedReservations,
-      declinedReservations,
+      acceptedReservations, // Renamed for frontend consistency
+      declinedReservations, // Renamed for frontend consistency
     });
   } catch (error) {
     console.error("Monthly report generation error:", error);
     res.status(500).json({
       message: "Failed to generate monthly report",
       error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };

@@ -12,7 +12,7 @@ class AuthError extends Error {
   }
 }
 
-// Centralized token verification
+// Centralized token verification with improved role checking
 const verifyToken = (token, requireRole = null) => {
   if (!token) {
     throw new AuthError("No authentication token found");
@@ -21,19 +21,36 @@ const verifyToken = (token, requireRole = null) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Normalize user data for consistent access
+    const normalizedUser = {
+      userId: decoded.id || decoded.userId || decoded._id,
+      role: decoded.employeeType || decoded.role || decoded.type || "customer",
+      type: decoded.type || "customer",
+    };
+
+    // Check if role is required and validate it
     if (requireRole) {
-      const { type, employeeType } = decoded;
-      if (
-        type !== "employee" ||
-        (Array.isArray(requireRole)
-          ? !requireRole.includes(employeeType)
-          : employeeType !== requireRole)
-      ) {
-        throw new AuthError(`Unauthorized access`, 403);
+      const userRole = normalizedUser.role;
+
+      if (Array.isArray(requireRole)) {
+        // Check if user role is in the array of allowed roles
+        if (!requireRole.includes(userRole)) {
+          throw new AuthError(
+            `Unauthorized access: role ${userRole} not permitted`,
+            403
+          );
+        }
+      } else if (userRole !== requireRole) {
+        // Direct comparison for single role requirement
+        throw new AuthError(
+          `Unauthorized access: role ${userRole} not permitted`,
+          403
+        );
       }
     }
 
-    return decoded;
+    // Return the normalized user data
+    return normalizedUser;
   } catch (error) {
     if (error instanceof AuthError) throw error;
     if (error.name === "JsonWebTokenError") {
@@ -63,12 +80,8 @@ export const auth = async (req, res, next) => {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token);
 
-    // Make sure decoded has the user id in the expected format
-    req.user = {
-      _id: decoded.id || decoded.userId || decoded._id,
-      // Include other user properties if needed
-    };
-
+    // Set normalized user info
+    req.user = decoded;
     next();
   } catch (error) {
     handleAuthError(error, res);
@@ -103,18 +116,16 @@ export const staffAuth = (req, res, next) => {
 export const adminStaffAuth = (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
-    console.log("Received Token:", token); // Debugging
 
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
 
     const decoded = verifyToken(token, ["admin", "staff"]);
-    console.log("Decoded User:", decoded); // Debugging
     req.user = decoded;
     next();
   } catch (error) {
-    console.error("Auth Error:", error.message); // Debugging
+    console.error("Auth Error:", error.message);
     handleAuthError(error, res);
   }
 };

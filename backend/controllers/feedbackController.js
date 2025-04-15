@@ -3,12 +3,14 @@ import Feedback from "../models/Feedback.js";
 //Create Feedback
 export const createFeedback = async (req, res) => {
   try {
-    // Extract userId from req.user based on how it's structured in your token
-    const userId = req.user.id || req.user.userId || req.user._id;
+    // Use the standardized userId from auth middleware
+    const userId = req.user.userId;
 
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
+
+    console.log("Creating feedback for user ID:", userId);
 
     const feedback = new Feedback({
       message: req.body.message,
@@ -17,6 +19,7 @@ export const createFeedback = async (req, res) => {
     });
 
     await feedback.save();
+    console.log("Feedback created:", feedback._id);
     res.status(201).json(feedback);
   } catch (error) {
     console.error("Feedback creation error:", error);
@@ -27,11 +30,19 @@ export const createFeedback = async (req, res) => {
 // Get user's feedback
 export const getUserFeedback = async (req, res) => {
   try {
-    const feedback = await Feedback.find({ userId: req.user._id }).sort({
+    // Extract userId consistently using the same approach as createFeedback
+    const userId = req.user.userId;
+
+    console.log("Fetching feedback for user ID:", userId);
+
+    const feedback = await Feedback.find({ userId: userId }).sort({
       createdAt: -1,
     });
+
+    console.log("Found feedback items:", feedback.length);
     res.json(feedback);
   } catch (error) {
+    console.error("Error in getUserFeedback:", error);
     res.status(500).json({ message: error.message });
   }
 };

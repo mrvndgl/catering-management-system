@@ -8,6 +8,8 @@ import {
   uploadPaymentProof,
   getPaymentProof,
   getPaymentStatuses,
+  generateEReceipt,
+  getReceipt,
 } from "../controllers/paymentController.js";
 import { cancelReservation } from "../controllers/reservationController.js";
 import multer from "multer";
@@ -29,10 +31,18 @@ router.get(
 );
 router.get("/admin/payments/proof/:filename", adminStaffAuth, getPaymentProof);
 
+// E-Receipt routes
+router.get(
+  "/admin/generate-receipt/:payment_id",
+  adminStaffAuth,
+  generateEReceipt
+);
+router.get("/receipts/:filename", auth, getReceipt);
+
 // Customer payment routes
 router.post("/", auth, createPayment);
 router.post(
-  "/:payment_id/proof",
+  "/upload",
   auth,
   upload.single("payment_proof"),
   uploadPaymentProof
@@ -40,7 +50,7 @@ router.post(
 router.put("/:reservationId/cancel", auth, cancelReservation);
 
 // Add these routes to your paymentRoute.js
-router.get("/status", auth, getPaymentStatuses); // You'll need to create this controller function
+router.get("/status", auth, getPaymentStatuses);
 router.post(
   "/upload",
   auth,

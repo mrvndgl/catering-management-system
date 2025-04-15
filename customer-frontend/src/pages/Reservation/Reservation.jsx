@@ -368,6 +368,8 @@ const Reservation = () => {
         return;
       }
 
+      const calculatedTotal = calculateTotal();
+
       // Format data to match backend expectations - include ALL fields we want to update
       const formattedData = {
         // Use specific field names to avoid confusion
@@ -379,7 +381,8 @@ const Reservation = () => {
           updatedReservation.specialNotes ||
           updatedReservation.special_requests,
         reservation_date: updatedReservation.reservation_date,
-        // Add other fields that might be needed
+        selectedProducts: updatedReservation.selectedProducts || {},
+        total_amount: updatedReservation.total_amount,
       };
 
       console.log("Sending update with data:", formattedData);
@@ -805,7 +808,7 @@ const Reservation = () => {
 
   const calculateTotal = () => {
     // Only calculate if we have valid input
-    if (!formData.numberOfPax) return;
+    if (!formData.numberOfPax) return 0;
 
     const numPax = parseInt(formData.numberOfPax);
 
@@ -828,7 +831,9 @@ const Reservation = () => {
       numPax *
       pricingSettings.additionalItemPrice;
 
-    setTotalAmount(basePriceForPax + additionalItemsTotal);
+    const total = basePriceForPax + additionalItemsTotal;
+    setTotalAmount(total);
+    return total;
   };
 
   const fetchSettingsData = async () => {
@@ -1370,61 +1375,80 @@ const Reservation = () => {
 
             {/* Additional Item Modal */}
             {showAdditionalItemModal && (
-              <div className="modal">
+              <div className="modal-overlay">
                 <div className="modal-content">
+                  {/* Modal Header */}
                   <div className="modal-header">
-                    <h2>Select Additional Item</h2>
+                    <h3>Select Additional Items</h3>
                     <button
                       type="button"
                       className="close-modal"
                       onClick={() => setShowAdditionalItemModal(false)}
+                      aria-label="Close modal"
                     >
                       ×
                     </button>
                   </div>
-                  <div className="modal-body">
-                    {/* Category tabs for modal */}
-                    <div className="modal-category-tabs">
-                      {Object.keys(MENU_ITEMS).map((category) => (
-                        <div
-                          key={category}
-                          className={`modal-category-tab ${
-                            activeCategory === category ? "active" : ""
-                          }`}
-                          onClick={() => setActiveCategory(category)}
-                        >
-                          <span>{category}</span>
-                        </div>
-                      ))}
-                    </div>
 
-                    {/* Product items */}
-                    {Object.entries(MENU_ITEMS).map(([category, products]) => (
-                      <div
-                        key={category}
-                        className={`modal-category-items ${
-                          activeCategory === category ? "active" : ""
-                        }`}
-                      >
-                        {}
-                        {products.map((product) => {
-                          if (!isArchived(product.product_id)) {
-                            return (
-                              <div
-                                key={product.product_id}
-                                className="modal-item"
-                                onClick={() =>
-                                  addAdditionalItem(product.product_id)
-                                }
-                              >
-                                {product.product_name}
-                              </div>
-                            );
-                          }
-                          return "";
-                        })}
+                  {/* Modal Body */}
+                  <div className="modal-body">
+                    {Object.entries(menuItems).map(([category, products]) => (
+                      <div key={category} className="modal-category">
+                        <div className="category-header">
+                          {getCategoryIcon(category)}
+                          <h4>{category}</h4>
+                        </div>
+
+                        <div className="modal-products">
+                          {products.map((product) => (
+                            <div
+                              key={product.product_id}
+                              className={`modal-product-item ${
+                                product.is_archived ? "archived-product" : ""
+                              }`}
+                            >
+                              <label>
+                                <input
+                                  type="radio"
+                                  name={`radio-${category}`}
+                                  value={product.product_id}
+                                  onChange={() => {
+                                    addAdditionalItem(product.product_id);
+                                    setShowAdditionalItemModal(false);
+                                  }}
+                                />
+                                <span className="product-name">
+                                  {product.product_name}
+                                </span>
+                                {product.is_archived && (
+                                  <span className="archived-label">
+                                    (Archived)
+                                  </span>
+                                )}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Modal Footer - New */}
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="modal-button cancel-button"
+                      onClick={() => setShowAdditionalItemModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="modal-button confirm-button"
+                      onClick={() => setShowAdditionalItemModal(false)}
+                    >
+                      Done
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1458,10 +1482,46 @@ const Reservation = () => {
                               addAdditionalItem(product.product_id)
                             }
                           >
-                            {product.product_name}
-                            {product.is_archived && (
-                              <span className="archived-label">(Archived)</span>
-                            )}
+                            <label>
+                              <input
+                                type="radio"
+                                name={`radio-${category}`} // ensures only one can be selected per category
+                                value={product.product_id}
+                                onChange={() =>
+                                  addAdditionalItem(product.product_id)
+                                }
+                              />
+                              {product.product_name}
+                              {product.is_archived && (
+                                <span className="archived-label">
+                                  (Archived)
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        ))}
+                        {products.map((product) => (
+                          <div
+                            key={product.product_id}
+                            className="modal-product-item"
+                          >
+                            <label>
+                              <input
+                                type="radio"
+                                name={`radio-${category}`}
+                                value={product.product_id}
+                                onChange={() => {
+                                  addAdditionalItem(product.product_id); // your function to handle selection
+                                  setShowAdditionalItemModal(false); // close the modal right after
+                                }}
+                              />
+                              {product.product_name}
+                              {product.is_archived && (
+                                <span className="archived-label">
+                                  (Archived)
+                                </span>
+                              )}
+                            </label>
                           </div>
                         ))}
                       </div>

@@ -14,6 +14,10 @@ const reservationSchema = new mongoose.Schema(
       default: Date.now,
       immutable: true,
     },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
     paymentMode: { type: String, required: true },
     reservation_date: { type: Date, required: true },
     venue: { type: String, required: true },
@@ -53,6 +57,11 @@ reservationSchema.pre("save", function (next) {
   if (this.total_amount < 0) {
     next(new Error("Total amount cannot be negative"));
   }
+  next();
+});
+
+reservationSchema.pre("findOneAndUpdate", function (next) {
+  this.set({ updatedAt: new Date() });
   next();
 });
 

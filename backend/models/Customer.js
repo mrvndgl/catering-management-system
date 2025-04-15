@@ -19,7 +19,7 @@ const customerSchema = new mongoose.Schema({
     unique: true,
   },
   contactNumber: {
-    type: Number,
+    type: String,
     required: true,
   },
   address: {

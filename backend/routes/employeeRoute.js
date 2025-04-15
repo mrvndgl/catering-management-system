@@ -12,7 +12,7 @@ import {
 const employeeRouter = express.Router();
 
 // Get all staff accounts (admin only)
-employeeRouter.get("/staff", adminAuth, async (req, res) => {
+employeeRouter.get("/staff", adminStaffAuth, async (req, res) => {
   try {
     const staffAccounts = await Employee.find({ employeeType: "staff" })
       .select("-password -photo")

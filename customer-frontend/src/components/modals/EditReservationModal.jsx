@@ -394,15 +394,15 @@ const EditReservationModal = ({
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="cancel-button" onClick={onClose}>
-              Cancel
-            </button>
             <button
               type="submit"
               className="submit-button"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Saving Changes..." : "Save Changes"}
+            </button>
+            <button type="button" className="cancel-button" onClick={onClose}>
+              Cancel
             </button>
           </div>
         </form>

@@ -12,6 +12,7 @@ const Payment = () => {
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [paymentProof, setPaymentProof] = useState(null);
   const [products, setProducts] = useState({});
+  const [productsLookup, setProductsLookup] = useState({});
   const [paymentStatuses, setPaymentStatuses] = useState({});
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -147,6 +148,7 @@ const Payment = () => {
       }
 
       const data = await response.json();
+      console.log("Payment statuses data:", data); // For debugging
 
       if (data.success && Array.isArray(data.data)) {
         const statusMap = {};
@@ -159,6 +161,7 @@ const Payment = () => {
             proof: payment.payment_proof,
           };
         });
+        console.log("Processed payment status map:", statusMap); // For debugging
         setPaymentStatuses(statusMap);
       }
     } catch (error) {
@@ -172,29 +175,43 @@ const Payment = () => {
 
     return reservations.filter((reservation) => {
       const paymentStatus = paymentStatuses[reservation.reservation_id];
+
       if (activeTab === "pending") {
-        return !paymentStatus || paymentStatus.status === "Pending";
+        // Only show reservations with NO payment submission yet
+        return !paymentStatus;
+      } else {
+        // "paid" tab (payment history)
+        // Show ANY reservation with a payment status (even if it's pending)
+        return paymentStatus !== undefined;
       }
-      return (
-        paymentStatus && ["Accepted", "Paid"].includes(paymentStatus.status)
-      );
     });
   };
 
   const getStatusDisplay = (payment) => {
+    if (!payment) return null;
+
+    // Handle both string and object formats
+    const status = typeof payment === "string" ? payment : payment.status;
+
     const statusClasses = {
       Pending: "pending",
       Accepted: "accepted",
       Paid: "completed",
+      "Fully Paid": "completed",
+      Downpayment: "partial",
+      Completed: "completed",
       Declined: "declined",
     };
 
     return (
-      <div className={`status-badge ${statusClasses[payment.status] || ""}`}>
-        {payment.status === "Pending" && "Payment Pending"}
-        {payment.status === "Accepted" && "Payment Accepted"}
-        {payment.status === "Paid" && "Payment Completed"}
-        {payment.status === "Declined" && "Payment Declined"}
+      <div className={`status-badge ${statusClasses[status] || ""}`}>
+        {status === "Pending" && "PENDING"}
+        {status === "Accepted" && "ACCEPTED"}
+        {status === "Paid" && "COMPLETED"}
+        {status === "Fully Paid" && "FULLY PAID"}
+        {status === "Downpayment" && "DOWNPAYMENT"}
+        {status === "Completed" && "COMPLETED"}
+        {status === "Declined" && "DECLINED"}
       </div>
     );
   };
@@ -237,11 +254,10 @@ const Payment = () => {
   };
 
   const fetchProducts = async () => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      console.log("Fetching products..."); // Debug log
 
-      // First, get all products
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/products`,
         {
@@ -257,20 +273,41 @@ const Payment = () => {
       }
 
       const productsData = await response.json();
-      console.log("Products received:", productsData); // Debug log
 
-      // Create a map using MongoDB _id as the key
-      const productMap = productsData.reduce((acc, product) => {
-        acc[product._id] = product.product_name;
+      // Create a lookup object with both _id and product_id as keys
+      const lookup = productsData.reduce((acc, product) => {
+        acc[product._id] = product;
+        // Also add an entry with product_id if it exists
+        if (product.product_id) {
+          acc[product.product_id] = product;
+        }
         return acc;
       }, {});
 
-      console.log("Product map created:", productMap); // Debug log
-      setProducts(productMap);
+      setProductsLookup(lookup);
+      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
-      setError(error.message);
+      setIsLoading(false);
     }
+  };
+
+  const getProductName = (productId) => {
+    if (!productId) return "No product selected";
+    if (!productsLookup) return "Loading products...";
+
+    const product = productsLookup[productId];
+
+    // Debug logging
+    if (!product) {
+      console.warn(
+        `Product ID ${productId} not found in lookup`,
+        productsLookup
+      );
+      return "Product not found";
+    }
+
+    return product.product_name || "Unnamed product";
   };
 
   const fetchAcceptedReservations = async () => {
@@ -348,9 +385,7 @@ const Payment = () => {
 
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL || ""
-        }/api/payments/${reservationId}/proof`,
+        `${import.meta.env.VITE_API_URL || ""}/api/payments/upload`,
         {
           method: "POST",
           headers: {
@@ -360,12 +395,12 @@ const Payment = () => {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to upload payment proof");
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to upload payment proof");
       }
 
-      const data = await response.json();
       Swal.fire({
         title: "Success!",
         text: "Payment proof uploaded successfully!",
@@ -376,7 +411,9 @@ const Payment = () => {
       setPaymentMethod(null);
       setSelectedReservation(null);
       setPaymentProof(null);
-      await fetchAcceptedReservations();
+
+      // Refresh both data sources
+      await Promise.all([fetchAcceptedReservations(), fetchPaymentStatuses()]);
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -446,13 +483,22 @@ const Payment = () => {
       setPaymentMethod(null);
       setSelectedReservation(null);
 
-      // Update payment status locally
+      // Update payment status locally with correct structure
       setPaymentStatuses((prev) => ({
         ...prev,
-        [reservationId]: "Pending",
+        [reservationId]: {
+          status: "Pending",
+          method: "Cash",
+          amount: null,
+          date: new Date().toISOString(),
+        },
       }));
 
-      await fetchAcceptedReservations();
+      // Fetch updated data from server
+      await Promise.all([fetchAcceptedReservations(), fetchPaymentStatuses()]);
+
+      // Switch to payment history tab
+      setActiveTab("paid");
     } catch (error) {
       console.error("Payment error:", error);
 
@@ -637,7 +683,7 @@ const Payment = () => {
                     <h3>Reservation #{reservation.reservation_id}</h3>
                     {paymentStatuses[reservation.reservation_id] &&
                       getStatusDisplay(
-                        paymentStatuses[reservation.reservation_id]
+                        paymentStatuses[reservation.reservation_id].status
                       )}
                   </div>
 
@@ -684,27 +730,37 @@ const Payment = () => {
                     )}
 
                     <div className="menu-details">
-                      <h4>Selected Items:</h4>
-                      <ul>
-                        {Object.entries(reservation.selectedProducts).map(
-                          ([category, productId]) => (
-                            <li key={category}>
-                              {category}: {products[productId] || "Loading..."}
-                            </li>
-                          )
-                        )}
-                      </ul>
-
-                      {reservation.additionalItems?.length > 0 && (
-                        <>
-                          <h4>Additional Items:</h4>
-                          <ul>
-                            {reservation.additionalItems.map((item, index) => (
-                              <li key={index}>{item}</li>
-                            ))}
-                          </ul>
-                        </>
+                      <h4>Selected Products:</h4>
+                      {isLoading ? (
+                        <p>Loading products...</p>
+                      ) : reservation && reservation.selectedProducts ? (
+                        <ul>
+                          {Object.entries(reservation.selectedProducts).map(
+                            ([category, productId]) => (
+                              <li key={category}>
+                                {category}: {getProductName(productId)}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      ) : (
+                        <p>No items selected</p>
                       )}
+
+                      {/* Additional items */}
+                      {reservation &&
+                        reservation.additionalItems?.length > 0 && (
+                          <>
+                            <h4>Additional Items:</h4>
+                            <ul>
+                              {reservation.additionalItems.map(
+                                (itemId, index) => (
+                                  <li key={index}>{getProductName(itemId)}</li>
+                                )
+                              )}
+                            </ul>
+                          </>
+                        )}
                     </div>
                   </div>
 

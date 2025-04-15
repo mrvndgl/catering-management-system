@@ -1,4 +1,6 @@
 import { Employee } from "../models/Employee.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export const employeeController = {
   login: async (req, res) => {

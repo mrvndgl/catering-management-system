@@ -201,6 +201,44 @@ export const createReservation = async (req, res) => {
       });
     }
 
+    // Ensure reservation is at least 7 days in advance
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const chosenDate = new Date(reservation_date);
+    chosenDate.setHours(0, 0, 0, 0);
+
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + 7);
+
+    if (chosenDate < minDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservations must be made at least 7 days in advance.",
+      });
+    }
+
+    // NEW CODE: Check if the date and time slot is already taken
+    const reservationDate = new Date(reservation_date);
+    reservationDate.setHours(0, 0, 0, 0);
+
+    const existingReservation = await Reservation.findOne({
+      reservation_date: {
+        $gte: reservationDate,
+        $lt: new Date(reservationDate.getTime() + 24 * 60 * 60 * 1000),
+      },
+      timeSlot: timeSlot,
+      reservation_status: "accepted",
+    });
+
+    if (existingReservation) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This date and time slot is already booked by another customer. Please select another date or time.",
+      });
+    }
+
     // Generate a unique reservation ID
     const lastReservation = await Reservation.findOne().sort({
       reservation_id: -1,
@@ -309,6 +347,59 @@ export const createReservation = async (req, res) => {
   }
 };
 
+// Function to check if a reservation date and time slot is already taken
+export const checkReservationAvailability = async (req, res) => {
+  try {
+    const { date, timeSlot } = req.body;
+
+    if (!date || !timeSlot) {
+      return res.status(400).json({
+        success: false,
+        message: "Both date and timeSlot are required.",
+      });
+    }
+
+    // Convert the date string to a Date object
+    const reservationDate = new Date(date);
+
+    // Set hours to 0 to compare just the date portion
+    reservationDate.setHours(0, 0, 0, 0);
+
+    // Find any accepted reservations for this date and time slot
+    const existingReservation = await Reservation.findOne({
+      reservation_date: {
+        $gte: reservationDate,
+        $lt: new Date(reservationDate.getTime() + 24 * 60 * 60 * 1000), // Next day
+      },
+      timeSlot: timeSlot,
+      reservation_status: "accepted",
+    });
+
+    if (existingReservation) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This date and time slot is already booked. Please select another date or time.",
+        isAvailable: false,
+      });
+    }
+
+    // If no existing reservation found, the slot is available
+    return res.status(200).json({
+      success: true,
+      message: "This date and time slot is available for booking.",
+      isAvailable: true,
+    });
+  } catch (error) {
+    console.error("Error checking reservation availability:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error checking reservation availability",
+      error: error.message,
+    });
+  }
+};
+
 export const getAdminReservations = async (req, res) => {
   try {
     const { month, year, status } = req.query;
@@ -330,24 +421,158 @@ export const getAdminReservations = async (req, res) => {
   }
 };
 
-export const updateReservationStatus = async (req, res) => {
+// For customers to edit their reservation details
+export const editReservation = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { reservation_id } = req.params;
+    let updateData = { ...req.body };
 
-    const reservation = await Reservation.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
+    console.log(`Editing reservation ${reservation_id} with data:`, updateData);
+
+    // Find the reservation first to check permissions
+    const reservation = await Reservation.findOne({
+      reservation_id: parseInt(reservation_id),
+    });
 
     if (!reservation) {
-      return res.status(404).json({ message: "Reservation not found" });
+      console.log(`Reservation ${reservation_id} not found`);
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
     }
 
-    res.json(reservation);
+    console.log(`Original reservation:`, reservation);
+    console.log(
+      `User ID: ${req.user.userId}, Reservation owner: ${reservation.customer_id}`
+    );
+
+    // Check if the user is the owner of this reservation
+    const isOwner =
+      reservation.customer_id.toString() === req.user.userId.toString();
+
+    if (!isOwner) {
+      console.log("Owner validation failed");
+      return res.status(403).json({
+        success: false,
+        message:
+          "Unauthorized access - you can only edit your own reservations",
+      });
+    }
+
+    // Process field mappings from frontend to database fields
+    const fieldMappings = {
+      number_of_guests: "numberOfPax",
+      special_requests: "specialNotes",
+      reservation_time: "timeSlot",
+      totalAmount: "total_amount",
+    };
+
+    // Map fields from frontend names to database names
+    Object.keys(fieldMappings).forEach((frontendField) => {
+      if (updateData[frontendField] !== undefined) {
+        updateData[fieldMappings[frontendField]] = updateData[frontendField];
+        delete updateData[frontendField]; // Remove the original key
+      }
+    });
+
+    // Only allow certain fields to be updated by customers
+    const allowedFields = [
+      "reservation_date",
+      "timeSlot",
+      "numberOfPax",
+      "specialNotes",
+      "selectedProducts",
+      "additionalItems",
+      "total_amount",
+      // Add additionalItems to allowed fields
+      // Add other allowed fields here
+    ];
+
+    // Create a new object with only the allowed fields
+    const filteredUpdateData = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        filteredUpdateData[field] = updateData[field];
+      }
+    }
+
+    // Set update timestamp
+    filteredUpdateData.updatedAt = new Date();
+
+    console.log(`Final update data:`, filteredUpdateData);
+
+    // Use findOneAndUpdate with proper options
+    const updatedReservation = await Reservation.findOneAndUpdate(
+      { reservation_id: parseInt(reservation_id) },
+      { $set: filteredUpdateData }, // Use $set operator explicitly
+      { new: true, runValidators: true }
+    );
+
+    console.log(`Updated reservation result:`, updatedReservation);
+
+    // Double-check the update by fetching it again
+    const verifyUpdate = await Reservation.findOne({
+      reservation_id: parseInt(reservation_id),
+    });
+
+    console.log(`Verification fetch:`, verifyUpdate);
+
+    res.status(200).json({
+      success: true,
+      data: updatedReservation,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Edit reservation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error editing reservation",
+      error: error.message,
+    });
+  }
+};
+
+export const updateReservationStatus = async (req, res) => {
+  try {
+    const { reservation_id } = req.params;
+    const { reservation_status, decline_reason } = req.body;
+
+    console.log(
+      `Admin updating reservation ${reservation_id} status to: ${reservation_status}`
+    );
+
+    const statusLower = reservation_status.toLowerCase();
+
+    const updateData = {
+      reservation_status: statusLower,
+      status: statusLower,
+      ...(decline_reason && { decline_reason }),
+    };
+
+    const updatedReservation = await Reservation.findOneAndUpdate(
+      { reservation_id: parseInt(reservation_id) },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedReservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedReservation,
+    });
+  } catch (error) {
+    console.error("Update reservation status error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating reservation status",
+      error: error.message,
+    });
   }
 };
 
@@ -514,19 +739,82 @@ export const getReservationByCustomerId = async (req, res) => {
 export const updateReservation = async (req, res) => {
   try {
     const { reservation_id } = req.params;
-    const { reservation_status, paymentRedirect } = req.body;
+    const updateData = { ...req.body };
 
-    console.log(
-      `Updating reservation ${reservation_id} to status: ${reservation_status}`
-    );
+    // Find the reservation first to check permissions
+    const reservation = await Reservation.findOne({
+      reservation_id: parseInt(reservation_id),
+    });
 
-    const statusLower = reservation_status.toLowerCase();
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
 
-    const updateData = {
-      reservation_status: statusLower,
-      status: statusLower, // Make sure both fields are updated
-      ...(paymentRedirect && { payment_required: true }),
+    // Check user roles and permissions
+    const isAdminOrStaff =
+      req.user.type === "admin" ||
+      req.user.type === "staff" ||
+      req.user.employeeType === "admin" ||
+      req.user.employeeType === "staff";
+
+    const isOwner =
+      reservation.customer_id.toString() === req.user.userId.toString();
+
+    // If not admin/staff and not the owner, deny access
+    if (!isAdminOrStaff && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Unauthorized access - you can only edit your own reservations",
+      });
+    }
+
+    // Process field mappings from frontend to database fields
+    const fieldMappings = {
+      number_of_guests: "numberOfPax",
+      special_requests: "specialNotes",
+      reservation_time: "timeSlot",
+      total_amount: "total_amount",
+      // Add any other field mappings here
     };
+
+    // Map fields from frontend names to database names
+    Object.keys(fieldMappings).forEach((frontendField) => {
+      if (updateData[frontendField] !== undefined) {
+        updateData[fieldMappings[frontendField]] = updateData[frontendField];
+        delete updateData[frontendField]; // Remove the original key
+      }
+    });
+
+    // If customer is editing their own reservation, restrict what fields they can update
+    if (!isAdminOrStaff && isOwner) {
+      // Only allow certain fields to be updated by customers
+      const allowedFields = [
+        "reservation_date",
+        "timeSlot",
+        "numberOfPax",
+        "specialNotes",
+        "total_amount",
+        // Add other allowed fields here
+      ];
+
+      // Create a new object with only the allowed fields
+      const filteredUpdateData = {};
+
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          filteredUpdateData[field] = updateData[field];
+        }
+      }
+
+      // Replace updateData with filtered version
+      updateData = filteredUpdateData;
+    }
+
+    console.log("Processed update data:", updateData);
 
     const updatedReservation = await Reservation.findOneAndUpdate(
       { reservation_id: parseInt(reservation_id) },
@@ -534,15 +822,7 @@ export const updateReservation = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Log the result for debugging
     console.log("Updated reservation:", updatedReservation);
-
-    if (!updatedReservation) {
-      return res.status(404).json({
-        success: false,
-        message: "Reservation not found",
-      });
-    }
 
     res.status(200).json({
       success: true,
@@ -720,7 +1000,6 @@ export const cancelReservation = async (req, res) => {
       customer_id: userId,
     });
 
-    // Detailed logging for reservation finding
     if (!reservation) {
       console.warn(
         `Reservation not found: ID ${reservationId}, User ${userId}`
@@ -731,7 +1010,7 @@ export const cancelReservation = async (req, res) => {
       });
     }
 
-    // Cancellation status checks
+    // Disallow if already cancelled, completed, or declined
     if (reservation.reservation_status === "Cancelled") {
       return res.status(400).json({
         success: false,
@@ -746,7 +1025,25 @@ export const cancelReservation = async (req, res) => {
       });
     }
 
-    // Update reservation status
+    // Check if it's at least 3 days before reservation date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const reservationDate = new Date(reservation.reservation_date);
+    reservationDate.setHours(0, 0, 0, 0);
+
+    const cancelDeadline = new Date(reservationDate);
+    cancelDeadline.setDate(reservationDate.getDate() - 3);
+
+    if (today > cancelDeadline) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cancellations are only allowed up to 3 days before the reservation date.",
+      });
+    }
+
+    // Update status to Cancelled
     reservation.reservation_status = "Cancelled";
 
     try {

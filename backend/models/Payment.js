@@ -21,7 +21,15 @@ const PaymentSchema = new mongoose.Schema({
   },
   payment_status: {
     type: String,
-    enum: ["Pending", "Paid", "Failed", "Refunded", "Cancelled"],
+    enum: [
+      "Pending",
+      "Fully Paid",
+      "Downpayment",
+      "Completed",
+      "Failed",
+      "Refunded",
+      "Cancelled",
+    ],
     default: "Pending",
   },
   payment_method: {
@@ -44,6 +52,18 @@ const PaymentSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: "",
+  },
+  receipt_number: {
+    type: String,
+    default: null,
+  },
+  receipt_file: {
+    type: String,
+    default: null,
+  },
+  receipt_generated_at: {
+    type: Date,
+    default: null,
   },
   created_at: {
     type: Date,
