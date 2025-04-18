@@ -990,6 +990,10 @@ const Reservation = () => {
           <p>
             <strong>Payment Mode:</strong> {reservation.paymentMode}
           </p>
+          <p className="note">
+            <strong>Note:</strong> You can only edit/cancel your reservations
+            for 6 hours before the establishment accepts your reservations
+          </p>
 
           <div className="menu-section">
             <div className="selected-items">

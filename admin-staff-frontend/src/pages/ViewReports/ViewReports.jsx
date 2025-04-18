@@ -158,7 +158,7 @@ const AdminReports = () => {
     }
   }, [reportData, historicalData, compareMode]);
 
-  // Fetch historical data for the selected year
+  // Update your fetchHistoricalData function with better error handling
   const fetchHistoricalData = async (year) => {
     try {
       setHistoricalLoading(true);
@@ -172,11 +172,25 @@ const AdminReports = () => {
         const sortedData = response.data.monthlyData.sort(
           (a, b) => a.month - b.month
         );
-        setHistoricalData(sortedData);
+
+        // Ensure all properties are present to avoid undefined errors
+        const processedData = sortedData.map((month) => ({
+          month: month.month,
+          monthName: month.monthName || getMonthName(month.month),
+          year: month.year || parseInt(year),
+          totalReservations: month.totalReservations || 0,
+          acceptedReservations: month.acceptedReservations || 0,
+          declinedReservations: month.declinedReservations || 0,
+          cancelledReservations: month.cancelledReservations || 0,
+          totalRevenue: month.totalRevenue || 0,
+        }));
+
+        setHistoricalData(processedData);
         setHistoricalLoading(false);
-        return sortedData;
+        return processedData;
       } else {
-        setError("No historical data available");
+        console.warn("Historical data format unexpected:", response.data);
+        setError("No historical data available or invalid format received");
         setHistoricalLoading(false);
         return [];
       }
@@ -499,14 +513,18 @@ const AdminReports = () => {
     }
   };
 
-  // Find the month with highest revenue
   const getHighestRevenueMonth = () => {
-    if (historicalData.length === 0) return null;
-    return [...historicalData].sort(
-      (a, b) => b.totalRevenue - a.totalRevenue
-    )[0];
-  };
+    if (!historicalData || historicalData.length === 0) return null;
 
+    try {
+      return [...historicalData].sort(
+        (a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0)
+      )[0];
+    } catch (err) {
+      console.error("Error calculating highest revenue month:", err);
+      return historicalData[0]; // Return first month as fallback
+    }
+  };
   // Format month name
   const getMonthName = (monthNum) => {
     return new Date(0, monthNum - 1).toLocaleString("default", {

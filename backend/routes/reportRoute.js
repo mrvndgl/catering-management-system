@@ -3,6 +3,7 @@ import { auth as authenticate } from "../middleware/auth.js";
 import {
   generateMonthlyReport,
   generateYearlyReport,
+  getOverallStats,
 } from "../controllers/reportController.js";
 
 const router = express.Router();
@@ -65,5 +66,7 @@ router.get(
   },
   generateYearlyReport
 );
+
+router.get("/overall-stats", authenticate, getOverallStats);
 
 export default router;

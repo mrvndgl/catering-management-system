@@ -217,6 +217,10 @@ export const generateMonthlyReport = async (req, res) => {
         ? req.user.id || req.user._id || req.user.userId || "system"
         : "system",
       generated_at: new Date(),
+      reservations_data: {
+        accepted: acceptedReservations,
+        declined: declinedReservations,
+      },
       metrics: {
         total_reservations: monthlyTotals.totalReservations,
         total_revenue: monthlyTotals.totalRevenue,
@@ -332,15 +336,26 @@ export const generateYearlyReport = async (req, res) => {
       console.log("Using cached yearly report");
 
       // Transform the report data for the frontend
-      const monthlyData = existingReport.monthly_breakdown.map((month) => ({
-        month: new Date(0, month.month - 1).getMonth() + 1, // Convert month name to number
-        year: month.year,
-        totalReservations: month.reservation_count,
-        acceptedReservations: month.status_counts.accepted,
-        declinedReservations: month.status_counts.canceled,
-        cancelledReservations: month.status_counts.canceled,
-        totalRevenue: month.revenue,
-      }));
+      const monthlyData = existingReport.monthly_breakdown.map((month) => {
+        // Get month name based on month number (1-12)
+        const monthName = new Date(numYear, month.month - 1, 1).toLocaleString(
+          "default",
+          {
+            month: "long",
+          }
+        );
+
+        return {
+          month: month.month,
+          monthName,
+          year: month.year,
+          totalReservations: month.reservation_count,
+          acceptedReservations: month.status_counts.accepted || 0,
+          declinedReservations: month.status_counts.declined || 0, // Fixed: "declined" not "canceled"
+          cancelledReservations: month.status_counts.canceled || 0,
+          totalRevenue: month.revenue,
+        };
+      });
 
       return res.status(200).json({
         year: numYear,
@@ -378,6 +393,7 @@ export const generateYearlyReport = async (req, res) => {
       });
       monthlyData.push({
         month: i,
+        monthName,
         year: numYear,
         totalReservations: 0,
         acceptedReservations: 0,
@@ -444,12 +460,14 @@ export const generateYearlyReport = async (req, res) => {
         pending: 0, // Not tracked in monthly data
         canceled: month.cancelledReservations,
         completed: 0, // Not differentiated in monthly data
-        declined: month.declinedReservations,
+        declined: month.declinedReservations, // Fixed: "declined" not "canceled"
       },
     }));
 
     // Generate a report ID
-    const reportId = Report.generateReportId("yearly", startDate, endDate);
+    const reportId = Report.generateReportId
+      ? Report.generateReportId("yearly", startDate, endDate)
+      : `yearly_${startDate.toISOString()}_${endDate.toISOString()}`; // Added fallback
 
     // Create new report or update existing
     const reportData = {
@@ -482,11 +500,16 @@ export const generateYearlyReport = async (req, res) => {
       summary: `Yearly report for ${numYear}. Total reservations: ${yearTotals.totalReservations}, Total revenue: ${yearTotals.totalRevenue}`,
     };
 
-    // Save report to database (upsert)
-    if (existingReport) {
-      await Report.findByIdAndUpdate(existingReport._id, reportData);
-    } else {
-      await new Report(reportData).save();
+    try {
+      // Save report to database (upsert)
+      if (existingReport) {
+        await Report.findByIdAndUpdate(existingReport._id, reportData);
+      } else {
+        await new Report(reportData).save();
+      }
+    } catch (dbError) {
+      console.error("Error saving report to database:", dbError);
+      // Continue processing even if DB save fails
     }
 
     // Return report data
@@ -500,6 +523,71 @@ export const generateYearlyReport = async (req, res) => {
     res.status(500).json({
       message: "Failed to generate yearly report",
       error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+};
+
+// New endpoint to get overall revenue statistics
+export const getOverallStats = async (req, res) => {
+  try {
+    // Get all accepted/completed reservations
+    const reservations = await Reservation.find({
+      reservation_status: { $in: ["accepted", "completed"] },
+    });
+
+    // Calculate overall stats
+    const overallStats = {
+      totalReservations: reservations.length,
+      totalRevenue: reservations.reduce(
+        (sum, r) => sum + (r.total_amount || 0),
+        0
+      ),
+      avgRevenuePerReservation:
+        reservations.length > 0
+          ? reservations.reduce((sum, r) => sum + (r.total_amount || 0), 0) /
+            reservations.length
+          : 0,
+      totalGuests: reservations.reduce(
+        (sum, r) => sum + (r.numberOfPax || r.guest_count || 0),
+        0
+      ),
+    };
+
+    // Get yearly breakdowns
+    const years = [
+      ...new Set(
+        reservations.map((r) => new Date(r.reservation_date).getFullYear())
+      ),
+    ].sort();
+
+    const yearlyBreakdown = [];
+
+    for (const year of years) {
+      const yearlyReservations = reservations.filter(
+        (r) => new Date(r.reservation_date).getFullYear() === year
+      );
+
+      yearlyBreakdown.push({
+        year,
+        reservationCount: yearlyReservations.length,
+        revenue: yearlyReservations.reduce(
+          (sum, r) => sum + (r.total_amount || 0),
+          0
+        ),
+      });
+    }
+
+    return res.status(200).json({
+      overallStats,
+      yearlyBreakdown,
+    });
+  } catch (error) {
+    console.error("Error fetching overall stats:", error);
+    res.status(500).json({
+      message: "Failed to fetch overall statistics",
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };

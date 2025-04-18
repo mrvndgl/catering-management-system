@@ -1,6 +1,8 @@
 import main from "./main.jpg";
 import samplebg from "./samplebg.jpg";
 import mainLogo from "./mainLogo.png";
+import cmslogo from "./cmslogo.png";
+import cmslogo2 from "./cmslogo2.png";
 import service from "./service.jpg";
 import facebook_icon from "./facebook_icon.png";
 
@@ -15,6 +17,8 @@ export const assets = {
   main,
   samplebg,
   mainLogo,
+  cmslogo,
+  cmslogo2,
   service,
   facebook_icon,
   placeholderImage:

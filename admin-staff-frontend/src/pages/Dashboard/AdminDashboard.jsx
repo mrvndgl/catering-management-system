@@ -8,7 +8,13 @@ import ViewPayment from "../ViewPayment/ViewPayment";
 import AdminReports from "../ViewReports/ViewReports";
 import ViewAccounts from "../ViewAccounts/ViewAccounts";
 import ViewSchedules from "../ViewSchedules.jsx/ViewSchedules";
-import { ClipboardList, CreditCard, Utensils } from "lucide-react";
+import {
+  ClipboardList,
+  CreditCard,
+  Utensils,
+  TrendingUp,
+  Check,
+} from "lucide-react";
 import "./AdminDashboard.css";
 import { useSidebar } from "../../context/SidebarContext";
 import axios from "axios";
@@ -16,6 +22,12 @@ import axios from "axios";
 const DashboardContent = ({ isSidebarCollapsed }) => {
   const [acceptedReservations, setAcceptedReservations] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [overallStats, setOverallStats] = useState({
+    totalReservations: 0,
+    totalRevenue: 0,
+    avgRevenuePerReservation: 0,
+    totalGuests: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,10 +56,9 @@ const DashboardContent = ({ isSidebarCollapsed }) => {
 
         setAcceptedReservations(reservationsResponse.data.length);
 
-        // Calculate total revenue from accepted reservations
+        // Calculate revenue from accepted reservations
         let revenue = 0;
         reservationsResponse.data.forEach((reservation) => {
-          // Assuming each reservation has a 'total_amount' or similar field
           if (
             reservation.total_amount &&
             reservation.payment_status === "paid"
@@ -57,6 +68,18 @@ const DashboardContent = ({ isSidebarCollapsed }) => {
         });
 
         setTotalRevenue(revenue);
+
+        // Fetch overall statistics
+        const overallStatsResponse = await axios.get(
+          "/api/reports/overall-stats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setOverallStats(overallStatsResponse.data.overallStats);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         // Set default values if fetch fails
@@ -78,35 +101,43 @@ const DashboardContent = ({ isSidebarCollapsed }) => {
       <div className="content-area">
         <div className="dashboard-grid">
           <div className="dashboard-card">
-            <div className="stat-card">
-              <div className="stat-icon">
-                <ClipboardList size={50} color="#ffffff" />
-              </div>
-              <div className="stat-content">
-                <h3>Total Reservations</h3>
-                <p className="stat-number">
-                  {isLoading ? "Loading..." : acceptedReservations}
-                </p>
-                <p className="stat-label">Accepted Bookings</p>
+            <div className="dashboard-card">
+              <div className="stat-card">
+                <div className="stat-icon">
+                  <Check size={50} color="#ffffff" />
+                </div>
+                <div className="stat-content">
+                  <h3>Accepted Reservations</h3>
+                  <p className="stat-number">
+                    {isLoading
+                      ? "Loading..."
+                      : overallStats.accepted_reservations ||
+                        acceptedReservations}
+                  </p>
+                  <p className="stat-label">All Time</p>
+                </div>
               </div>
             </div>
           </div>
           <div className="dashboard-card">
             <div className="stat-card">
               <div className="stat-icon">
-                <CreditCard size={50} color="#ffffff" />
+                <TrendingUp size={50} color="#ffffff" />
               </div>
               <div className="stat-content">
-                <h3>Revenue</h3>
+                <h3>Avg. Revenue</h3>
                 <p className="stat-number">
                   {isLoading
                     ? "Loading..."
-                    : `₱${totalRevenue.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}`}
+                    : `₱${overallStats.avgRevenuePerReservation.toLocaleString(
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
+                      )}`}
                 </p>
-                <p className="stat-label">From Reservations</p>
+                <p className="stat-label">Per Reservation</p>
               </div>
             </div>
           </div>

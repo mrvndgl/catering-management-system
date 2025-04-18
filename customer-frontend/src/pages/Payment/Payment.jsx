@@ -809,12 +809,12 @@ const Payment = () => {
                           <div className="payment-instructions cash">
                             <h4>Cash Payment Instructions</h4>
                             <p>
-                              If you prefer to pay with cash, kindly provide
-                              your mobile number so that you and the staff can
-                              schedule a time for the payment to be processed.
+                              If you prefer to pay with cash, kindly give the
+                              following mobile numbers a call so that you and
+                              the staff can schedule a time for the payment to
+                              be processed.
                             </p>
                             <p className="contact-numbers">
-                              Kindly give the following mobile numbers a call:
                               09358276798 / 09207129412
                             </p>
                             <p>
