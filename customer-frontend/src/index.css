@@ -13,7 +13,7 @@ html, body {
 
 body{
   min-height: 100vh;
-  background-color: #F1F8E9;
+  background-color: #E5E5E5;
 }
 
 a{
@@ -53,10 +53,10 @@ hr{
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #4caf50;
+  background-color: #3A506B;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #388E3C;
+  background: #32465F;
 }

@@ -123,6 +123,7 @@ button.cancel-button {
   background-color: #ffffff;
   border: 1px solid #3A506B;
   color: #3A506B;
+  border-radius: 24px;
 }
   
 .image-upload-section {
@@ -241,12 +242,13 @@ button {
 }
 
 button[type="submit"] {
-  background-color: #3A506B;
+  background-color: #4a90e2;
   color: white;
+  border-radius: 24px;
 }
 
 button[type="submit"]:hover {
-  background-color: #32465F;
+  background-color: #3a7bc8;
 }
 
 .product-action-buttons {
@@ -444,23 +446,23 @@ h2 {
 }
 
 .view-toggle-button.active {
-  background-color: #ff9800;
+  background-color: #4a90e2;
   color: white;
   border-radius: 24px;
 }
 
 .view-toggle-button.active:hover {
-  background-color: #f57c00;;
+  background-color: #3a7bc8;
 }
 
 .view-toggle-button.archived {
-  background-color: #3A506B;
+  background-color: #4a90e2;
   color: white;
   border-radius: 24px;
 }
 
 .view-toggle-button.archived:hover {
-  background-color: #32465F;
+  background-color: #3a7bc8;
 }
 
 /* Modify the existing tr styling for archived products */

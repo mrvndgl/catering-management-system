@@ -346,4 +346,83 @@ employeeRouter.get("/staff/archived", adminAuth, async (req, res) => {
   }
 });
 
+// Get admin profile
+employeeRouter.get("/admin/profile", adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const admin = await Employee.findById(userId).select("-password -photo");
+
+    if (!admin || admin.employeeType !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    res.json(admin);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Update admin profile
+employeeRouter.put("/admin/profile", adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { firstName, lastName, email, contactNumber, address } = req.body;
+
+    const admin = await Employee.findById(userId);
+    if (!admin || admin.employeeType !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Update only provided fields
+    if (firstName) admin.firstName = firstName;
+    if (lastName) admin.lastName = lastName;
+    if (email) admin.email = email;
+    if (contactNumber) admin.contactNumber = contactNumber;
+    if (address) admin.address = address;
+
+    await admin.save();
+
+    // Remove password from response
+    const adminResponse = admin.toObject();
+    delete adminResponse.password;
+    delete adminResponse.photo;
+
+    res.json({
+      message: "Admin profile updated successfully",
+      admin: adminResponse,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Update admin password
+employeeRouter.put("/admin/password", adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    const admin = await Employee.findById(userId);
+    if (!admin || admin.employeeType !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
+
+    await admin.save();
+
+    res.json({ message: "Admin password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 export default employeeRouter;

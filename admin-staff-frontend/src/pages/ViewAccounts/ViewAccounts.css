@@ -90,21 +90,6 @@
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
   }
   
-  .submit-button {
-    background-color: #2563eb;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .submit-button:hover {
-    background-color: #1d4ed8;
-  }
-  
   .submit-button:disabled {
     background-color: #93c5fd;
     cursor: not-allowed;
@@ -205,9 +190,20 @@
   margin-top: 1rem;
   width: 100%;
 }
+
+.submit-button-update {
+  border-radius: 24px;
+}
+
+.submit-button-update:hover {
+  background-color: #32465F;
+  color: #ffffff;
+  border-radius: 24px;
+}
+
 .submit-button {
   padding: 0.75rem 1.5rem;
-  background-color: #4CAF50; 
+  background-color: #3A506B; 
   color: white;
   border: none;
   border-radius: 4px;
@@ -218,7 +214,7 @@
 }
 
 .submit-button:hover {
-  background-color: #45a049; 
+  background-color: #32465F; 
 }
 
 .submit-button:disabled {
@@ -398,6 +394,170 @@ td:last-child {
   background-color: #f9f9f9;
   border-radius: 4px;
   margin-top: 1rem;
+}
+
+/* Admin Profile Section Styling */
+.admin-profile-section {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-profile-section h2 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.75rem;
+}
+
+.admin-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  outline: none;
+}
+
+.form-group input:disabled {
+  background-color: #f5f5f5;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.submit-button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 1rem;
+}
+
+.submit-button:hover {
+  background-color: #3a7bc8;
+}
+
+.submit-button:disabled {
+  background-color: #99b9e2;
+  cursor: not-allowed;
+}
+
+.password-button {
+  background-color: #ffffff;
+  border: 1px solid #3A506B;
+  color: #3A506B;
+  padding: 0.75rem 1.5rem;
+  border-radius: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 1rem;
+}
+
+.password-button:hover {
+  background-color: transparent;
+}
+
+/* View Toggle Buttons Styling */
+.view-toggle-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.toggle-view-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.toggle-view-button:hover {
+  background-color: #4a90e2;
+  border-color: #4a90e2;
+}
+
+.toggle-view-button.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #3a7bc8;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.25);
+}
+
+.toggle-view-button.active:hover {
+  background-color: #3a7bc8;
+}
+
+.toggle-view-button svg {
+  flex-shrink: 0;
+}
+
+/* Password Change Form */
+.password-change-form {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #ddd;
+}
+
+.password-change-form h3 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
 }
 
   @media (max-width: 768px) {

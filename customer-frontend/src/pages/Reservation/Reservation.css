@@ -354,10 +354,10 @@
 
 .add-item-btn {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(45deg, #4caf50, #45a049);
+  background-color: #4a90e2;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 24px;
   cursor: pointer;
   font-weight: 600;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -366,6 +366,7 @@
 .add-item-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+  background-color: #3a7bc8;
 }
 
 /* Selected items */
@@ -420,10 +421,10 @@
 /* Submit button */
 .submit-button {
   padding: 1rem 2rem;
-  background: linear-gradient(45deg, #4caf50, #45a049);
+  background-color: #4a90e2 !important;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 24px !important;
   cursor: pointer;
   font-weight: 600;
   font-size: 1.1rem;
@@ -434,6 +435,7 @@
 .submit-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+  background-color: #3a7bc8;
 }
 
 .submit-button:disabled {

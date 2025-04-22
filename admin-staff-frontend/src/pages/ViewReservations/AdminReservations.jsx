@@ -456,7 +456,7 @@ const AdminReservations = () => {
             fetchPaymentStatuses();
           }}
         >
-          Refresh Data
+          Refresh
         </button>
       </div>
 

@@ -11,6 +11,11 @@
 
 .refresh-button {
   margin-left: 8px;
+  background-color: #4a90e2 !important;
+}
+
+.refresh-button:hover {
+  background-color: #3a7bc8 !important;
 }
 
 .reservations-header {

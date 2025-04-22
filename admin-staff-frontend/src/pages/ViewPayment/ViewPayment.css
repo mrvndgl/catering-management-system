@@ -217,9 +217,9 @@
 /* View details button */
 .view-details-button {
   padding: 8px 16px;
-  background-color: #007bff;
+  background-color: #4a90e2;
   border: none;
-  border-radius: 4px;
+  border-radius: 24px;
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -228,7 +228,7 @@
 }
 
 .view-details-button:hover {
-  background-color: #0056b3;
+  background-color: #3a7bc8;
 }
 
 /* Modal styles */

@@ -47,10 +47,10 @@ hr{
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #4caf50;
+  background-color: #3A506B;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #45a049;
+  background: #32465F;
 }

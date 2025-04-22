@@ -101,6 +101,7 @@ const Login = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Username"
+                autoComplete="off"
                 className="input-field"
               />
             </div>

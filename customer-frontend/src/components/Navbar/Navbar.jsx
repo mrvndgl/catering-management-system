@@ -36,11 +36,6 @@ const Navbar = () => {
   // Menu items for authenticated users
   const authMenuItems = [
     {
-      path: "/dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
       path: "/reservation",
       label: "Reserve",
       icon: CalendarCheck,
