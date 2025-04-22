@@ -206,8 +206,6 @@ const FeedbackManagement = () => {
 
   return (
     <div className="feedback-management-container">
-      <h1>Feedback Management</h1>
-
       {error && <div className="error-message">{error}</div>}
 
       <div className="filter-controls">

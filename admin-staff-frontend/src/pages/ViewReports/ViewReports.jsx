@@ -546,7 +546,6 @@ const AdminReports = () => {
         }}
       >
         <div className="form-group">
-          <label htmlFor="month">Select Month:</label>
           <input
             type="month"
             id="month"

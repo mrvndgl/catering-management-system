@@ -126,29 +126,6 @@
     margin-bottom: 15px;
   }
 
-.auth-link {
-    text-align: center;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-}
-
-.auth-link a {
-    color: #008F28;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.auth-link a:hover {
-    color: #007722;
-    text-decoration: underline;
-}
-
-.error-message {
-    color: #dc3545;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
 @media (max-width: 768px) {
 
     .login-page,

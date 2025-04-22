@@ -106,3 +106,24 @@ export const updateFeedbackStatus = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// Get public feedback for displaying on homepage
+export const getPublicFeedback = async (req, res) => {
+  try {
+    // Fetch feedbacks that have been reviewed and are appropriate for public display
+    const publicFeedbacks = await Feedback.find({
+      status: { $in: ["reviewed", "addressed"] },
+      rating: { $gte: 3 }, // Only show 3+ star ratings on public page
+    })
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 })
+      .limit(20); // Limit to prevent performance issues
+
+    res.json(publicFeedbacks);
+  } catch (error) {
+    console.error("Error fetching public feedback:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching public feedback" });
+  }
+};

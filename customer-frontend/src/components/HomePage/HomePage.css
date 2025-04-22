@@ -1,0 +1,105 @@
+/* PublicHome.css */
+.public-home {
+  max-width: 100%;
+  margin: 0 auto;
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-links {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100; /* Increased z-index to ensure visibility */
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.login-button, .signup-button {
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button {
+  background-color: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.login-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.signup-button {
+  background-color: #3A506B;
+  color: white;
+  border: 2px solid #3A506B;
+}
+
+.signup-button:hover {
+  background-color: #32465F;
+  border-color: #32465F;
+}
+
+/* Button animations */
+.login-button::after, .signup-button::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: width 0.3s ease;
+}
+
+.login-button:hover::after, .signup-button:hover::after {
+  width: 100%;
+}
+
+.explore-menu-container {
+  padding: 40px 20px;
+  background-color: #fff;
+}
+
+.food-display-container {
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+  flex: 1;
+}
+
+@media screen and (max-width: 768px) {
+  .auth-links {
+      position: static;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.7);
+  }
+  
+  .auth-buttons {
+      width: 100%;
+      max-width: 300px;
+      justify-content: center;
+  }
+  
+  .login-button, .signup-button {
+      width: 48%;
+      padding: 8px 0;
+      font-size: 14px;
+      text-align: center;
+  }
+}

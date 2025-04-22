@@ -34,6 +34,25 @@ export const generateMonthlyReport = async (req, res) => {
       end_date: endDate,
     });
 
+    // Get the reservations for this period to include in the response
+    const reservations = await Reservation.find({
+      reservation_date: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    });
+
+    // Get accepted and declined reservations
+    const acceptedReservations = reservations.filter(
+      (r) =>
+        r.reservation_status === "accepted" ||
+        r.reservation_status === "completed"
+    );
+
+    const declinedReservations = reservations.filter(
+      (r) => r.reservation_status === "declined"
+    );
+
     // If report exists and is recent, return it
     if (existingReport && Date.now() - existingReport.generated_at < 86400000) {
       // 24 hours
@@ -56,25 +75,6 @@ export const generateMonthlyReport = async (req, res) => {
           }))
         : [{ month: monthName, revenue: existingReport.metrics.total_revenue }];
 
-      // Get the reservations for this period to include in the response
-      const reservations = await Reservation.find({
-        reservation_date: {
-          $gte: startDate,
-          $lte: endDate,
-        },
-      });
-
-      // Get accepted and declined reservations if available
-      const acceptedReservations = reservations.filter(
-        (r) =>
-          r.reservation_status === "accepted" ||
-          r.reservation_status === "completed"
-      );
-
-      const declinedReservations = reservations.filter(
-        (r) => r.reservation_status === "declined"
-      );
-
       return res.status(200).json({
         month: numMonth,
         monthName,
@@ -90,21 +90,12 @@ export const generateMonthlyReport = async (req, res) => {
             existingReport.metrics.avg_pax_per_reservation,
           monthly_sales: monthlySales,
         },
-        acceptedReservations, // Renamed for frontend consistency
-        declinedReservations, // Renamed for frontend consistency
+        acceptedReservations, // Now defined before using
+        declinedReservations, // Now defined before using
       });
     }
 
     // If report doesn't exist or is old, generate a new one
-
-    // Query all reservations for the month
-    const reservations = await Reservation.find({
-      reservation_date: {
-        $gte: startDate,
-        $lte: endDate,
-      },
-    });
-
     console.log(
       `Found ${reservations.length} reservations for ${numMonth}/${numYear}`
     );
@@ -150,24 +141,15 @@ export const generateMonthlyReport = async (req, res) => {
     // Calculate monthly totals
     const monthlyTotals = {
       totalReservations: reservations.length,
-      acceptedReservations: reservations.filter(
-        (r) =>
-          r.reservation_status === "accepted" ||
-          r.reservation_status === "completed"
-      ).length,
-      declinedReservations: reservations.filter(
-        (r) => r.reservation_status === "declined"
-      ).length,
+      acceptedReservations: acceptedReservations.length,
+      declinedReservations: declinedReservations.length,
       cancelledReservations: reservations.filter(
         (r) => r.reservation_status === "cancelled"
       ).length,
-      totalRevenue: reservations
-        .filter(
-          (r) =>
-            r.reservation_status === "accepted" ||
-            r.reservation_status === "completed"
-        )
-        .reduce((sum, r) => sum + (r.total_amount || 0), 0),
+      totalRevenue: acceptedReservations.reduce(
+        (sum, r) => sum + (r.total_amount || 0),
+        0
+      ),
       avgPaxPerReservation:
         reservations.length > 0
           ? reservations.reduce(
@@ -255,17 +237,6 @@ export const generateMonthlyReport = async (req, res) => {
       revenue: day.totalRevenue,
     }));
 
-    // Get accepted and declined reservations
-    const acceptedReservations = reservations.filter(
-      (r) =>
-        r.reservation_status === "accepted" ||
-        r.reservation_status === "completed"
-    );
-
-    const declinedReservations = reservations.filter(
-      (r) => r.reservation_status === "declined"
-    );
-
     // Return report data in format expected by frontend
     return res.status(200).json({
       month: numMonth,
@@ -280,8 +251,8 @@ export const generateMonthlyReport = async (req, res) => {
         avg_pax_per_reservation: monthlyTotals.avgPaxPerReservation,
         monthly_sales: monthlySales,
       },
-      acceptedReservations, // Renamed for frontend consistency
-      declinedReservations, // Renamed for frontend consistency
+      acceptedReservations,
+      declinedReservations,
     });
   } catch (error) {
     console.error("Monthly report generation error:", error);

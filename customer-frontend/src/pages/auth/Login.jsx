@@ -1,18 +1,20 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import "./Auth.css";
 import Swal from "sweetalert2";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Login = () => {
-  const { setIsAuthenticated } = useAuth();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/reservation"; // Default to reservation
 
   const handleChange = (e) => {
     setFormData({
@@ -27,7 +29,9 @@ const Login = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/customers/login",
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:4000"
+        }/api/customers/login`,
         {
           method: "POST",
           headers: {
@@ -38,7 +42,6 @@ const Login = () => {
       );
 
       const data = await response.json();
-      console.log("Server response:", data); // Debug log
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
@@ -48,12 +51,9 @@ const Login = () => {
         throw new Error("Invalid user data received");
       }
 
-      // Store user data only if valid
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Use login function from context
+      login(data.user, data.token);
       localStorage.setItem("userId", data.user._id);
-
-      setIsAuthenticated(true);
 
       Swal.fire({
         icon: "success",
@@ -63,13 +63,12 @@ const Login = () => {
         showConfirmButton: false,
       });
 
-      navigate("/dashboard");
+      // Redirect to reservation page
+      setTimeout(() => {
+        navigate(from);
+      }, 2000);
     } catch (err) {
-      console.error("Login error details:", {
-        message: err.message,
-        response: err.response,
-        stack: err.stack,
-      });
+      console.error("Login error details:", err);
 
       Swal.fire({
         icon: "error",
@@ -79,6 +78,10 @@ const Login = () => {
 
       setError(err.message || "Login failed. Please check your credentials.");
     }
+  };
+
+  const handleCancel = () => {
+    navigate("/dashboard");
   };
 
   return (
@@ -114,9 +117,18 @@ const Login = () => {
               />
             </div>
 
-            <button type="submit" className="submit-btn">
-              Login
-            </button>
+            <div className="form-actions">
+              <button type="submit" className="submit-btn">
+                Login
+              </button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
 
             <p className="auth-link">
               Don't have an account? <Link to="/signup">Sign Up</Link>

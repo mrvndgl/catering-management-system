@@ -2,12 +2,12 @@
   display: flex;
   height: 100vh;
   position: relative; 
-  background-color: #F1F8E9 !important;
+  background-color: #32465F !important;
 }
 
 .main-content {
   flex: 1;
-  background-color: #F1F8E9 !important;
+  background-color: #E5E5E5 !important;
   overflow-y: auto;
   margin-left: 250px; /* sidebar width */
   width: calc(100% - 250px);
@@ -101,7 +101,7 @@
 
 .dashboard-sidebar {
   width: 250px;
-  background-color: #45a049;
+  background-color: #3A506B;
   color: white;
   padding: 20px;
   transition: all 0.3s ease;

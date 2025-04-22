@@ -8,7 +8,7 @@
 }
 
 .report-container h2 {
-  color: #2c3e50;
+  color: #3A506B;
   text-align: center;
   margin-bottom: 25px;
   font-weight: 600;
@@ -20,7 +20,7 @@
   align-items: center;
   margin-bottom: 25px;
   gap: 15px;
-  background-color: #f8f9fa;
+  background-color: #FBFBFB;
   padding: 20px;
   border-radius: 6px;
 }
@@ -50,9 +50,7 @@
   box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }
 
-.generate-button {
-  padding: 10px 15px;
-  background-color: #3498db;
+.generate-button {  
   color: white;
   border: none;
   border-radius: 4px;

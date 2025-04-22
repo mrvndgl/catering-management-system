@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import Swal from "sweetalert2";
 import {
@@ -10,13 +10,16 @@ import {
   MessageSquare,
   Menu,
   LogOut,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import logoImage from "../../assets/cmslogo2.png";
 import "./Navbar.css";
 
 const Navbar = () => {
-  const { logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const Toast = Swal.mixin({
     toast: true,
@@ -30,7 +33,8 @@ const Navbar = () => {
     },
   });
 
-  const menuItems = [
+  // Menu items for authenticated users
+  const authMenuItems = [
     {
       path: "/dashboard",
       label: "Dashboard",
@@ -55,6 +59,15 @@ const Navbar = () => {
       path: "/feedback",
       label: "Feedback",
       icon: MessageSquare,
+    },
+  ];
+
+  // Menu items for non-authenticated users
+  const publicMenuItems = [
+    {
+      path: "/dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
     },
   ];
 
@@ -87,6 +100,7 @@ const Navbar = () => {
 
     setTimeout(() => {
       logout();
+      navigate("/dashboard");
     }, 1000);
   };
 
@@ -94,7 +108,9 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo">
-          <img src={logoImage} alt="Logo" className="logo-image" />
+          <NavLink to="/dashboard">
+            <img src={logoImage} alt="Logo" className="logo-image" />
+          </NavLink>
         </div>
         <button className="menu-toggle" onClick={toggleMenu}>
           <Menu size={20} />
@@ -102,7 +118,8 @@ const Navbar = () => {
 
         <div className={`navbar-menu ${isMenuOpen ? "open" : ""}`}>
           <ul className="nav-list">
-            {menuItems.map((item) => (
+            {/* Show different menu items based on authentication status */}
+            {(isAuthenticated ? authMenuItems : publicMenuItems).map((item) => (
               <li key={item.path} className="nav-item">
                 <NavLink
                   to={item.path}
@@ -115,12 +132,31 @@ const Navbar = () => {
                 </NavLink>
               </li>
             ))}
-            <li className="nav-item logout-item">
-              <button onClick={openLogoutConfirm} className="logout-btn">
-                <LogOut size={20} className="nav-icon" />
-                <span>Log out</span>
-              </button>
-            </li>
+
+            {/* Authentication buttons */}
+            {isAuthenticated ? (
+              <li className="nav-item logout-item">
+                <button onClick={openLogoutConfirm} className="logout-btn">
+                  <LogOut size={20} className="nav-icon" />
+                  <span>Log out</span>
+                </button>
+              </li>
+            ) : (
+              <>
+                <li className="nav-item">
+                  <NavLink to="/login" className="nav-link">
+                    <LogIn size={20} className="nav-icon" />
+                    <span>Login</span>
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink to="/signup" className="nav-link">
+                    <UserPlus size={20} className="nav-icon" />
+                    <span>Sign Up</span>
+                  </NavLink>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>

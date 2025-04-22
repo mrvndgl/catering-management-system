@@ -1,13 +1,13 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthProvider"; // Import useAuth
+import { useAuth } from "../../context/AuthProvider";
 import "./Auth.css";
 import "./Signup.css";
 import Swal from "sweetalert2";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Signup = () => {
-  const { setIsAuthenticated } = useAuth(); // Get from context instead of props
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -19,7 +19,7 @@ const Signup = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(""); // Add success message state
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -46,7 +46,9 @@ const Signup = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/customers/signup`,
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:4000"
+        }/api/customers/signup`,
         {
           method: "POST",
           headers: {
@@ -63,16 +65,21 @@ const Signup = () => {
 
       setSuccess("Account created successfully! Redirecting...");
 
+      // Use login function from context
+      login(data.user, data.token);
+      localStorage.setItem("userId", data.user._id);
+
       Swal.fire({
         icon: "success",
         title: "Account Created",
-        text: "Redirecting to login...",
+        text: "Redirecting to reservation...",
         timer: 2000,
         showConfirmButton: false,
       });
 
+      // Direct to reservation after signup
       setTimeout(() => {
-        navigate("/login");
+        navigate("/reservation");
       }, 2000);
     } catch (err) {
       console.error("Signup error:", err);
@@ -84,6 +91,10 @@ const Signup = () => {
         text: err.message || "An error occurred. Please try again.",
       });
     }
+  };
+
+  const handleCancel = () => {
+    navigate("/dashboard");
   };
 
   return (
@@ -191,9 +202,18 @@ const Signup = () => {
               />
             </div>
 
-            <button type="submit" className="submit-btn compact-btn">
-              Sign Up
-            </button>
+            <div className="form-actions">
+              <button type="submit" className="submit-btn compact-btn">
+                Sign Up
+              </button>
+              <button
+                type="button"
+                className="cancel-btn compact-btn"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
 
             <p className="auth-link compact-link">
               Already have an account?{" "}

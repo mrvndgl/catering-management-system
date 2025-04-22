@@ -10,12 +10,26 @@
 .food-display h2 {
     font-size: max(2vw, 24px);
     font-weight: 600;
+    color: #2A2A2A;
 }
 
 .food-display-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr); /* Changed to exactly 4 columns */
     margin-top: 30px;
     gap: 30px;
     row-gap: 50px;
+}
+
+/* Media query for smaller screens */
+@media screen and (max-width: 992px) {
+    .food-display-list {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for tablets */
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .food-display-list {
+        grid-template-columns: 1fr; /* 1 column for mobile phones */
+    }
 }
