@@ -7,7 +7,7 @@
 
 .main-content {
   flex: 1;
-  background-color: #E5E5E5 !important;
+  background-color: #F5F7FA !important;
   overflow-y: auto;
   margin-left: 250px; /* sidebar width */
   width: calc(100% - 250px);
@@ -24,17 +24,20 @@
 
 .main-header {
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: sticky; 
   top: 0; 
   z-index: 90; 
   border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .page-title {
-  margin-left: 20px !important;
+  margin: 0 0 0 20px !important;
   font-size: 1.8rem;
   color: #263238;
+  font-weight: 600;
 }
 
 .content-area {
@@ -44,59 +47,147 @@
 /* Dashboard Grid Styling */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
-  padding: 20px;
+  margin-bottom: 30px;
 }
 
 .dashboard-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color:  #263238!important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: #263238 !important;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card {
+  padding: 20px;
+  display: flex;
+  align-items: center;
 }
 
 .stat-content h3 {
   margin: 0;
   font-size: 1.1rem;
-  color: #ffffff  !important;
+  color: #ffffff !important;
+  font-weight: 500;
 }
 
 .stat-number {
-  margin: 5px 0;
-  font-size: 1.8rem;
-  font-weight: bold;
+  margin: 10px 0;
+  font-size: 2rem;
+  font-weight: 700;
   color: #ffffff !important;
 }
 
 .stat-label {
   margin: 0;
   font-size: 0.9rem;
-  color: #ffffff !important;
-}
-
-.admin-dashboard {
-  display: flex;
-  min-height: 100vh;
-  position: relative;
+  color: #B0BEC5 !important;
+  font-weight: 400;
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
-  border-radius: 50%;
-  background-color: transparent !important;
+  margin-right: 20px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  padding: 15px;
 }
 
-.stat-content {
-  flex: 1;
+/* Charts Container */
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
 }
 
-.stat-label {
-  margin: 0;
-  font-size: 0.875rem;
-  color: #6c757d;
+.chart-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chart-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.chart-title {
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  color: #263238;
+  font-weight: 600;
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+.doughnut-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: #90A4AE;
+  font-size: 1rem;
+}
+
+.no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: #90A4AE;
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+}
+
+/* Rest of your existing CSS remains unchanged */
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
 }
 
 .dashboard-sidebar {
@@ -217,14 +308,6 @@
   margin-left: 250px;
   transition: all 0.3s ease;
   width: calc(100% - 250px);
-}
-
-.content-area {
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-  margin-top: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Logout Modal Styles */

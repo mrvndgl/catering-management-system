@@ -17,6 +17,11 @@
   cursor: pointer;
 }
 
+.toggle-btn:hover {
+  color: #fff;
+  background-color: #32465F !important;
+}
+
 .nav-menu {
   display: flex;
   flex-direction: column;

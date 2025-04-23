@@ -64,7 +64,7 @@
 }
 
 .submit-button {
-  background-color: #4CAF50;
+  background-color: #3A506B;
   color: white;
   padding: 1rem;
   border: none;
@@ -75,7 +75,7 @@
 }
 
 .submit-button:hover {
-  background-color: #45a049;
+  background-color: #32465F;
 }
 
 .error-message {

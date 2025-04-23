@@ -71,7 +71,7 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.1rem;
 }
 
 .auth-form h2 {

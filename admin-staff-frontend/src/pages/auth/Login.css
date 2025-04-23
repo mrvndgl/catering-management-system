@@ -37,7 +37,7 @@ html {
   border-radius: 10px;
   position: relative;
   z-index: 1;
-  min-height: 460px; 
+  min-height:350px; 
   width: 400px;
 }
 
@@ -51,7 +51,7 @@ html {
 }
 
 .login-form-wrapper h2 {
-  color: #4CAF50;
+  color: #3A506B;
   font-size: 2.5rem;
   font-weight: bold;
   margin-bottom: 2rem;
@@ -97,7 +97,7 @@ html {
 }
 
 .submit-button:hover:not(:disabled) {
-  background-color: #006c2f !important;
+  background-color: #3a7bc8 !important;
 }
 
 .submit-button:disabled {

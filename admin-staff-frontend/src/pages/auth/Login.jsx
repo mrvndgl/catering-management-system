@@ -93,7 +93,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-form-section">
         <div className="login-form-wrapper">
-          <h2>Log In</h2>
+          <h2>Management Portal</h2>
           <form onSubmit={handleSubmit}>
             {/* Username Input */}
             <div className="form-group">
