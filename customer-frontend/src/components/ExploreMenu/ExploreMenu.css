@@ -15,13 +15,13 @@
   }
 
 .explore-menu h1{
-    color: #2A2A2A;
+    color: #3A506B;
     font-weight: 500;
 }
 .explore-menu-text{
     max-width: 100%;
     columns: #808080;
-    color: #2A2A2A;
+    color: #3A506B;
 }
 .explore-menu-list{
     display: flex;
@@ -44,14 +44,14 @@
 }
 .explore-menu-list-item p{
     margin-top: 10px;
-    color: #2A2A2A;
+    color: #3A506B;
     font-size: max(1.4vw,16px);
     cursor: pointer;
 }
 .explore-menu hr{
     margin: 10px 0px;
     height: 2px;
-    background-color: #263238;
+    background-color: #3A506B;
     border: none;
 }
 .explore-menu-list-item .active{

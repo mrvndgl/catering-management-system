@@ -48,6 +48,11 @@
     z-index: 1;
 }
 
+.auth-link a {
+    color: #3A506B;
+    text-decoration: underline;
+}
+
 /* Login Specific Styles */
 .login .auth-container {
     max-width: 300px;
@@ -97,14 +102,14 @@
 
 .input-field:focus {
     outline: none;
-    border-color: #008F28;
+    border-color: #3A506B;
     box-shadow: 0 0 0 0.2rem rgba(0, 143, 40, 0.25);
 }
 
 .submit-btn {
     width: 100%;
     padding: 0.75rem;
-    background-color: #4a90e2;
+    background-color: #3A506B;
     color: white;
     border: none;
     border-radius: 24px;
@@ -115,15 +120,15 @@
 }
 
 .submit-btn:hover {
-    background-color: #3a7bc8;
+    background-color: #32465F;
 }
 
 .cancel-btn {
     width: 100%;
     padding: 0.75rem;
-    background-color:  #e94e4e;
-    color: white;
-    border: none;
+    background-color: transparent;
+    border: 1px solid #3A506B;
+    color: #3A506B;
     border-radius: 24px;
     cursor: pointer;
     font-size: 1rem;
@@ -132,7 +137,7 @@
 }
 
 .cancel-btn:hover {
-    background-color: #c63c3c;
+    background-color: transparent;
 }
 
 .success-message {

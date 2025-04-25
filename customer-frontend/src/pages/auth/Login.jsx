@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import "./Auth.css";
@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import backgroundImage from "../../assets/samplebg.jpg";
 
 const Login = () => {
+  const formRef = useRef(null);
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
@@ -15,11 +16,65 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/reservation"; // Default to reservation
+  const [formKey, setFormKey] = useState(Date.now());
+
+  // Add this enhanced useEffect hook
+  useEffect(() => {
+    // Function to clear autofill
+    const clearAutofill = () => {
+      console.log("Attempting to clear autofill...");
+
+      // Force a form reset
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+
+      // Try to clear using DOM manipulation
+      const usernameInput = document.getElementById("username-field");
+      const passwordInput = document.getElementById("password-field");
+
+      if (usernameInput) {
+        usernameInput.value = "";
+        usernameInput.setAttribute("autocomplete", "new-username");
+      }
+
+      if (passwordInput) {
+        passwordInput.value = "";
+        passwordInput.setAttribute("autocomplete", "new-password");
+      }
+
+      // Reset React state
+      setFormData({
+        username: "",
+        password: "",
+      });
+
+      // Force form refresh by updating key
+      setFormKey(Date.now());
+    };
+
+    // Initial clear
+    clearAutofill();
+
+    // Add a secondary delayed clear to catch late autofills
+    const timer = setTimeout(clearAutofill, 500);
+
+    // Clean up
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e) => {
+    // Map input names to state properties
+    const fieldName =
+      e.target.name === "username_input"
+        ? "username"
+        : e.target.name === "password_input"
+        ? "password"
+        : e.target.name;
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [fieldName]: e.target.value,
     });
   };
 
@@ -37,7 +92,10 @@ const Login = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            username: formData.username,
+            password: formData.password,
+          }),
         }
       );
 
@@ -85,35 +143,65 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" key={`login-container-${formKey}`}>
+      {/* Hidden form to "catch" browser autofill */}
+      <div
+        style={{
+          height: 0,
+          width: 0,
+          overflow: "hidden",
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+        }}
+      >
+        <form id="decoy-form" aria-hidden="true">
+          <input type="text" name="username" autoComplete="username" />
+          <input
+            type="password"
+            name="password"
+            autoComplete="current-password"
+          />
+        </form>
+      </div>
+
       <div className="login-left">
         <div className="auth-container login">
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="auth-form"
+            autoComplete="off"
+            key={`login-form-${formKey}`}
+          >
             <h2>Welcome Back!</h2>
             {error && <div className="error-message">{error}</div>}
 
             <div className="form-group">
               <input
-                id="username"
-                name="username"
+                id="username-field"
+                name="username_input"
                 type="text"
                 required
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Username"
-                autoComplete="off"
+                autoComplete="new-username"
                 className="input-field"
+                autoFocus
               />
             </div>
 
             <div className="form-group">
               <input
+                id="password-field"
                 type="password"
-                name="password"
+                name="password_input"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
                 required
+                autoComplete="new-password"
                 className="input-field"
               />
             </div>

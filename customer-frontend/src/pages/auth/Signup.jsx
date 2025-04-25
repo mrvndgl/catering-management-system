@@ -101,105 +101,133 @@ const Signup = () => {
     <div className="login-page signup">
       <div className="login-left">
         <div className="auth-container compact">
-          <form onSubmit={handleSubmit} className="auth-form compact-form">
+          <form
+            onSubmit={handleSubmit}
+            className="auth-form compact-form"
+            autoComplete="off"
+          >
             <h2>Create Account</h2>
             {error && <div className="error-message">{error}</div>}
             {success && <div className="success-message">{success}</div>}
 
-            <div className="form-group">
-              <input
-                type="text"
-                name="firstName"
-                placeholder="First Name"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
+            {/* First row: First Name and Last Name */}
+            <div className="form-row">
+              <div className="form-group">
+                <input
+                  type="text"
+                  name="firstName"
+                  placeholder="First Name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="given-name"
+                />
+              </div>
+
+              <div className="form-group">
+                <input
+                  type="text"
+                  name="lastName"
+                  placeholder="Last Name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="family-name"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
+            {/* Second row: Username and Contact Number */}
+            <div className="form-row">
+              <div className="form-group">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="username"
+                  spellCheck="false"
+                />
+              </div>
+
+              <div className="form-group">
+                <input
+                  type="tel"
+                  name="contactNumber"
+                  placeholder="Contact Number"
+                  value={formData.contactNumber}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="tel"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
+            {/* Third row: Address (full width) */}
+            <div className="form-row full-width">
+              <div className="form-group">
+                <input
+                  type="text"
+                  name="address"
+                  placeholder="Address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="street-address"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <input
-                type="tel"
-                name="contactNumber"
-                placeholder="Contact Number"
-                value={formData.contactNumber}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
+            {/* Fourth row: Email (full width) */}
+            <div className="form-row full-width">
+              <div className="form-group">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="email"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <input
-                type="text"
-                name="address"
-                placeholder="Address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
-            </div>
+            {/* Fifth row: Password and Confirm Password */}
+            <div className="form-row">
+              <div className="form-group">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="new-password"
+                />
+              </div>
 
-            <div className="form-group">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className="input-field compact-input"
-              />
+              <div className="form-group">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="input-field compact-input"
+                  autoComplete="new-password"
+                />
+              </div>
             </div>
 
             <div className="form-actions">

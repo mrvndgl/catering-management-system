@@ -127,7 +127,7 @@
   left: 0;
   height: 3px;
   width: 100%;
-  background-color: #45a049;
+  background-color: #3A506B;
   border-radius: 2px;
 }
 
@@ -161,7 +161,7 @@
 }
 
 .tab.active {
-  color: #4CAF50;
+  color: #3A506B;
   font-weight: 600;
 }
 
@@ -249,18 +249,18 @@
 }
 
 .refresh-button {
-  background-color: #4CAF50;
+  background-color: #4a90e2;
   color: white;
   border: none;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 24px;
   cursor: pointer;
   transition: background-color 0.3s;
   font-size: 0.9rem;
 }
 
 .refresh-button:hover {
-  background-color: #45a049;
+  background-color: #3a7bc8;
 }
 
 .retry-button {
@@ -333,8 +333,8 @@
 }
 
 .status-badge.addressed {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: #E3ECF4;
+  color: #3A506B;
 }
 
 .feedback-body {

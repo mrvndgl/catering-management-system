@@ -175,7 +175,7 @@
   font-weight: 600;
   margin-bottom: 1.5rem;
   color: #2c3e50;
-  border-left: 4px solid #4caf50;
+  border-left: 4px solid #3A506B;
   padding-left: 1rem;
 }
 
@@ -228,7 +228,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4caf50;
+  border-color: #3A506B;
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
   background-color: white;
 }
@@ -265,8 +265,8 @@
 }
 
 .category-tab.active {
-  color: #4caf50;
-  border-bottom-color: #4caf50;
+  color: #3A506B;
+  border-bottom-color: #3A506B;
 }
 
 .icon-container {
@@ -283,8 +283,8 @@
 }
 
 .active .icon-container {
-  background-color: #dcfce7;
-  color: #4caf50;
+  background-color: #E3ECF4;
+  color: #3A506B;
 }
 
 .product-list {
@@ -302,12 +302,12 @@
 }
 
 .product-item:hover {
-  border-color: #4caf50;
+  border-color: #3A506B;
 }
 
 .product-item.selected {
-  border-color: #4caf50;
-  background-color: #f0fdf4;
+  border-color: #3A506B;
+  background-color: #E3ECF4;
 }
 
 .product-item input[type="radio"] {
@@ -412,9 +412,9 @@
   font-weight: 700;
   margin: 2rem 0;
   text-align: center;
-  color: #4CAF50;
+  color: #3A506B;
   padding: 0.5rem;
-  background: #F1F8E9;
+  background: #E3ECF4;
   border-radius: 24px;
 }
 
@@ -656,7 +656,7 @@
 }
 
 .pricing-row.total span:last-child {
-  color: #2e7d32;
+  color: #3A506B;
   font-weight: 700;
 }
 
