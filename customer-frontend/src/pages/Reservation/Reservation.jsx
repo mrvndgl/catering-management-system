@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { StoreContext } from "../../context/StoreContext";
 import "./Reservation.css";
 import { Beef, Drumstick, Fish, Salad, Soup, Utensils } from "lucide-react";
 import Swal from "sweetalert2";
@@ -77,6 +78,7 @@ const Reservation = () => {
   });
 
   // Menu and product data
+  const { foodList, refreshFoodItems } = useContext(StoreContext);
   const [menuItems, setMenuItems] = useState({});
   const [reservations, setReservations] = useState([]);
   const [productsLookup, setProductsLookup] = useState({});
@@ -147,6 +149,118 @@ const Reservation = () => {
     return archivedProducts.filter((archived) => archived?.product_id == id)
       ? true
       : false;
+  };
+
+  useEffect(() => {
+    if (foodList && foodList.length > 0) {
+      organizeMenuItems();
+    }
+  }, [foodList]);
+
+  const organizeMenuItems = async () => {
+    try {
+      console.log("[Reservation] Organizing menu items from foodList");
+      if (!foodList || foodList.length === 0) {
+        console.warn("[Reservation] Food list is empty or unavailable");
+        return;
+      }
+
+      // Get categories or use the existing ones
+      let categoriesData = categories;
+      if (!categoriesData || categoriesData.length === 0) {
+        try {
+          const token = localStorage.getItem("token");
+          const categoriesResponse = await fetch(
+            "http://localhost:4000/api/categories",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!categoriesResponse.ok) {
+            throw new Error(
+              `Failed to fetch categories: ${categoriesResponse.status}`
+            );
+          }
+
+          categoriesData = await categoriesResponse.json();
+          setCategories(categoriesData);
+        } catch (error) {
+          console.error("[Reservation] Error fetching categories:", error);
+          categoriesData = predefinedCategories;
+        }
+      }
+
+      // Filter out archived items from foodList
+      const nonArchivedFoodItems = foodList.filter((item) => !item.archived);
+      console.log(
+        "[Reservation] Non-archived food items:",
+        nonArchivedFoodItems.length
+      );
+
+      // Organize by category
+      const organizedMenu = {};
+      categoriesData.forEach((category) => {
+        organizedMenu[category.category_name] = [];
+      });
+
+      nonArchivedFoodItems.forEach((item) => {
+        const categoryName = categoriesData.find(
+          (cat) => cat.category_id === item.category_id
+        )?.category_name;
+
+        if (categoryName && organizedMenu[categoryName]) {
+          // Transform to expected format
+          organizedMenu[categoryName].push({
+            product_id: item._id,
+            product_name: item.name,
+            product_details: item.description,
+            category_id: item.category_id,
+            images: item.images || [],
+          });
+        }
+      });
+
+      console.log(
+        "[Reservation] Organized menu items:",
+        Object.keys(organizedMenu).map(
+          (key) => `${key}: ${organizedMenu[key].length} items`
+        )
+      );
+
+      // Set menu items
+      setMenuItems(organizedMenu);
+
+      // Set initial active category if needed
+      if (Object.keys(organizedMenu).length > 0 && !activeCategory) {
+        setActiveCategory(Object.keys(organizedMenu)[0]);
+      }
+
+      // Build product lookup for easy reference
+      const lookup = {};
+      nonArchivedFoodItems.forEach((item) => {
+        lookup[item._id] = {
+          product_id: item._id,
+          product_name: item.name,
+          product_details: item.description,
+          category_id: item.category_id,
+        };
+      });
+      setProductsLookup(lookup);
+
+      setError("");
+    } catch (error) {
+      console.error("[Reservation] Error organizing menu items:", error);
+      setError(`Failed to organize menu items: ${error.message}`);
+    }
+  };
+
+  // You can manually refresh if needed
+  const handleRefresh = () => {
+    refreshFoodItems();
   };
 
   // Updated getProductName function
@@ -256,45 +370,73 @@ const Reservation = () => {
   };
 
   const fetchAllProductData = async () => {
+    setLoading(true);
+    setError("");
+
     try {
+      console.log("[Reservation] Fetching all product data");
       const token = localStorage.getItem("token");
 
+      if (!token) {
+        setError("No authentication token found - please log in");
+        return;
+      }
+
+      // Common headers for all requests
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
       // Fetch categories
+      console.log("[Reservation] Fetching categories");
       const categoriesResponse = await fetch(
-        "http://localhost:4000/api/categories"
+        "http://localhost:4000/api/categories",
+        { headers }
       );
-      if (!categoriesResponse.ok)
-        throw new Error(`HTTP error! status: ${categoriesResponse.status}`);
+
+      if (!categoriesResponse.ok) {
+        throw new Error(
+          `Categories request failed: ${categoriesResponse.status}`
+        );
+      }
+
       const categoriesData = await categoriesResponse.json();
+      console.log("[Reservation] Categories fetched:", categoriesData.length);
       setCategories(categoriesData);
 
-      // Fetch regular products
+      // Fetch products
+      console.log("[Reservation] Fetching products");
       const productsResponse = await fetch(
         "http://localhost:4000/api/products",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers }
       );
-      if (!productsResponse.ok)
-        throw new Error(`HTTP error! status: ${productsResponse.status}`);
+
+      if (!productsResponse.ok) {
+        throw new Error(`Products request failed: ${productsResponse.status}`);
+      }
+
       const productsData = await productsResponse.json();
+      console.log("[Reservation] Products fetched:", productsData.length);
 
       // Fetch archived products
+      console.log("[Reservation] Fetching archived products");
       const archivedResponse = await fetch(
         "http://localhost:4000/api/products/archived",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers }
       );
-      if (!archivedResponse.ok)
-        throw new Error(`HTTP error! status: ${archivedResponse.status}`);
+
+      if (!archivedResponse.ok) {
+        throw new Error(
+          `Archived products request failed: ${archivedResponse.status}`
+        );
+      }
+
       const archivedData = await archivedResponse.json();
+      console.log(
+        "[Reservation] Archived products fetched:",
+        archivedData.length
+      );
       setArchivedProducts(archivedData);
 
       // Create a lookup of archived product IDs for faster checks
@@ -303,6 +445,10 @@ const Reservation = () => {
       // Filter out archived products
       const nonArchivedProducts = productsData.filter(
         (product) => !archivedIds.has(product.product_id)
+      );
+      console.log(
+        "[Reservation] Non-archived products:",
+        nonArchivedProducts.length
       );
 
       // Organize by category
@@ -322,33 +468,174 @@ const Reservation = () => {
       });
 
       // Set menu items
+      console.log("[Reservation] Setting organized menu items");
       setMenuItems(organizedMenu);
 
-      // Set initial active category
-      if (categoriesData.length > 0 && !activeCategory) {
-        setActiveCategory(categoriesData[0].category_name);
+      // Set initial active category if needed
+      if (Object.keys(organizedMenu).length > 0 && !activeCategory) {
+        setActiveCategory(Object.keys(organizedMenu)[0]);
       }
 
-      // Also create lookup for quick reference
-      const productsLookup = nonArchivedProducts.reduce((acc, product) => {
-        // Use product_id as the key and store the entire product object
-        acc[product.product_id] = product;
-        return acc;
-      }, {});
+      // Build product lookup for easy reference
+      const lookup = {};
+      nonArchivedProducts.forEach((product) => {
+        lookup[product.product_id] = product;
+      });
+      setProductsLookup(lookup);
 
-      setProductsLookup(productsLookup);
+      console.log("[Reservation] Product data fetch complete");
     } catch (error) {
-      console.error("Error fetching product data:", error);
-      setCategories([]);
-      setMenuItems({});
-      setError("Failed to fetch products");
+      console.error("[Reservation] Error fetching product data:", error);
+      setError(`Failed to fetch products: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (foodList && foodList.length > 0) {
+      console.log(
+        "[Reservation] foodList updated from context, reorganizing menu items"
+      );
+      organizeMenuItems();
+    }
+  }, [foodList]);
+
+  useEffect(() => {
+    console.log("[Reservation] Component mounted, fetching initial data");
+    fetchAllProductData();
+
+    // Set up event listeners for product updates
+    const handleProductUpdate = (event) => {
+      console.log(
+        "[Reservation] Product update event received:",
+        event.detail ? JSON.stringify(event.detail) : "No details"
+      );
+      fetchAllProductData();
+    };
+
+    const handleProductDelete = (event) => {
+      console.log(
+        "[Reservation] Product delete event received:",
+        event.detail ? JSON.stringify(event.detail) : "No details"
+      );
+      fetchAllProductData();
+    };
+  }, []);
 
   // Function to handle editing a reservation
   const handleEditReservation = (reservation) => {
     setSelectedReservation(reservation);
     setEditModalOpen(true);
+  };
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  const fetchMenuItems = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // If no token is found, handle the case
+      if (!token) {
+        console.warn("No authentication token found. User may need to log in.");
+        setError("Authentication required. Please log in.");
+        // Optionally redirect to login
+        // window.location.href = "/login";
+        return;
+      }
+
+      // Common headers for both requests
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      // Fetch products with error handling
+      let products = [];
+      try {
+        const productsResponse = await fetch(
+          "http://localhost:4000/api/products",
+          { headers }
+        );
+
+        if (productsResponse.status === 401) {
+          console.error("Token expired or invalid. Redirecting to login.");
+          // Clear the invalid token
+          localStorage.removeItem("token");
+          setError("Your session has expired. Please log in again.");
+          // Redirect to login
+          // window.location.href = "/login";
+          return;
+        }
+
+        if (!productsResponse.ok) {
+          throw new Error(
+            `Failed to fetch products: ${productsResponse.status}`
+          );
+        }
+
+        products = await productsResponse.json();
+        console.log("Products fetched successfully:", products);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError("Failed to load menu items");
+        return;
+      }
+
+      // Fetch categories with error handling
+      let categories = [];
+      try {
+        const categoriesResponse = await fetch(
+          "http://localhost:4000/api/categories",
+          { headers }
+        );
+
+        if (!categoriesResponse.ok) {
+          throw new Error(
+            `Failed to fetch categories: ${categoriesResponse.status}`
+          );
+        }
+
+        categories = await categoriesResponse.json();
+        console.log("Categories fetched successfully:", categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError("Failed to load menu categories");
+        return;
+      }
+
+      // Organize products by category
+      const organizedMenu = {};
+      categories.forEach((category) => {
+        const categoryProducts = products.filter(
+          (product) =>
+            product.category_id === category.category_id && !product.archived
+        );
+
+        if (categoryProducts.length > 0) {
+          organizedMenu[category.category_name] = categoryProducts;
+          console.log(
+            `Added ${categoryProducts.length} products to ${category.category_name} category`
+          );
+        }
+      });
+
+      console.log("Final organized menu:", organizedMenu);
+      setMenuItems(organizedMenu);
+
+      // Check if we have any menu items and set the active category
+      const categoryNames = Object.keys(organizedMenu);
+      if (categoryNames.length > 0) {
+        setActiveCategory(
+          (prevActiveCategory) => prevActiveCategory || categoryNames[0]
+        );
+      }
+    } catch (error) {
+      console.error("Unexpected error in fetchMenuItems:", error);
+      setError("Failed to load menu items");
+    }
   };
 
   // Function to save edited reservation
@@ -615,18 +902,21 @@ const Reservation = () => {
   };
 
   const handleProductSelect = (category, product) => {
-    setFormData((prev) => ({
-      ...prev,
+    console.log("Selecting product:", product);
+
+    // Check if the product still exists
+    if (!product || !product.product_id) {
+      console.error("Attempted to select invalid product:", product);
+      return;
+    }
+
+    setFormData((prevState) => ({
+      ...prevState,
       selectedProducts: {
-        ...prev.selectedProducts,
+        ...prevState.selectedProducts,
         [category]: product.product_id,
       },
     }));
-  };
-
-  const handleAdditionalItemSelect = (category, product) => {
-    setSelectedAdditionalItems((prev) => [...prev, product.product_id]);
-    setShowAdditionalItemModal(false);
   };
 
   const addAdditionalItem = (itemId) => {
@@ -940,19 +1230,6 @@ const Reservation = () => {
     setMenuItems(getFilteredMenuItems());
   }, [archivedProducts]);
 
-  useEffect(() => {
-    const fetchArchivedProducts = async () => {
-      try {
-        const data = await getArchivedProducts();
-        setArchivedProducts(data);
-      } catch (error) {
-        console.error("Error fetching archived products:", error);
-      }
-    };
-
-    fetchArchivedProducts();
-  }, []);
-
   const findProductById = (itemId) => {
     return productsLookup[itemId] || null;
   };
@@ -989,10 +1266,6 @@ const Reservation = () => {
           </p>
           <p>
             <strong>Payment Mode:</strong> {reservation.paymentMode}
-          </p>
-          <p className="note">
-            <strong>Note:</strong> You can only edit/cancel your reservations
-            for 6 hours before the establishment accepts your reservations
           </p>
 
           <div className="menu-section">
