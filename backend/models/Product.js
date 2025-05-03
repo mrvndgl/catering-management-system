@@ -63,6 +63,10 @@ const productSchema = new mongoose.Schema(
         _id: false,
       },
     ],
+    deleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

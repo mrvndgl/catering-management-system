@@ -31,12 +31,12 @@
 }
 
 .tab-button:hover {
-  color: #4CAF50;
+  color: #3A506B;
   background-color: #f8f9fa;
 }
 
 .tab-button.active {
-  color: #4CAF50;
+  color: #3A506B;
   font-weight: 600;
 }
 
@@ -47,7 +47,7 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #4CAF50;
+  background-color: #3A506B;
 }
 
 .card-header {

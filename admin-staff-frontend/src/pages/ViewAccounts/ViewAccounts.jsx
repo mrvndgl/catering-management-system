@@ -87,6 +87,140 @@ const ViewAccounts = () => {
     }
   };
 
+  // Add these validation functions near the top of the component, after the state declarations
+  const validatePassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!hasLowerCase) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number";
+    }
+    return "";
+  };
+
+  const validateContactNumber = (number) => {
+    const phoneRegex = /^09\d{9}$/;
+    return phoneRegex.test(number);
+  };
+
+  // Modify the handleInputChange function to include contact number validation
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "contactNumber") {
+      // Only allow digits
+      const sanitizedValue = value.replace(/[^\d]/g, "");
+      // Limit to 11 digits
+      const truncatedValue = sanitizedValue.slice(0, 11);
+      setNewAccount((prev) => ({
+        ...prev,
+        [name]: truncatedValue,
+      }));
+    } else {
+      setNewAccount((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  // Update the handleSubmit/handleAddAccount function to include validations
+  const handleAddAccount = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validate contact number
+      if (!validateContactNumber(newAccount.contactNumber)) {
+        throw new Error(
+          "Please enter a valid Philippine mobile number (11 digits starting with '09')"
+        );
+      }
+
+      // Validate password if it's provided (for new accounts or password changes)
+      if (newAccount.password) {
+        const passwordError = validatePassword(newAccount.password);
+        if (passwordError) {
+          throw new Error(passwordError);
+        }
+      }
+
+      // Check if required fields are present
+      const requiredFields = [
+        "firstName",
+        "lastName",
+        "username",
+        "contactNumber",
+        "address",
+        "email",
+      ];
+      for (const field of requiredFields) {
+        if (!newAccount[field]) {
+          throw new Error(
+            `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+          );
+        }
+      }
+
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/employees/staff/create", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newAccount,
+          employeeType: "staff",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create account");
+      }
+
+      const data = await response.json();
+      await fetchAccounts();
+
+      // Reset form
+      setNewAccount({
+        firstName: "",
+        lastName: "",
+        username: "",
+        email: "",
+        contactNumber: "",
+        address: "",
+        password: "",
+      });
+
+      // Show success message
+      Swal.fire({
+        title: "Success!",
+        text: "Staff account created successfully",
+        icon: "success",
+        confirmButtonColor: "#28a745",
+      });
+    } catch (err) {
+      Swal.fire({
+        title: "Error!",
+        text: err.message,
+        icon: "error",
+        confirmButtonColor: "#dc3545",
+      });
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateAdminProfile = async (e) => {
     e.preventDefault();
     try {
@@ -457,60 +591,6 @@ const ViewAccounts = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    setNewAccount((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleAddAccount = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    console.log("Submitting new account data:", newAccount);
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/employees/staff/create", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...newAccount,
-          employeeType: "staff",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create account");
-      }
-
-      const data = await response.json();
-      console.log("Server response:", data);
-
-      // Refresh the account list instead of manually updating state
-      await fetchAccounts();
-
-      setNewAccount({
-        firstName: "",
-        lastName: "",
-        username: "",
-        email: "",
-        contactNumber: "",
-        address: "",
-        password: "",
-      });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUpdateAccount = (id) => {
     const accountToEdit = accounts?.find((account) => account._id === id);
     console.log("Editing account:", accountToEdit);
@@ -802,6 +882,7 @@ const ViewAccounts = () => {
                   name="firstName"
                   value={newAccount.firstName}
                   onChange={handleInputChange}
+                  autoComplete="new-username"
                   required
                 />
               </div>
@@ -877,8 +958,11 @@ const ViewAccounts = () => {
                   name="password"
                   value={newAccount.password}
                   onChange={handleInputChange}
+                  autoComplete="new-password"
                   placeholder={
-                    isEditing ? "Leave blank to keep current password" : ""
+                    isEditing
+                      ? "Leave blank to keep current password"
+                      : "Password (A-Z, a-z, 0-9)"
                   }
                   required={!isEditing} // Only required for new accounts
                 />
@@ -957,7 +1041,10 @@ const ViewAccounts = () => {
                 </tr>
               </thead>
               <tbody>
-                {(showArchived ? archivedAccounts : accounts).map((account) => (
+                {(showArchived
+                  ? archivedAccounts
+                  : accounts.filter((account) => !account.isArchived)
+                ).map((account) => (
                   <tr key={account._id || account.employee_id}>
                     <td>{account.employee_id || "N/A"}</td>
                     <td>

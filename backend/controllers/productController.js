@@ -104,6 +104,33 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
+export const refreshArchivedProducts = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await fetch(
+      "http://localhost:4000/api/products/archived",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch archived products: ${response.status}`);
+    }
+
+    const archivedProducts = await response.json();
+    return updateArchivedProducts(archivedProducts);
+  } catch (error) {
+    console.error("Error refreshing archived products:", error);
+    return [];
+  }
+};
+
 export const updateProduct = async (req, res) => {
   try {
     console.log("Received Update Request:", {
@@ -247,18 +274,26 @@ export const deleteProduct = async (req, res) => {
   try {
     const { product_id } = req.params;
 
-    const deletedProduct = await Product.findOneAndDelete({
-      product_id: parseInt(product_id),
-    });
+    // First try to find the product
+    const product = await Product.findOne({ product_id: parseInt(product_id) });
 
-    if (!deletedProduct) {
+    if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(200).json({ message: "Product deleted successfully" });
+    // Perform hard delete
+    await Product.deleteOne({ product_id: parseInt(product_id) });
+
+    // Send success response with deleted product info
+    res.status(200).json({
+      message: "Product deleted successfully",
+      deletedProduct: product,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error deleting product", error: error.message });
+    console.error("Error in deleteProduct:", error);
+    res.status(500).json({
+      message: "Error deleting product",
+      error: error.message,
+    });
   }
 };

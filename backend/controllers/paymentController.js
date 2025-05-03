@@ -31,10 +31,9 @@ export const createPayment = async (req, res) => {
     const newPayment = new Payment({
       payment_id,
       reservation_id,
-      customer_id, // Add customer_id
+      customer_id,
       amount: amount || reservation.total_amount,
       payment_method,
-      customer_name: reservation.name,
       payment_status: "Pending",
       payment_date: new Date(),
       notes,
@@ -66,19 +65,144 @@ export const createPayment = async (req, res) => {
   }
 };
 
+export const uploadPaymentProof = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const { reservation_id, payment_method } = req.body;
+    const customer_id = req.user.userId;
+
+    // Verify the reservation exists and belongs to the user
+    const reservation = await Reservation.findOne({
+      reservation_id: parseInt(reservation_id),
+      customer_id,
+    });
+
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found or does not belong to you",
+      });
+    }
+
+    // Get the last payment ID
+    const lastPayment = await Payment.findOne().sort({ payment_id: -1 });
+    let payment_id = 1;
+    if (lastPayment) {
+      payment_id = lastPayment.payment_id + 1;
+    }
+
+    // Create new payment record
+    const newPayment = new Payment({
+      payment_id,
+      reservation_id: parseInt(reservation_id),
+      customer_id,
+      amount: reservation.total_amount,
+      payment_method,
+      payment_status: "Pending",
+      payment_proof: req.file.filename,
+      payment_date: new Date(),
+      notes: "Payment proof uploaded by customer",
+    });
+
+    const savedPayment = await newPayment.save();
+
+    // Update reservation payment status
+    await Reservation.findOneAndUpdate(
+      { reservation_id: parseInt(reservation_id) },
+      {
+        payment_status: "Pending",
+        payment_required: false,
+      }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Payment proof uploaded successfully",
+      data: savedPayment,
+    });
+  } catch (error) {
+    console.error("Payment upload error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error uploading payment proof",
+      error: error.message,
+    });
+  }
+};
+
 // Get all payments
 export const getAllPayments = async (req, res) => {
   try {
-    const payments = await Payment.find().sort({ created_at: -1 });
+    console.log("Fetching payments from database");
+
+    // Get all payments without using populate
+    const payments = await Payment.find().lean();
+    console.log(`Found ${payments.length} payments`);
+
+    if (!payments || payments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "No payments found",
+      });
+    }
+
+    // Now find all the reservations separately to avoid the ObjectId casting issue
+    const reservationIds = [...new Set(payments.map((p) => p.reservation_id))];
+    console.log(`Found ${reservationIds.length} unique reservation IDs`);
+
+    // Find all reservations with these IDs
+    const reservations = await mongoose
+      .model("Reservation")
+      .find({
+        reservation_id: { $in: reservationIds }, // Using reservation_id field, not _id
+      })
+      .lean();
+
+    console.log(`Found ${reservations.length} matching reservations`);
+
+    // Create a lookup map for quick access
+    const reservationMap = {};
+    reservations.forEach((res) => {
+      reservationMap[res.reservation_id] = res;
+    });
+
+    // Combine payment data with reservation data
+    const paymentsWithDetails = payments.map((payment) => {
+      const reservation = reservationMap[payment.reservation_id] || {};
+
+      return {
+        ...payment,
+        phoneNumber: reservation.phoneNumber || "No contact number",
+        reservation_details: {
+          reservation_id: reservation.reservation_id || payment.reservation_id,
+          phoneNumber: reservation.phoneNumber || null,
+        },
+      };
+    });
+
+    console.log("Processed payments successfully:", {
+      count: paymentsWithDetails.length,
+      sample: paymentsWithDetails.length > 0 ? paymentsWithDetails[0] : null,
+    });
+
     res.status(200).json({
       success: true,
-      data: payments,
+      data: paymentsWithDetails,
     });
   } catch (error) {
+    console.error("Error in getAllPayments:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching payments",
       error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -201,79 +325,6 @@ export const updatePaymentStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error updating payment status",
-      error: error.message,
-    });
-  }
-};
-
-// Upload payment proof
-export const uploadPaymentProof = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
-    }
-
-    const { reservation_id, payment_method } = req.body;
-    const customer_id = req.user.userId;
-
-    // Verify the reservation exists and belongs to the user
-    const reservation = await Reservation.findOne({
-      reservation_id: parseInt(reservation_id),
-      customer_id,
-    });
-
-    if (!reservation) {
-      return res.status(404).json({
-        success: false,
-        message: "Reservation not found or does not belong to you",
-      });
-    }
-
-    // Get the last payment ID
-    const lastPayment = await Payment.findOne().sort({ payment_id: -1 });
-    let payment_id = 1;
-    if (lastPayment) {
-      payment_id = lastPayment.payment_id + 1;
-    }
-
-    // Create new payment record
-    const newPayment = new Payment({
-      payment_id,
-      reservation_id: parseInt(reservation_id),
-      customer_id,
-      amount: reservation.total_amount,
-      payment_method,
-      customer_name: reservation.name,
-      payment_status: "Pending", // Admin will verify this later
-      payment_proof: req.file.filename,
-      payment_date: new Date(),
-      notes: "Payment proof uploaded by customer",
-    });
-
-    const savedPayment = await newPayment.save();
-
-    // Update reservation payment status
-    await Reservation.findOneAndUpdate(
-      { reservation_id: parseInt(reservation_id) },
-      {
-        payment_status: "Pending",
-        payment_required: false,
-      }
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "Payment proof uploaded successfully",
-      data: savedPayment,
-    });
-  } catch (error) {
-    console.error("Payment upload error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading payment proof",
       error: error.message,
     });
   }

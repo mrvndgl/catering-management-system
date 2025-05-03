@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
 import Dashboard from "../../pages/Dashboard/Dashboard";
@@ -11,13 +11,18 @@ import "./HomePage.css";
 
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+
+  // Force re-render when auth state changes
+  useEffect(() => {
+    console.log("Auth state in HomePage:", isAuthenticated);
+  }, [isAuthenticated]);
 
   return (
     <div className="public-home">
       <div className="auth-links">
-        {!isAuthenticated && (
+        {!isAuthenticated ? (
           <div className="auth-buttons">
             <button onClick={() => navigate("/login")} className="login-button">
               Login
@@ -29,8 +34,20 @@ const HomePage = () => {
               Sign Up
             </button>
           </div>
+        ) : (
+          <div className="welcome-message">
+            Welcome, {user?.firstName || user?.username || "User"}!
+            <button
+              onClick={() => navigate("/reservation")}
+              className="reservation-button"
+            >
+              Make a Reservation
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Consider what Dashboard does and if it should be conditional */}
       <Dashboard />
       <ExploreService />
       <ExploreMenu

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Login.css";
@@ -11,6 +11,22 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Clear pre-filled values when component mounts
+  useEffect(() => {
+    // Clear form fields on component mount
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+
+    if (usernameInput) usernameInput.value = "";
+    if (passwordInput) passwordInput.value = "";
+
+    // Update the React state to match
+    setFormData({
+      username: "",
+      password: "",
+    });
+  }, []);
 
   // Configure the Toast notification
   const Toast = Swal.mixin({
@@ -94,6 +110,7 @@ const Login = () => {
       <div className="login-form-section">
         <div className="login-form-wrapper">
           <h2>Management Portal</h2>
+
           <form onSubmit={handleSubmit}>
             {/* Username Input */}
             <div className="form-group">
@@ -105,6 +122,7 @@ const Login = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Username"
+                autoComplete="new-username"
               />
             </div>
 
@@ -118,6 +136,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Password"
+                autoComplete="new-password"
               />
             </div>
 

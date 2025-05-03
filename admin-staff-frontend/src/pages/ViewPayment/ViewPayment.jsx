@@ -121,11 +121,11 @@ const PaymentDetailsModal = ({
             <h3>Customer Information</h3>
             <div className="detail-row">
               <span className="detail-label">Customer Name:</span>
-              <span className="detail-value">{payment.customer_name}</span>
+              <span className="detail-value">{payment.customerName}</span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Contact Number:</span>
-              <span className="detail-value">{payment.phone_number}</span>
+              <span className="detail-value">{payment.phoneNumber}</span>
             </div>
           </div>
 
@@ -318,6 +318,14 @@ const ViewPayment = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token missing");
+      }
+
+      console.log("Fetching payments from API...");
+      setIsLoading(true);
+      setError(null);
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/payments/admin/payments`,
         {
@@ -334,31 +342,84 @@ const ViewPayment = () => {
 
       const result = await response.json();
       if (result.success) {
-        const latestPayments = result.data.reduce((acc, payment) => {
-          // Priority order for displaying payments by reservation
-          const priorityOrder = {
-            Completed: 1,
-            "Fully Paid": 2,
-            Downpayment: 3,
-            Pending: 4,
-            Failed: 5,
-            Refunded: 6,
-            Cancelled: 7,
-          };
+        // Fetch customer details for each payment
+        const paymentsWithCustomers = await Promise.all(
+          result.data.map(async (payment) => {
+            try {
+              const customerResponse = await fetch(
+                `${import.meta.env.VITE_API_URL}/customers/${
+                  payment.customer_id
+                }`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
+              );
 
-          if (
-            !acc[payment.reservation_id] ||
-            priorityOrder[payment.payment_status] <
-              priorityOrder[acc[payment.reservation_id].payment_status]
-          ) {
-            acc[payment.reservation_id] = payment;
+              if (customerResponse.ok) {
+                const customerData = await customerResponse.json();
+                return {
+                  ...payment,
+                  customerName: `${customerData.data.firstName} ${customerData.data.lastName}`,
+                  phoneNumber:
+                    payment.phoneNumber || customerData.data.phoneNumber,
+                };
+              }
+              return payment;
+            } catch (error) {
+              console.error(
+                `Error fetching customer for payment ${payment.payment_id}:`,
+                error
+              );
+              return payment;
+            }
+          })
+        );
+
+        const latestPayments = paymentsWithCustomers.reduce((acc, payment) => {
+          try {
+            const paymentWithDetails = {
+              ...payment,
+              customerName: payment.customerName || "N/A",
+              phoneNumber: payment.phoneNumber || "No contact number",
+            };
+
+            const priorityOrder = {
+              Completed: 1,
+              "Fully Paid": 2,
+              Downpayment: 3,
+              Pending: 4,
+              Failed: 5,
+              Refunded: 6,
+              Cancelled: 7,
+            };
+
+            const existingPayment = acc[payment.reservation_id];
+            const existingPriority = existingPayment
+              ? priorityOrder[existingPayment.payment_status] || 999
+              : 999;
+            const newPriority = priorityOrder[payment.payment_status] || 999;
+
+            if (!existingPayment || newPriority < existingPriority) {
+              acc[payment.reservation_id] = paymentWithDetails;
+            }
+            return acc;
+          } catch (err) {
+            console.error("Error processing payment", payment, err);
+            return acc;
           }
-          return acc;
         }, {});
+
+        console.log(
+          "Processed payments with customer details:",
+          latestPayments
+        );
         setPayments(Object.values(latestPayments));
       }
       setIsLoading(false);
     } catch (error) {
+      console.error("Error fetching payments:", error);
       setError(error.message);
       setIsLoading(false);
     }
@@ -453,7 +514,7 @@ const ViewPayment = () => {
                   <h3 className="payment-title">
                     Payment #{payment.payment_id}
                   </h3>
-                  <p className="payment-subtitle">{payment.customer_name}</p>
+                  <p className="payment-subtitle">{payment.customerName}</p>
                 </div>
                 <span
                   className={`status ${getStatusClass(payment.payment_status)}`}
@@ -466,6 +527,10 @@ const ViewPayment = () => {
                   <div className="info-row">
                     <span className="info-label">Reservation ID:</span>
                     <span>#{payment.reservation_id}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Contact:</span>
+                    <span>{payment.phoneNumber}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Amount:</span>

@@ -5,11 +5,6 @@ import { Customer } from "../models/Customer.js";
 export const customerController = {
   signup: async (req, res) => {
     try {
-      console.log("Received signup request body:", {
-        ...req.body,
-        password: "[REDACTED]",
-      });
-
       const {
         firstName,
         lastName,
@@ -20,87 +15,87 @@ export const customerController = {
         password,
       } = req.body;
 
-      // Enhanced validation
-      if (!password || password.length < 6) {
+      // Check if required fields are present
+      if (
+        !firstName ||
+        !lastName ||
+        !username ||
+        !contactNumber ||
+        !address ||
+        !email ||
+        !password
+      ) {
         return res.status(400).json({
-          message: "Password must be at least 6 characters long",
+          message: "All fields are required",
         });
       }
 
-      if (!username || username.length < 3) {
+      // Password validation - must contain at least one number
+      const hasNumber = /\d/.test(password);
+      if (!hasNumber) {
         return res.status(400).json({
-          message: "Username must be at least 3 characters long",
+          message: "Password must contain at least one number",
         });
       }
 
-      // Validate contact number format (Philippines format)
-      const contactRegex = /^(09|\+639)\d{9}$/;
-      if (!contactRegex.test(contactNumber)) {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+      if (!passwordRegex.test(password)) {
         return res.status(400).json({
           message:
-            "Invalid contact number format. Use 09XXXXXXXXX or +639XXXXXXXXX",
+            "Password must contain at least one uppercase letter, one lowercase letter, and one number",
         });
       }
 
-      // Check if user exists with more detailed error
-      console.log("Checking for existing user...");
+      // Check if email already exists
       const existingEmail = await Customer.findOne({ email });
-      const existingUsername = await Customer.findOne({ username });
-
       if (existingEmail) {
         return res.status(400).json({
           message: "Email already registered",
-          field: "email",
         });
       }
 
+      // Check if username already exists
+      const existingUsername = await Customer.findOne({ username });
       if (existingUsername) {
         return res.status(400).json({
           message: "Username already taken",
-          field: "username",
         });
       }
 
       // Hash password
-      console.log("Hashing password...");
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Create new customer with trimmed strings
-      console.log("Creating new customer...");
-      const customer = new Customer({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        username: username.trim(),
-        contactNumber: contactNumber.trim(),
-        address: address.trim(),
-        email: email.toLowerCase().trim(),
+      // Create new customer
+      const newCustomer = new Customer({
+        firstName,
+        lastName,
+        username,
+        contactNumber,
+        address,
+        email,
         password: hashedPassword,
       });
 
-      await customer.save();
+      // Save customer to DB
+      const savedCustomer = await newCustomer.save();
 
-      // Generate token with user role
+      // Create JWT token
       const token = jwt.sign(
-        {
-          userId: customer._id,
-          type: "customer",
-          username: customer.username,
-        },
+        { userId: savedCustomer._id, type: "customer" },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
 
-      // Send success response without sensitive data
+      // Create a user object without password
+      const userResponse = savedCustomer.toObject();
+      delete userResponse.password;
+
+      // Return success response
       res.status(201).json({
-        message: "Signup successful",
+        message: "Customer registered successfully",
         token,
-        user: {
-          id: customer._id,
-          username: customer.username,
-          email: customer.email,
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-        },
+        user: userResponse,
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -116,6 +111,38 @@ export const customerController = {
         message: "Server error during signup",
         error:
           process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  },
+
+  getCustomerById: async (req, res) => {
+    try {
+      const customerId = req.params.id;
+
+      const customer = await Customer.findById(customerId)
+        .select("firstName lastName email contactNumber")
+        .lean();
+
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          message: "Customer not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: customer,
+      });
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching customer details",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
       });
     }
   },

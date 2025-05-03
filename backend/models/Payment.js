@@ -6,10 +6,10 @@ const PaymentSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  // Keep as Number to match existing data
   reservation_id: {
     type: Number,
     required: true,
-    ref: "Reservation",
   },
   customer_id: {
     type: String,
@@ -47,7 +47,8 @@ const PaymentSchema = new mongoose.Schema({
   },
   customer_name: {
     type: String,
-    required: true,
+    required: false,
+    default: null,
   },
   notes: {
     type: String,

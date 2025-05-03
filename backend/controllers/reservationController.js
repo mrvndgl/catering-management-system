@@ -109,6 +109,15 @@ export const getAvailableDates = async (req, res) => {
       });
     }
 
+    // Get today's date with time set to midnight
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Calculate minimum allowed date (7 days from today)
+    const minAllowedDate = new Date(today);
+    minAllowedDate.setDate(today.getDate() + 7);
+
+    // Fetch reservations from database
     const reservations = await Reservation.find({
       reservation_date: {
         $gte: startDateObj,
@@ -116,28 +125,35 @@ export const getAvailableDates = async (req, res) => {
       },
     }).select("reservation_date timeSlot");
 
-    // Create a map of booked slots
-    const bookedSlots = reservations.reduce((acc, reservation) => {
+    // Create a map of dates with booked time slots
+    const bookedDates = {};
+    reservations.forEach((reservation) => {
       const date = reservation.reservation_date.toISOString().split("T")[0];
-      if (!acc[date]) {
-        acc[date] = new Set();
+      if (!bookedDates[date]) {
+        bookedDates[date] = new Set();
       }
-      acc[date].add(reservation.timeSlot);
-      return acc;
-    }, {});
+      bookedDates[date].add(reservation.timeSlot);
+    });
 
-    // Generate a list of all dates between startDate and endDate
-    const allDates = [];
+    // Generate all dates within range
+    const availableDates = [];
     let currentDate = new Date(startDateObj);
+
     while (currentDate <= endDateObj) {
-      allDates.push(currentDate.toISOString().split("T")[0]);
+      const dateString = currentDate.toISOString().split("T")[0];
+
+      // Only include dates that are at least 7 days in the future
+      if (currentDate >= minAllowedDate) {
+        availableDates.push(dateString);
+      }
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Determine available dates
-    const availableDates = allDates.filter((date) => !bookedSlots[date]);
-
-    res.status(200).json(availableDates);
+    res.status(200).json({
+      availableDates,
+      minAllowedDate: minAllowedDate.toISOString().split("T")[0],
+    });
   } catch (error) {
     console.error("Error in getAvailableDates:", error);
     res.status(500).json({
@@ -154,7 +170,6 @@ export const createReservation = async (req, res) => {
 
   try {
     const {
-      name,
       phoneNumber,
       numberOfPax,
       timeSlot,
@@ -167,7 +182,6 @@ export const createReservation = async (req, res) => {
     } = req.body;
 
     // Log each piece of received data for debugging
-    console.log("Name:", name);
     console.log("Phone Number:", phoneNumber);
     console.log("Number of Pax:", numberOfPax);
     console.log("Time Slot:", timeSlot);
@@ -177,9 +191,8 @@ export const createReservation = async (req, res) => {
     console.log("Selected Products:", selectedProducts);
     console.log("Additional Items:", additionalItems);
 
-    // Basic validation
+    // Basic validation - removed name field from validation
     if (
-      !name ||
       !phoneNumber ||
       !numberOfPax ||
       !timeSlot ||
@@ -201,41 +214,37 @@ export const createReservation = async (req, res) => {
       });
     }
 
-    // Ensure reservation is at least 7 days in advance
+    // Validate reservation date (must be at least 7 days in advance)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const chosenDate = new Date(reservation_date);
-    chosenDate.setHours(0, 0, 0, 0);
+    const minAllowedDate = new Date(today);
+    minAllowedDate.setDate(today.getDate() + 7);
 
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() + 7);
+    const reservationDate = new Date(reservation_date);
+    reservationDate.setHours(0, 0, 0, 0);
 
-    if (chosenDate < minDate) {
+    if (reservationDate < minAllowedDate) {
       return res.status(400).json({
         success: false,
         message: "Reservations must be made at least 7 days in advance.",
       });
     }
 
-    // NEW CODE: Check if the date and time slot is already taken
-    const reservationDate = new Date(reservation_date);
-    reservationDate.setHours(0, 0, 0, 0);
-
+    // Check if the date and time slot are already taken (regardless of status)
     const existingReservation = await Reservation.findOne({
       reservation_date: {
         $gte: reservationDate,
         $lt: new Date(reservationDate.getTime() + 24 * 60 * 60 * 1000),
       },
       timeSlot: timeSlot,
-      reservation_status: "accepted",
     });
 
     if (existingReservation) {
       return res.status(409).json({
         success: false,
         message:
-          "This date and time slot is already booked by another customer. Please select another date or time.",
+          "This date and time slot is already booked. Please select another.",
       });
     }
 
@@ -251,7 +260,6 @@ export const createReservation = async (req, res) => {
     const processedProducts = {};
     for (const [category, productId] of Object.entries(selectedProducts)) {
       try {
-        // Find the product by its numeric ID
         const product = await Product.findOne({ product_id: productId });
 
         if (!product) {
@@ -261,7 +269,6 @@ export const createReservation = async (req, res) => {
           });
         }
 
-        // Use the MongoDB _id of the found product
         processedProducts[category] = Number(productId);
       } catch (error) {
         console.error(
@@ -305,20 +312,19 @@ export const createReservation = async (req, res) => {
         numberOfPax * ADDITIONAL_ITEM_PRICE * additionalItems.length;
     }
 
-    // Create new reservation
+    // Create new reservation - removed name field
     const newReservation = new Reservation({
       reservation_id,
       customer_id: req.user.userId,
-      name,
       phoneNumber,
       numberOfPax,
       timeSlot,
       createdAt: new Date(),
       paymentMode,
-      reservation_date: new Date(reservation_date),
+      reservation_date: reservationDate, // Use the cleaned-up date
       venue,
-      selectedProducts: processedProducts, // Store numeric IDs
-      additionalItems: additionalItems.map((id) => Number(id)), // Convert to numbers
+      selectedProducts: processedProducts,
+      additionalItems: additionalItems.map((id) => Number(id)),
       total_amount: totalAmount,
       reservation_status: "Pending",
       specialNotes: specialNotes,
@@ -628,19 +634,17 @@ export const getMyReservations = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    console.log("Fetching reservations for user:", userId);
+    // Find reservations and populate customer information
+    const reservations = await Reservation.find({ customer_id: userId })
+      .populate("customer_id", "firstName lastName -_id")
+      .sort({ createdAt: -1 });
 
-    // Fetch reservations, sorting by most recent first
-    const reservations = await Reservation.find({
-      customer_id: userId,
-    }).sort({ createdAt: -1 }); // Assuming you want most recent first
-
-    console.log("Found Reservations:", reservations);
-
-    // Standardize response format
     return res.status(200).json({
       success: true,
-      data: reservations,
+      data: reservations.map((reservation) => ({
+        ...reservation.toObject(),
+        customerName: `${reservation.customer_id.firstName} ${reservation.customer_id.lastName}`,
+      })),
       message: "Reservations retrieved successfully",
     });
   } catch (error) {

@@ -138,6 +138,7 @@ router.delete("/:product_id", adminStaffAuth, deleteProduct);
 router.get("/archived", getArchivedProducts);
 router.put("/:product_id/archive", adminStaffAuth, archiveProduct);
 router.put("/:product_id/unarchive", adminStaffAuth, unarchiveProduct);
+router.delete("/products/:product_id", deleteProduct);
 router.get("/", getAllProducts);
 
 export default router;

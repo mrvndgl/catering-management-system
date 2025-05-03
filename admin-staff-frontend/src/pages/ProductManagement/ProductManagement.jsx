@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-import { Pencil, Archive, Trash2, ArchiveRestore, Edit2 } from "lucide-react";
+import {
+  Pencil,
+  Archive,
+  Trash2,
+  ArchiveRestore,
+  Edit2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import "./ProductManagement.css";
 
 const API_URL = "http://localhost:4000";
@@ -16,6 +24,20 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Adjust number of items per page as needed
+  const filteredProducts = products.filter(
+    (product) => product.archived === showArchived
+  );
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  // Change page function
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
   const [productForm, setProductForm] = useState({
     product_id: "",
     category_id: "",
@@ -120,13 +142,15 @@ const ProductManagement = () => {
 
       const categories = await categoriesResponse.json();
 
-      // Organize products by category
+      // Organize products by category - only include active and non-deleted products
       const organizedMenu = {};
 
       categories.forEach((category) => {
         const categoryProducts = products.filter(
           (product) =>
-            product.category_id === category.category_id && !product.archived
+            product.category_id === category.category_id &&
+            !product.archived &&
+            !product.deleted // Add check for deleted status
         );
 
         if (categoryProducts.length > 0) {
@@ -135,17 +159,18 @@ const ProductManagement = () => {
               product_id: product.product_id,
               category_id: product.category_id,
               product_name: product.product_name,
+              images: product.images, // Make sure images are included
             })
           );
         }
       });
 
       setMenuItems(organizedMenu);
-      setLoading(false); // Set loading to false on success
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching menu items:", error);
       setError(error.message);
-      setLoading(false); // Also set loading to false on error
+      setLoading(false);
     }
   };
 
@@ -232,12 +257,7 @@ const ProductManagement = () => {
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        await Promise.all([
-          fetchProducts(),
-          fetchCategories(),
-          fetchMenuItems(),
-          fetchPricingSettings(),
-        ]);
+        await fetchAll();
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load data. Please try again.");
@@ -752,9 +772,25 @@ const ProductManagement = () => {
     }
   };
 
+  // Add this function to the existing code
   const handleDeleteProduct = async (product_id) => {
     try {
+      console.log(
+        "[ProductManagement] Starting product deletion for ID:",
+        product_id
+      );
+
       const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("[ProductManagement] No token found for deletion");
+        Swal.fire(
+          "Error!",
+          "Authentication required. Please log in again.",
+          "error"
+        );
+        return;
+      }
+
       const result = await Swal.fire({
         title: "Delete Product",
         text: "Are you sure you want to delete this product? This action cannot be undone!",
@@ -766,6 +802,10 @@ const ProductManagement = () => {
       });
 
       if (result.isConfirmed) {
+        console.log(
+          "[ProductManagement] Deletion confirmed, sending request to server..."
+        );
+
         const response = await fetch(
           `http://localhost:4000/api/products/${product_id}`,
           {
@@ -778,15 +818,84 @@ const ProductManagement = () => {
         );
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            "[ProductManagement] Delete request failed:",
+            response.status,
+            errorData
+          );
+          throw new Error(
+            `Delete failed: ${response.status} - ${
+              errorData.message || "Unknown error"
+            }`
+          );
         }
 
-        await fetchProducts();
+        const responseData = await response.json();
+        console.log("[ProductManagement] Delete response:", responseData);
+
+        // Update local state
+        setProducts((prevProducts) =>
+          prevProducts.filter((product) => product.product_id !== product_id)
+        );
+
+        // Clear the product from the form if it's being edited
+        if (productForm && productForm.product_id === product_id) {
+          setProductForm({
+            product_id: getNextProductId(),
+            category_id: "",
+            product_name: "",
+            product_details: "",
+          });
+          setIsEditing(false);
+        }
+
+        // Dispatch custom events for all components to update
+        console.log("[ProductManagement] Dispatching productDelete event");
+        window.dispatchEvent(
+          new CustomEvent("productDelete", {
+            detail: { product_id, action: "delete" },
+          })
+        );
+
+        console.log("[ProductManagement] Dispatching productUpdate event");
+        window.dispatchEvent(
+          new CustomEvent("productUpdate", {
+            detail: { product_id, action: "delete" },
+          })
+        );
+
+        // Show success message
         Swal.fire("Deleted!", "The product has been deleted.", "success");
+
+        // If you have a fetchAll function, call it to refresh all data
+        if (typeof fetchAll === "function") {
+          await fetchAll();
+        }
       }
     } catch (error) {
-      console.error("Error deleting product:", error);
-      Swal.fire("Error!", "Failed to delete product", "error");
+      console.error("[ProductManagement] Error deleting product:", error);
+      Swal.fire(
+        "Error!",
+        `Failed to delete product: ${error.message}`,
+        "error"
+      );
+    }
+  };
+
+  // Add this function to coordinate all data fetching
+  const fetchAll = async () => {
+    try {
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories(),
+        fetchMenuItems(), // Make sure this is properly defined and updates state
+        fetchPricingSettings(),
+        fetchAllProductData(),
+      ]);
+    } catch (error) {
+      console.error("Error in fetchAll:", error);
+      setError("Failed to refresh data after deletion");
     }
   };
 
@@ -1065,7 +1174,10 @@ const ProductManagement = () => {
             className={`view-toggle-button ${
               showArchived ? "archived" : "active"
             }`}
-            onClick={() => setShowArchived(!showArchived)}
+            onClick={() => {
+              setShowArchived(!showArchived);
+              setCurrentPage(1); // Reset to first page when toggling view
+            }}
           >
             {showArchived ? (
               <>
@@ -1091,74 +1203,125 @@ const ProductManagement = () => {
               : "No active products found"}
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Details</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products
-                .filter((product) => product.archived === showArchived)
-                .map((product) => (
-                  <tr key={product.product_id}>
-                    <td>{product.product_id}</td>
-                    <td>{product.product_name}</td>
-                    <td>
-                      {categories.find(
-                        (c) => c.category_id === parseInt(product.category_id)
-                      )?.category_name || "No Category"}
-                    </td>
-                    <td>{product.product_details}</td>
-                    <td>
-                      <div className="product-action-buttons">
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="icon-button edit"
-                          title="Edit"
-                        >
-                          <Pencil size={20} />
-                        </button>
-                        {product.archived ? (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Details</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products
+                  .filter((product) => product.archived === showArchived)
+                  .slice(indexOfFirstProduct, indexOfLastProduct)
+                  .map((product) => (
+                    <tr key={product.product_id}>
+                      <td>{product.product_id}</td>
+                      <td>{product.product_name}</td>
+                      <td>
+                        {categories.find(
+                          (c) => c.category_id === parseInt(product.category_id)
+                        )?.category_name || "No Category"}
+                      </td>
+                      <td>{product.product_details}</td>
+                      <td>
+                        <div className="product-action-buttons">
+                          <button
+                            onClick={() => handleEditProduct(product)}
+                            className="icon-button edit"
+                            title="Edit"
+                          >
+                            <Pencil size={20} />
+                          </button>
+                          {product.archived ? (
+                            <button
+                              onClick={() =>
+                                handleUnarchiveProduct(product.product_id)
+                              }
+                              className="icon-button unarchive"
+                              title="Unarchive"
+                            >
+                              <ArchiveRestore size={20} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                handleArchiveProduct(product.product_id)
+                              }
+                              className="icon-button archive"
+                              title="Archive"
+                            >
+                              <Archive size={20} />
+                            </button>
+                          )}
                           <button
                             onClick={() =>
-                              handleUnarchiveProduct(product.product_id)
+                              handleDeleteProduct(product.product_id)
                             }
-                            className="icon-button unarchive"
-                            title="Unarchive"
+                            className="icon-button delete"
+                            title="Delete"
                           >
-                            <ArchiveRestore size={20} />
+                            <Trash2 size={20} />
                           </button>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              handleArchiveProduct(product.product_id)
-                            }
-                            className="icon-button archive"
-                            title="Archive"
-                          >
-                            <Archive size={20} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() =>
-                            handleDeleteProduct(product.product_id)
-                          }
-                          className="icon-button delete"
-                          title="Delete"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+
+            {/* Pagination Controls */}
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Showing {indexOfFirstProduct + 1}-
+                {Math.min(indexOfLastProduct, filteredProducts.length)} of{" "}
+                {filteredProducts.length} products
+              </div>
+              <div className="pagination-controls">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className={`pagination-arrow ${
+                    currentPage === 1 ? "disabled" : ""
+                  }`}
+                >
+                  <ChevronLeft size={20} color="#4caf50" />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`pagination-number ${
+                        currentPage === pageNum ? "active" : ""
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                )}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className={`pagination-arrow ${
+                    currentPage === totalPages ? "disabled" : ""
+                  }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

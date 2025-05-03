@@ -67,8 +67,9 @@ const prepareProductData = (productData) => {
 };
 
 // Normalized image URL processing
-// In your getImageUrl function
 export const getImageUrl = (imagePath) => {
+  console.log("Processing image path:", imagePath);
+
   // If path is undefined/null/empty, return placeholder immediately
   if (!imagePath) {
     console.warn("Empty image path provided to getImageUrl");
@@ -88,7 +89,9 @@ export const getImageUrl = (imagePath) => {
       console.warn("Invalid filename in path:", imagePath);
       return null;
     }
-    return `${BASE_URL}${imagePath}`;
+    const baseUrl = import.meta.env?.VITE_BASE_URL || "http://localhost:4000";
+    console.log(`Converting ${imagePath} to ${baseUrl}${imagePath}`);
+    return `${baseUrl}${imagePath}`;
   }
 
   // A blob URL (for local preview)
@@ -96,51 +99,34 @@ export const getImageUrl = (imagePath) => {
     return imagePath;
   }
 
-  // Unknown format, return as is
+  // Unknown format, return as is but log it
+  console.warn("Unknown image path format:", imagePath);
   return imagePath;
 };
 
-// Get auth token from localStorage
-const getAuthToken = () => localStorage.getItem("token");
-
-const createAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    console.error("No token found! User might not be logged in.");
-    return {}; // Ensure it doesn't send an empty Authorization header
-  }
-  return { Authorization: `Bearer ${token}` };
-};
-
-export const fetchMenuItems = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/menu-items`, {
-      headers: createAuthHeaders(),
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching menu items:", error);
-    throw error;
-  }
-};
-
+// Modified fetchMenuItemsByCategory function with better error handling
 export const fetchMenuItemsByCategory = async (includeArchived = false) => {
   try {
+    const authHeaders = createAuthHeaders();
+    console.log("Using auth headers:", authHeaders);
+
     // Get all products
+    console.log("Fetching products from:", `${API_URL}/products`);
     const response = await axios.get(`${API_URL}/products`, {
-      headers: createAuthHeaders(),
+      headers: authHeaders,
     });
 
     // Get all categories
+    console.log("Fetching categories from:", `${API_URL}/categories`);
     const categoriesResponse = await axios.get(`${API_URL}/categories`, {
-      headers: createAuthHeaders(),
+      headers: authHeaders,
     });
 
     const products = response.data;
     const categories = categoriesResponse.data;
 
-    console.log("API products:", products);
-    console.log("API categories:", categories);
+    console.log("Products received:", products.length);
+    console.log("Categories received:", categories.length);
 
     // Create a structured menu object
     const menuItemsByCategory = {};
@@ -150,7 +136,7 @@ export const fetchMenuItemsByCategory = async (includeArchived = false) => {
       menuItemsByCategory[category.category_name] = [];
     });
 
-    // Populate categories with products (optionally filtering archived ones)
+    // Populate categories with products
     products.forEach((product) => {
       // Find the category for this product
       const category = categories.find(
@@ -164,8 +150,76 @@ export const fetchMenuItemsByCategory = async (includeArchived = false) => {
           category_id: product.category_id,
           product_name: product.product_name,
           is_archived: product.is_archived,
+          // Include a placeholder for images to avoid null references
+          images: product.images || [],
         });
       }
+    });
+
+    // Process products to ensure image data is well-formed
+    const processedProducts = products.map((product) => {
+      // Ensure product has an images array
+      if (!product.images) {
+        product.images = [];
+      }
+
+      // If images is not an array, make it one
+      if (!Array.isArray(product.images)) {
+        console.warn(
+          `Product ${product.product_name} has non-array images:`,
+          product.images
+        );
+        product.images = product.images ? [product.images] : [];
+      }
+
+      // Process each image to ensure URLs are valid
+      product.images = product.images
+        .map((img) => {
+          if (!img || typeof img !== "object") {
+            console.warn(
+              `Invalid image object in ${product.product_name}:`,
+              img
+            );
+            return null;
+          }
+
+          // Process the products to ensure image URLs are valid
+          products.forEach((product) => {
+            if (product.images && Array.isArray(product.images)) {
+              product.images = product.images
+                .map((img) => {
+                  return {
+                    ...img,
+                    url: getImageUrl(img.url),
+                  };
+                })
+                .filter(Boolean); // Remove null entries
+            }
+
+            return product;
+          });
+
+          // Process URL using getImageUrl function
+          return {
+            ...img,
+            url: getImageUrl(img.url),
+          };
+        })
+        .filter(Boolean); // Remove null entries
+
+      return product;
+    });
+
+    // Update menuItemsByCategory with the processed products
+    Object.keys(menuItemsByCategory).forEach((categoryName) => {
+      menuItemsByCategory[categoryName] = menuItemsByCategory[categoryName].map(
+        (product) => {
+          const processedProduct = processedProducts.find(
+            (p) => p.product_id === product.product_id
+          );
+          return processedProduct || product;
+        }
+      );
     });
 
     return menuItemsByCategory;
@@ -173,6 +227,12 @@ export const fetchMenuItemsByCategory = async (includeArchived = false) => {
     console.error("Error fetching menu items by category:", error);
     throw error;
   }
+};
+
+// Add this function at the top of your apiService.js file
+const createAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Add this utility function

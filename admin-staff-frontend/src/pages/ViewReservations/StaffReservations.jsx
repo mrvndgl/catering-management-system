@@ -39,7 +39,7 @@ const StaffReservations = () => {
 
       // Update reservation status
       const updateResponse = await fetch(
-        `${import.meta.env.VITE_API_URL}/reservations/${reservationId}`,
+        `${import.meta.env.VITE_API_URL}/reservations/status/${reservationId}`,
         {
           method: "PUT",
           headers: {
@@ -212,6 +212,15 @@ const StaffReservations = () => {
     fetchReservations();
     fetchProducts();
     fetchPaymentStatuses();
+
+    // Set up polling for updates every 30 seconds
+    const pollingInterval = setInterval(() => {
+      fetchReservations();
+      fetchPaymentStatuses();
+    }, 30000); // 30 seconds
+
+    // Clean up on component unmount
+    return () => clearInterval(pollingInterval);
   }, []);
 
   const fetchPaymentStatuses = async () => {
@@ -262,14 +271,18 @@ const StaffReservations = () => {
       setIsLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await fetch("/api/reservations", {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Fix the URL by removing the duplicate 'api'
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/reservations`, // Removed duplicate 'api/'
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -277,8 +290,45 @@ const StaffReservations = () => {
       }
 
       const data = await response.json();
-      console.log("Reservation data from API:", data);
-      setReservations(data);
+
+      // Fetch customer details for each reservation
+      const reservationsWithCustomers = await Promise.all(
+        data.map(async (reservation) => {
+          try {
+            const customerResponse = await fetch(
+              `${import.meta.env.VITE_API_URL}/customers/${
+                reservation.customer_id
+              }`, // Also fixed this URL
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (customerResponse.ok) {
+              const customerData = await customerResponse.json();
+              return {
+                ...reservation,
+                customerName: `${customerData.data.firstName} ${customerData.data.lastName}`, // Added .data to match the API response
+              };
+            }
+            return reservation;
+          } catch (error) {
+            console.error(
+              `Error fetching customer for reservation ${reservation.reservation_id}:`,
+              error
+            );
+            return reservation;
+          }
+        })
+      );
+
+      console.log(
+        "Reservation data with customers:",
+        reservationsWithCustomers
+      );
+      setReservations(reservationsWithCustomers);
     } catch (error) {
       console.error("Fetch failed:", error);
       setError(error.message);
@@ -380,11 +430,7 @@ const StaffReservations = () => {
 
     // If there's a payment mode but no status yet
     if (paymentMode && !status) {
-      return (
-        <span className="payment-status pending">
-          Payment Mode: {paymentMode}
-        </span>
-      );
+      return <span className="payment-status pending">{paymentMode}</span>;
     }
 
     // If there's a status, show both payment mode and status
@@ -451,7 +497,7 @@ const StaffReservations = () => {
             fetchPaymentStatuses();
           }}
         >
-          Refresh Data
+          Refresh
         </button>
       </div>
 
@@ -478,7 +524,7 @@ const StaffReservations = () => {
             {filteredReservations.map((reservation) => (
               <tr key={reservation.reservation_id}>
                 <td>{reservation.reservation_id}</td>
-                <td>{reservation.name}</td>
+                <td>{reservation.customerName || "N/A"}</td>
                 <td>{formatDate(reservation.reservation_date)}</td>
                 <td>{reservation.timeSlot}</td>
                 <td>{reservation.numberOfPax}</td>
@@ -522,7 +568,8 @@ const StaffReservations = () => {
                     {selectedReservation.reservation_id}
                   </p>
                   <p>
-                    <strong>Name:</strong> {selectedReservation.name}
+                    <strong>Customer Name:</strong>{" "}
+                    {selectedReservation.customerName || "N/A"}
                   </p>
                   <p>
                     <strong>Phone Number:</strong>{" "}

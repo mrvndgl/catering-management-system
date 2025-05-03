@@ -20,22 +20,86 @@ const Signup = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    if (name === "contactNumber") {
+      // Only allow digits
+      const sanitizedValue = value.replace(/[^\d]/g, "");
+      // Limit to 11 digits
+      const truncatedValue = sanitizedValue.slice(0, 11);
+      setFormData({
+        ...formData,
+        [name]: truncatedValue,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+
+    if (name === "password" || name === "confirmPassword") {
+      setPasswordError("");
+    }
+  };
+
+  const validatePassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!hasLowerCase) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number";
+    }
+    return "";
+  };
+
+  const validateContactNumber = (number) => {
+    const phoneRegex = /^09\d{9}$/;
+    return phoneRegex.test(number);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setPasswordError("");
 
+    // Validate contact number
+    if (!validateContactNumber(formData.contactNumber)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Contact Number",
+        text: "Please enter a valid Philippine mobile number (11 digits starting with '09')",
+      });
+      return;
+    }
+
+    // Validate password format
+    const passwordValidationError = validatePassword(formData.password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      Swal.fire({
+        icon: "error",
+        title: "Password Error",
+        text: passwordValidationError,
+      });
+      return;
+    }
+
+    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setPasswordError("Passwords do not match");
       Swal.fire({
         icon: "error",
         title: "Signup Failed",
@@ -109,6 +173,9 @@ const Signup = () => {
             <h2>Create Account</h2>
             {error && <div className="error-message">{error}</div>}
             {success && <div className="success-message">{success}</div>}
+            {passwordError && (
+              <div className="error-message">{passwordError}</div>
+            )}
 
             {/* First row: First Name and Last Name */}
             <div className="form-row">
@@ -207,7 +274,7 @@ const Signup = () => {
                 <input
                   type="password"
                   name="password"
-                  placeholder="Password"
+                  placeholder="Password (A-Z, a-z, 0-9)"
                   value={formData.password}
                   onChange={handleChange}
                   required

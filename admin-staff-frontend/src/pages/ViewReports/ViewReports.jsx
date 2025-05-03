@@ -235,6 +235,7 @@ const AdminReports = () => {
       }
 
       const formattedMonth = monthNum.toString().padStart(2, "0");
+      const token = localStorage.getItem("token");
 
       // Get monthly report data
       console.log(`Generating report for ${year}-${formattedMonth}`);
@@ -246,13 +247,59 @@ const AdminReports = () => {
         const reportData = response.data;
         console.log("Report data received:", reportData);
 
+        // Fetch customer details for each reservation
+        const reservationsWithCustomers = await Promise.all(
+          [
+            ...(reportData.acceptedReservations || []),
+            ...(reportData.declinedReservations || []),
+          ].map(async (reservation) => {
+            try {
+              const customerResponse = await api.get(
+                `/customers/${reservation.customer_id}`
+              );
+
+              if (customerResponse.data && customerResponse.data.data) {
+                const customerData = customerResponse.data.data;
+                return {
+                  ...reservation,
+                  name: `${customerData.firstName} ${customerData.lastName}`,
+                  phoneNumber:
+                    customerData.phoneNumber ||
+                    reservation.phoneNumber ||
+                    "N/A",
+                  email: customerData.email || "N/A",
+                };
+              }
+              return reservation;
+            } catch (error) {
+              console.error(
+                `Error fetching customer for reservation ${reservation.reservation_id}:`,
+                error
+              );
+              return reservation;
+            }
+          })
+        );
+
+        // Split the reservations back into accepted and declined
+        const acceptedReservations = reservationsWithCustomers.filter((res) =>
+          reportData.acceptedReservations.some(
+            (accepted) => accepted.reservation_id === res.reservation_id
+          )
+        );
+
+        const declinedReservations = reservationsWithCustomers.filter((res) =>
+          reportData.declinedReservations.some(
+            (declined) => declined.reservation_id === res.reservation_id
+          )
+        );
+
         // Calculate daily sales for charting if not provided
         let monthlySales = [];
 
         if (reportData.metrics && reportData.metrics.monthly_sales) {
           monthlySales = reportData.metrics.monthly_sales;
         } else {
-          // If no daily breakdown, create a simple month view
           monthlySales = [
             {
               month: reportData.month,
@@ -275,8 +322,8 @@ const AdminReports = () => {
             totalRevenue: reportData.metrics.total_revenue || 0,
           },
           monthlySales: monthlySales,
-          acceptedReservations: reportData.acceptedReservations || [],
-          declinedReservations: reportData.declinedReservations || [],
+          acceptedReservations: acceptedReservations,
+          declinedReservations: declinedReservations,
         });
       }
 

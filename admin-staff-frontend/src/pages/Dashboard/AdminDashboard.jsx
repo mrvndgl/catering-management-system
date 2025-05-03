@@ -247,20 +247,6 @@ const DashboardContent = ({ isSidebarCollapsed }) => {
           <div className="dashboard-card">
             <div className="stat-card">
               <div className="stat-icon">
-                <Users size={40} color="#ffffff" />
-              </div>
-              <div className="stat-content">
-                <h3>Total Guests</h3>
-                <p className="stat-number">
-                  {isLoading ? "Loading..." : overallStats.totalGuests || 0}
-                </p>
-                <p className="stat-label">All Time</p>
-              </div>
-            </div>
-          </div>
-          <div className="dashboard-card">
-            <div className="stat-card">
-              <div className="stat-icon">
                 <CreditCard size={40} color="#ffffff" />
               </div>
               <div className="stat-content">

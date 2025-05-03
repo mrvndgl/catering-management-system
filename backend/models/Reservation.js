@@ -5,8 +5,11 @@ const reservationSchema = new mongoose.Schema(
     reservation_id: { type: Number, unique: true, required: true },
     reservation_status: { type: String, default: "pending" },
     payment_status: { type: String, default: "pending" },
-    name: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    phoneNumber: {
+      type: String,
+      required: true,
+      match: /^[0-9]{11}$/,
+    },
     numberOfPax: { type: Number, required: true },
     timeSlot: { type: String, required: true },
     createdAt: {
@@ -25,7 +28,6 @@ const reservationSchema = new mongoose.Schema(
       type: Object,
       required: true,
       default: {},
-      // Add validation to ensure values are numbers
       validate: {
         validator: function (obj) {
           return Object.values(obj).every((val) => typeof val === "number");

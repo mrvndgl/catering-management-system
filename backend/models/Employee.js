@@ -13,6 +13,13 @@ const employeeSchema = new mongoose.Schema({
   firstName: {
     type: String,
     required: true,
+    validate: {
+      validator: function (v) {
+        return /^[^0-9]+$/.test(v);
+      },
+      message: (props) =>
+        `${props.value} is not a valid first name! Numbers are not allowed.`,
+    },
     default: "",
   },
   lastName: {
