@@ -131,6 +131,7 @@ const Reservation = () => {
   );
   const [showAdditionalItemModal, setShowAdditionalItemModal] = useState(false);
   const [selectedAdditionalItems, setSelectedAdditionalItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
@@ -145,6 +146,9 @@ const Reservation = () => {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [loadingArchived, setLoadingArchived] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [additionalItemCategory, setAdditionalItemCategory] = useState(
+    Object.keys(menuItems).length > 0 ? Object.keys(menuItems)[0] : ""
+  );
   const [error, setError] = useState("");
   const [errorArchived, setErrorArchived] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
