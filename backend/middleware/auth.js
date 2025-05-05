@@ -3,6 +3,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
+import { Customer } from "../models/Customer.js";
 
 class AuthError extends Error {
   constructor(message, statusCode = 401) {
@@ -74,14 +75,38 @@ const handleAuthError = (error, res) => {
   });
 };
 
-// Updated authentication middleware
+// Update the auth middleware to include customer_id
 export const auth = async (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     const decoded = verifyToken(token);
 
-    // Set normalized user info
-    req.user = decoded;
+    // Fetch customer details if the user is a customer
+    if (decoded.type === "customer") {
+      const customer = await Customer.findById(decoded.userId).select(
+        "customer_id firstName lastName contactNumber email address" // Added customer_id
+      );
+
+      if (!customer) {
+        throw new AuthError("Customer not found", 404);
+      }
+
+      // Enhance the user object with customer details
+      req.user = {
+        ...decoded,
+        customerDetails: {
+          customer_id: customer.customer_id, // Add customer_id
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          contactNumber: customer.contactNumber,
+          email: customer.email,
+          address: customer.address,
+        },
+      };
+    } else {
+      req.user = decoded;
+    }
+
     next();
   } catch (error) {
     handleAuthError(error, res);

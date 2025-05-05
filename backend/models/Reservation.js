@@ -5,11 +5,6 @@ const reservationSchema = new mongoose.Schema(
     reservation_id: { type: Number, unique: true, required: true },
     reservation_status: { type: String, default: "pending" },
     payment_status: { type: String, default: "pending" },
-    phoneNumber: {
-      type: String,
-      required: true,
-      match: /^[0-9]{11}$/,
-    },
     numberOfPax: { type: Number, required: true },
     timeSlot: { type: String, required: true },
     createdAt: {
@@ -23,7 +18,16 @@ const reservationSchema = new mongoose.Schema(
     },
     paymentMode: { type: String, required: true },
     reservation_date: { type: Date, required: true },
-    venue: { type: String, required: true },
+    venue: {
+      municipality: { type: String, required: true },
+      streetAddress: { type: String, required: true },
+      barangay: { type: String, required: true },
+      lotNumber: { type: String },
+      blockNumber: { type: String },
+      landmark: { type: String },
+      postalCode: { type: String },
+      additionalInfo: { type: String },
+    },
     selectedProducts: {
       type: Object,
       required: true,

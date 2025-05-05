@@ -170,7 +170,6 @@ export const createReservation = async (req, res) => {
 
   try {
     const {
-      phoneNumber,
       numberOfPax,
       timeSlot,
       paymentMode,
@@ -182,7 +181,6 @@ export const createReservation = async (req, res) => {
     } = req.body;
 
     // Log each piece of received data for debugging
-    console.log("Phone Number:", phoneNumber);
     console.log("Number of Pax:", numberOfPax);
     console.log("Time Slot:", timeSlot);
     console.log("Payment Mode:", paymentMode);
@@ -191,9 +189,8 @@ export const createReservation = async (req, res) => {
     console.log("Selected Products:", selectedProducts);
     console.log("Additional Items:", additionalItems);
 
-    // Basic validation - removed name field from validation
+    // Basic validation
     if (
-      !phoneNumber ||
       !numberOfPax ||
       !timeSlot ||
       !paymentMode ||
@@ -206,11 +203,55 @@ export const createReservation = async (req, res) => {
       });
     }
 
+    // Check if venue has required fields
+    if (!venue.municipality || !venue.streetAddress || !venue.barangay) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Municipality, street address, and barangay are required for venue",
+      });
+    }
+
     // Validate numberOfPax range
     if (numberOfPax < 50 || numberOfPax > 150) {
       return res.status(400).json({
         success: false,
         message: "Number of pax must be between 50 and 150",
+      });
+    }
+
+    // Validate venue municipality (must be one of the allowed municipalities in Bohol)
+    const allowedMunicipalities = [
+      "Tagbilaran",
+      "Dauis",
+      "Baclayon",
+      "Albur",
+      "Maribojoc",
+      "Corella",
+    ];
+
+    if (!allowedMunicipalities.includes(venue.municipality)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Venue municipality must be one of the following in Bohol: " +
+          allowedMunicipalities.join(", "),
+      });
+    }
+
+    // Validate street address length
+    if (venue.streetAddress.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Street address must be at least 5 characters long",
+      });
+    }
+
+    // Validate barangay
+    if (venue.barangay.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid barangay name",
       });
     }
 
@@ -256,19 +297,41 @@ export const createReservation = async (req, res) => {
       ? lastReservation.reservation_id + 1
       : 1;
 
-    // Process selected products
+    // Get customer details from the auth middleware
+    if (!req.user || !req.user.customerDetails) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer details not found. Please log in again.",
+      });
+    }
+
+    const { customerDetails } = req.user;
+
+    // Make sure the user has a contactNumber
+    if (!customerDetails.contactNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Contact number is missing. Please update your profile.",
+      });
+    }
+
+    // Process selected products - with better product validation
     const processedProducts = {};
     for (const [category, productId] of Object.entries(selectedProducts)) {
       try {
-        const product = await Product.findOne({ product_id: productId });
+        // Check if product exists before adding to processedProducts
+        const product = await Product.findOne({
+          product_id: Number(productId),
+        });
 
         if (!product) {
           return res.status(400).json({
             success: false,
-            message: `Product with ID ${productId} in category ${category} not found`,
+            message: `Product with ID ${productId} in category ${category} not found. Please check your menu selection.`,
           });
         }
 
+        // Store the product ID as a number
         processedProducts[category] = Number(productId);
       } catch (error) {
         console.error(
@@ -282,51 +345,53 @@ export const createReservation = async (req, res) => {
       }
     }
 
-    // Process additional items
-    const processedAdditionalItems = [];
-    for (const itemId of additionalItems) {
-      try {
-        const product = await Product.findOne({ product_id: itemId });
+    // Process additional items with better validation
+    const validAdditionalItems = [];
+    if (additionalItems && additionalItems.length > 0) {
+      for (const itemId of additionalItems) {
+        try {
+          const product = await Product.findOne({ product_id: Number(itemId) });
 
-        if (!product) {
-          return res.status(400).json({
+          if (!product) {
+            return res.status(400).json({
+              success: false,
+              message: `Additional item with ID ${itemId} not found. Please check your additional items selection.`,
+            });
+          }
+
+          validAdditionalItems.push(Number(itemId));
+        } catch (error) {
+          console.error(`Error processing additional item ${itemId}:`, error);
+          return res.status(500).json({
             success: false,
-            message: `Additional item with ID ${itemId} not found`,
+            message: `Error processing additional item ${itemId}`,
           });
         }
-
-        processedAdditionalItems.push(product._id);
-      } catch (error) {
-        console.error(`Error processing additional item ${itemId}:`, error);
-        return res.status(500).json({
-          success: false,
-          message: `Error processing additional item ${itemId}`,
-        });
       }
     }
 
     // Calculate total amount
     let totalAmount = BASE_PRICE + (numberOfPax - BASE_PAX) * PRICE_PER_HEAD;
-    if (additionalItems && additionalItems.length > 0) {
+    if (validAdditionalItems.length > 0) {
       totalAmount +=
-        numberOfPax * ADDITIONAL_ITEM_PRICE * additionalItems.length;
+        numberOfPax * ADDITIONAL_ITEM_PRICE * validAdditionalItems.length;
     }
 
-    // Create new reservation - removed name field
+    // Create new reservation with customer details from the auth middleware
     const newReservation = new Reservation({
       reservation_id,
       customer_id: req.user.userId,
-      phoneNumber,
+      phoneNumber: customerDetails.contactNumber,
       numberOfPax,
       timeSlot,
       createdAt: new Date(),
       paymentMode,
-      reservation_date: reservationDate, // Use the cleaned-up date
+      reservation_date: reservationDate,
       venue,
       selectedProducts: processedProducts,
-      additionalItems: additionalItems.map((id) => Number(id)),
+      additionalItems: validAdditionalItems,
       total_amount: totalAmount,
-      reservation_status: "Pending",
+      reservation_status: "pending",
       specialNotes: specialNotes,
     });
 

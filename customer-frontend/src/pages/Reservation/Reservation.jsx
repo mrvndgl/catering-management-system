@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { StoreContext } from "../../context/StoreContext";
 import "./Reservation.css";
 import { Beef, Drumstick, Fish, Salad, Soup, Utensils } from "lucide-react";
+import { fetchMenuItemsByCategory } from "../../api/apiService";
 import Swal from "sweetalert2";
 import EditReservationModal from "../../components/modals/EditReservationModal";
 
@@ -64,22 +65,45 @@ const MENU_ITEMS = {
   ],
 };
 
+// Add this near your other useEffect hooks or state declarations
+const calculateMinDate = () => {
+  const today = new Date();
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + 7);
+
+  const year = minDate.getFullYear();
+  const month = String(minDate.getMonth() + 1).padStart(2, "0");
+  const day = String(minDate.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const minDateStr = calculateMinDate();
+
 const Reservation = () => {
   const [formData, setFormData] = useState({
-    name: "",
-    phoneNumber: "",
-    numberOfPax: "",
+    numberOfPax: 50, // Minimum allowed value
     timeSlot: "",
-    reservation_date: "",
-    venue: "",
-    paymentMode: "",
-    specialNotes: "",
+    paymentMode: "cash",
+    reservation_date: minDateStr,
+    venue: {
+      municipality: "",
+      streetAddress: "",
+      barangay: "",
+      lotNumber: "",
+      blockNumber: "",
+      landmark: "",
+      postalCode: "",
+      additionalInfo: "",
+    },
     selectedProducts: {},
+    specialNotes: "",
   });
 
   // Menu and product data
   const { foodList, refreshFoodItems } = useContext(StoreContext);
   const [menuItems, setMenuItems] = useState({});
+  const [menuItemOrganized, setMenuItemOrganized] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [productsLookup, setProductsLookup] = useState({});
   const [categories, setCategories] = useState();
@@ -151,6 +175,48 @@ const Reservation = () => {
       : false;
   };
 
+  // Add this handler for venue fields
+  const handleVenueChange = (e) => {
+    const { name, value } = e.target;
+    // Extract the field name after "venue."
+    const fieldName = name.split(".")[1];
+
+    setFormData((prevData) => ({
+      ...prevData,
+      venue: {
+        ...prevData.venue,
+        [fieldName]: value,
+      },
+    }));
+  };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const response = await fetch("/api/users/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            // Update to store contactNumber instead of phoneNumber
+            setUserInfo({
+              name: userData.name,
+              phoneNumber: userData.contactNumber, // Change to match your API response field name
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
   useEffect(() => {
     if (foodList && foodList.length > 0) {
       organizeMenuItems();
@@ -233,7 +299,6 @@ const Reservation = () => {
 
       // Set menu items
       setMenuItems(organizedMenu);
-
       // Set initial active category if needed
       if (Object.keys(organizedMenu).length > 0 && !activeCategory) {
         setActiveCategory(Object.keys(organizedMenu)[0]);
@@ -453,11 +518,33 @@ const Reservation = () => {
 
       // Organize by category
       const organizedMenu = {};
+      const MenuOrganized = [];
+      categoriesData.map((category) => {
+        MenuOrganized.push({
+          ...category,
+          items: [],
+        });
+      });
       categoriesData.forEach((category) => {
         organizedMenu[category.category_name] = [];
       });
+      const groupedByCategory = nonArchivedProducts.reduce((acc, product) => {
+        const categoryId = product.category_id;
+        if (!acc[categoryId]) {
+          acc[categoryId] = [];
+        }
+        acc[categoryId].push(product);
+        return acc;
+      }, {});
+
+      MenuOrganized.map((m_o) => {
+        m_o.items = groupedByCategory[m_o.category_id];
+      });
+
+      setMenuItemOrganized(MenuOrganized);
 
       nonArchivedProducts.forEach((product) => {
+        console.log("nonArchivedProducts", product);
         const categoryName = categoriesData.find(
           (cat) => cat.category_id === product.category_id
         )?.category_name;
@@ -467,6 +554,7 @@ const Reservation = () => {
         }
       });
 
+      console.log("organizedMenu", organizedMenu);
       // Set menu items
       console.log("[Reservation] Setting organized menu items");
       setMenuItems(organizedMenu);
@@ -779,26 +867,85 @@ const Reservation = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch your reservations data here
     const fetchReservations = async () => {
+      setIsLoading(true);
       try {
-        // Replace with your actual API endpoint
-        const response = await fetch("/api/reservations");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const response = await fetch("/api/reservations/my-reservations", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+          return;
+        }
+
         const data = await response.json();
-        setReservations(data);
+
+        if (response.ok) {
+          // We need to fetch user info for each reservation
+          const reservationsWithUserData = await Promise.all(
+            data.data.map(async (reservation) => {
+              // Fetch user info for the customer_id
+              try {
+                const userResponse = await fetch(
+                  `/api/users/${reservation.customer_id}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+
+                if (userResponse.ok) {
+                  const userData = await userResponse.json();
+                  // Return reservation with user data attached
+                  return {
+                    ...reservation,
+                    userName: userData.name,
+                    userPhoneNumber: userData.phoneNumber,
+                  };
+                }
+                return reservation; // Return original if fetch fails
+              } catch (error) {
+                console.error(
+                  "Error fetching user data for reservation:",
+                  error
+                );
+                return reservation;
+              }
+            })
+          );
+
+          setReservations(reservationsWithUserData);
+        } else {
+          setError(data.message || "Failed to fetch reservations");
+        }
       } catch (error) {
         console.error("Error fetching reservations:", error);
+        setError("An error occurred while fetching reservations");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchReservations();
-  }, []);
+  }, [navigate]);
 
   const fetchReservationHistory = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         setHistoryLoading(false);
+        setError("Authentication required. Please log in."); // Provide user feedback
         return;
       }
 
@@ -814,7 +961,14 @@ const Reservation = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch reservation history");
+        // Handle specific error codes
+        if (response.status === 401) {
+          setError("Authentication failed. Please log in again.");
+          // Optionally redirect to login page
+        } else {
+          throw new Error("Failed to fetch reservation history");
+        }
+        return;
       }
 
       const data = await response.json();
@@ -895,39 +1049,54 @@ const Reservation = () => {
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleProductSelect = (category, product) => {
-    console.log("Selecting product:", product);
-
-    // Check if the product still exists
-    if (!product || !product.product_id) {
-      console.error("Attempted to select invalid product:", product);
+    // For any fields that are part of the venue object, use the venue handler
+    if (name.startsWith("venue.")) {
+      handleVenueChange(e);
       return;
     }
 
-    setFormData((prevState) => ({
-      ...prevState,
+    // Handle other fields normally
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "number" ? parseInt(value) || 0 : value,
+    }));
+
+    // Additional validation or calculations can be added here
+    if (name === "numberOfPax") {
+      // Recalculate total, etc.
+      calculateTotal(parseInt(value) || 0);
+    }
+  };
+
+  // Handle product selection for main categories
+  const handleProductSelect = (category, product) => {
+    setFormData((prev) => ({
+      ...prev,
       selectedProducts: {
-        ...prevState.selectedProducts,
+        ...prev.selectedProducts,
         [category]: product.product_id,
       },
     }));
   };
 
-  const addAdditionalItem = (itemId) => {
-    setSelectedAdditionalItems([...selectedAdditionalItems, itemId]);
-    setShowAdditionalItemModal(false);
+  // Handle additional item selection in modal
+  const handleAdditionalItemSelect = (productId) => {
+    setSelectedAdditionalItems((prev) => {
+      if (prev.includes(productId)) {
+        return prev.filter((id) => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
   };
 
+  // Remove an additional item
   const removeAdditionalItem = (index) => {
-    const updatedItems = [...selectedAdditionalItems];
-    updatedItems.splice(index, 1);
-    setSelectedAdditionalItems(updatedItems);
+    setSelectedAdditionalItems((prev) => {
+      const newItems = [...prev];
+      newItems.splice(index, 1);
+      return newItems;
+    });
   };
 
   const handleCancelReservation = async (reservationId) => {
@@ -967,17 +1136,46 @@ const Reservation = () => {
     }
   };
 
-  // Handle form submission
+  // Simplified handleSubmit function that doesn't need to send name or phone number
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
 
-    if (!formData.name || !formData.phoneNumber || !formData.numberOfPax) {
+    // Note: We're not checking name or phone number anymore since they're fetched from the backend
+    if (!formData.numberOfPax || !formData.timeSlot) {
       Swal.fire({
         icon: "error",
         title: "Required Fields Missing",
         text: "Please fill in all required fields",
+        confirmButtonColor: "#3085d6",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate venue details
+    if (
+      !formData.venue.municipality ||
+      !formData.venue.barangay ||
+      !formData.venue.streetAddress
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Venue Information Incomplete",
+        text: "Please provide municipality, barangay, and street address for the venue",
+        confirmButtonColor: "#3085d6",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate street address length
+    if (formData.venue.streetAddress.length < 5) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Street Address",
+        text: "Street address must be at least 5 characters long",
         confirmButtonColor: "#3085d6",
       });
       setIsSubmitting(false);
@@ -995,9 +1193,38 @@ const Reservation = () => {
       return;
     }
 
+    // Validate min/max pax
+    if (formData.numberOfPax < 50 || formData.numberOfPax > 150) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Number of Pax",
+        text: "Number of guests must be between 50 and 150",
+        confirmButtonColor: "#3085d6",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validate date is at least 7 days in advance
+    const selectedDate = new Date(formData.reservation_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const minAllowedDate = new Date(today);
+    minAllowedDate.setDate(today.getDate() + 7);
+
+    if (selectedDate < minAllowedDate) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date",
+        text: "Reservations must be made at least 7 days in advance.",
+        confirmButtonColor: "#3085d6",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     const reservationData = {
-      name: formData.name,
-      phoneNumber: formData.phoneNumber,
       numberOfPax: formData.numberOfPax,
       timeSlot: formData.timeSlot,
       paymentMode: formData.paymentMode,
@@ -1007,6 +1234,7 @@ const Reservation = () => {
       additionalItems: selectedAdditionalItems,
       specialNotes: formData.specialNotes,
       totalAmount: totalAmount,
+      // No need to include phoneNumber or name as they'll be fetched from user details on the backend
       pricingDetails: {
         basePax: pricingSettings.basePax,
         pricePerHead: pricingSettings.pricePerHead,
@@ -1137,31 +1365,30 @@ const Reservation = () => {
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // First fetch categories
-      await fetchCategories();
-
-      // Call fetchSettingsData
-      const settingsData = await fetchSettingsData();
-      if (!settingsData) {
-        throw new Error("Failed to fetch settings data");
-      }
-
-      // Optional: fetch reservation history if needed
-      if (activeTab === "history") {
-        await fetchReservationHistory();
-      }
-    } catch (error) {
-      console.error("Failed to load data:", error);
-      setError(`Failed to load data: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load menu items and pricing settings
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const menuData = await fetchMenuItemsByCategory(false); // false = don't include archived items
+        const pricingData = await fetchPricingSettings();
+
+        // Set the menu items
+        setMenuItems(menuData);
+
+        // Set default active category if we have categories
+        if (Object.keys(menuData).length > 0) {
+          setActiveCategory(Object.keys(menuData)[0]);
+          setAdditionalItemCategory(Object.keys(menuData)[0]);
+        }
+
+        // Set pricing settings
+        setPricingSettings(pricingData);
+      } catch (error) {
+        console.error("Error loading reservation data:", error);
+        // Handle error appropriately
+      }
+    };
+
     loadData();
   }, []);
 
@@ -1230,11 +1457,17 @@ const Reservation = () => {
     setMenuItems(getFilteredMenuItems());
   }, [archivedProducts]);
 
-  const findProductById = (itemId) => {
-    return productsLookup[itemId] || null;
+  // Find a product by ID from all available products
+  const findProductById = (productId) => {
+    for (const category in menuItems) {
+      const product = menuItems[category].find(
+        (p) => p.product_id === productId
+      );
+      if (product) return product;
+    }
+    return null;
   };
-
-  // Define renderReservationCard function outside the JSX return statement
+  // render reservation history
   const renderReservationCard = (reservation) => {
     return (
       <div key={reservation._id} className="reservation-card">
@@ -1248,8 +1481,15 @@ const Reservation = () => {
         </div>
 
         <div className="reservation-details">
+          {/* Display the name and phone number fetched from the user data */}
           <p>
-            <strong>Name:</strong> {reservation.name}
+            <strong>Name:</strong> {reservation.userName || "Not available"}
+          </p>
+          <p>
+            <strong>Phone Number:</strong>{" "}
+            {reservation.userPhoneNumber ||
+              reservation.phoneNumber ||
+              "Not available"}
           </p>
           <p>
             <strong>Date:</strong>{" "}
@@ -1258,9 +1498,38 @@ const Reservation = () => {
           <p>
             <strong>Time Slot:</strong> {reservation.timeSlot}
           </p>
-          <p>
-            <strong>Venue:</strong> {reservation.venue}
-          </p>
+          <div className="venue-details">
+            <strong>Venue:</strong>
+            {typeof reservation.venue === "object" ? (
+              <div className="venue-address">
+                {reservation.venue.streetAddress}
+                {reservation.venue.lotNumber &&
+                  `, Lot ${reservation.venue.lotNumber}`}
+                {reservation.venue.blockNumber &&
+                  `, Block ${reservation.venue.blockNumber}`}
+                <br />
+                Brgy. {reservation.venue.barangay},{" "}
+                {reservation.venue.municipality}, Bohol
+                {reservation.venue.postalCode &&
+                  ` ${reservation.venue.postalCode}`}
+                {reservation.venue.landmark && (
+                  <>
+                    <br />
+                    <span className="landmark">
+                      Landmark: {reservation.venue.landmark}
+                    </span>
+                  </>
+                )}
+                {reservation.venue.additionalInfo && (
+                  <div className="additional-venue-info">
+                    <em>Additional Info: {reservation.venue.additionalInfo}</em>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span>{reservation.venue}</span> // Fallback for older reservations with string venue
+            )}
+          </div>
           <p>
             <strong>Number of Pax:</strong> {reservation.numberOfPax}
           </p>
@@ -1365,35 +1634,13 @@ const Reservation = () => {
           <form onSubmit={handleSubmit} className="reservation-form">
             <div className="form-columns">
               <div className="form-column left-column">
-                <div className="form-group">
-                  <label>Name:</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Phone Number:</label>
-                  <input
-                    type="text"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    placeholder="11 digits required"
-                    required
-                  />
-                </div>
-
+                {/* Phone number and name are now fetched from the user model */}
                 <div className="form-group">
                   <label>Number of Pax:</label>
                   <input
                     type="number"
                     name="numberOfPax"
-                    min={pricingSettings.basePax > 0 ? 1 : 50} // Minimum can be based on pricing settings
+                    min={50}
                     max="150"
                     value={formData.numberOfPax}
                     onChange={handleInputChange}
@@ -1432,19 +1679,142 @@ const Reservation = () => {
                     name="reservation_date"
                     value={formData.reservation_date}
                     onChange={handleInputChange}
+                    min={minDateStr} // Use minimum date (7 days from today)
                     required
                   />
+                  <small className="date-info">
+                    Reservations must be made at least 7 days in advance.
+                  </small>
                 </div>
 
-                <div className="form-group">
-                  <label>Venue:</label>
-                  <input
-                    type="text"
-                    name="venue"
-                    value={formData.venue}
-                    onChange={handleInputChange}
-                    required
-                  />
+                <div className="form-group venue-container">
+                  <h4>Venue Details</h4>
+
+                  <div className="venue-field">
+                    <label>Municipality:</label>
+                    <select
+                      name="venue.municipality"
+                      value={formData.venue?.municipality || ""}
+                      onChange={handleVenueChange}
+                      required
+                    >
+                      <option value="">Select municipality (Bohol)</option>
+                      <option value="Tagbilaran">Tagbilaran</option>
+                      <option value="Dauis">Dauis</option>
+                      <option value="Baclayon">Baclayon</option>
+                      <option value="Albur">Albur</option>
+                      <option value="Maribojoc">Maribojoc</option>
+                      <option value="Corella">Corella</option>
+                    </select>
+                  </div>
+
+                  <div className="venue-field">
+                    <label>Barangay:</label>
+                    <input
+                      type="text"
+                      name="venue.barangay"
+                      value={formData.venue?.barangay || ""}
+                      onChange={handleVenueChange}
+                      placeholder="Enter barangay name"
+                      required
+                    />
+                  </div>
+
+                  <div className="venue-field">
+                    <label>Street Address:</label>
+                    <input
+                      type="text"
+                      name="venue.streetAddress"
+                      value={formData.venue?.streetAddress || ""}
+                      onChange={handleVenueChange}
+                      placeholder="Enter street name/number"
+                      required
+                    />
+                  </div>
+
+                  <div className="venue-field-row">
+                    <div className="venue-field half">
+                      <label>Lot Number:</label>
+                      <input
+                        type="text"
+                        name="venue.lotNumber"
+                        value={formData.venue?.lotNumber || ""}
+                        onChange={handleVenueChange}
+                        placeholder="Lot #"
+                      />
+                    </div>
+
+                    <div className="venue-field half">
+                      <label>Block Number:</label>
+                      <input
+                        type="text"
+                        name="venue.blockNumber"
+                        value={formData.venue?.blockNumber || ""}
+                        onChange={handleVenueChange}
+                        placeholder="Block #"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="venue-field">
+                    <label>Nearest Landmark:</label>
+                    <input
+                      type="text"
+                      name="venue.landmark"
+                      value={formData.venue?.landmark || ""}
+                      onChange={handleVenueChange}
+                      placeholder="E.g., Near St. Joseph Cathedral"
+                    />
+                  </div>
+
+                  <div className="venue-field">
+                    <label>Postal Code:</label>
+                    <input
+                      type="text"
+                      name="venue.postalCode"
+                      value={formData.venue?.postalCode || ""}
+                      onChange={handleVenueChange}
+                      placeholder="Enter postal code"
+                    />
+                  </div>
+
+                  <div className="venue-field">
+                    <label>Additional Information:</label>
+                    <textarea
+                      name="venue.additionalInfo"
+                      value={formData.venue?.additionalInfo || ""}
+                      onChange={handleVenueChange}
+                      placeholder="Any additional venue details..."
+                      rows={2}
+                    />
+                  </div>
+
+                  {formData.venue?.municipality &&
+                    formData.venue?.barangay &&
+                    formData.venue?.streetAddress && (
+                      <div className="venue-summary">
+                        <h5>Venue Summary:</h5>
+                        <p className="venue-preview">
+                          {formData.venue.streetAddress}
+                          {formData.venue.lotNumber &&
+                            `, Lot ${formData.venue.lotNumber}`}
+                          {formData.venue.blockNumber &&
+                            `, Block ${formData.venue.blockNumber}`}
+                          ,
+                          <br />
+                          Brgy. {formData.venue.barangay},{" "}
+                          {formData.venue.municipality}, Bohol
+                          {formData.venue.postalCode &&
+                            ` ${formData.venue.postalCode}`}
+                          {formData.venue.landmark && (
+                            <>
+                              <br />
+                              Landmark: {formData.venue.landmark}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -1486,9 +1856,9 @@ const Reservation = () => {
               </div>
             </div>
 
+            {/* Enhanced Menu Selection Component with Images */}
             <div className="menu-selection form-section">
               <h3 className="section-title">Select Menu Items</h3>
-
               {/* Category tabs */}
               <div className="category-tabs">
                 {Object.keys(menuItems).map((category) => (
@@ -1506,8 +1876,89 @@ const Reservation = () => {
                   </div>
                 ))}
               </div>
-
+              222
+              {/* Category tabs */}
+              <div className="category-tabs">
+                {menuItemOrganized.map((category) => (
+                  <div
+                    key={category?.category_id}
+                    className={`category-tab ${
+                      activeCategory === category?.category_name ? "active" : ""
+                    }`}
+                    onClick={() => setActiveCategory(category?.category_name)}
+                  >
+                    <div className="icon-container">
+                      {getCategoryIcon(category?.category_name)}
+                    </div>
+                    <span>{category?.category_name}</span>
+                  </div>
+                ))}
+              </div>
+              {console.log(
+                "formData.selectedProducts",
+                formData.selectedProducts
+              )}
               {/* Display products for each category */}
+              {menuItemOrganized.map((category) => {
+                return (
+                  <div
+                    // key={`category-tab-${category}`}
+                    className={`category-section ${
+                      activeCategory === category?.category_name ? "active" : ""
+                    }`}
+                  >
+                    <div className="product-list">
+                      {category?.items?.map((product) => (
+                        <div
+                          key={product.product_id}
+                          className={`product-item ${
+                            formData.selectedProducts[
+                              category?.category_name
+                            ] === product.product_id
+                              ? "selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleProductSelect(
+                              category?.category_name,
+                              product
+                            )
+                          }
+                        >
+                          {console.log(
+                            "productproductproductproductzzz",
+                            product
+                          )}
+                          {/* Product Image Display */}
+                          <div className="product-image">
+                            <img
+                              src={
+                                "http://localhost:4000" + product?.primary_image
+                              }
+                              alt={product?.product_name}
+                            />
+                          </div>
+                          <div className="product-content">
+                            <input
+                              type="radio"
+                              name={`product-${category?.category_name}`}
+                              checked={
+                                formData.selectedProducts[
+                                  category?.category_name
+                                ] === product.product_id
+                              }
+                              onChange={() => {}}
+                            />
+                            <span className="product-name">
+                              {product.product_name}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
               {Object.entries(menuItems).map(([category, products]) => (
                 <div
                   key={category}
@@ -1527,10 +1978,30 @@ const Reservation = () => {
                         }`}
                         onClick={() => handleProductSelect(category, product)}
                       >
+                        {/* Product Image Display */}
+                        <div className="product-image">
+                          {product.images && product.images.length > 0 ? (
+                            <img
+                              src={
+                                product.images.find((img) => img.is_primary)
+                                  ?.url || product.images[0].url
+                              }
+                              alt={product.product_name}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/images/placeholder-food.png"; // Fallback image
+                              }}
+                            />
+                          ) : (
+                            <div className="no-image">
+                              <span>No Image</span>
+                            </div>
+                          )}
+                        </div>
                         <div className="product-content">
                           <input
                             type="radio"
-                            name={`product-${category}`}
+                            name={`product-${category}_`}
                             checked={
                               formData.selectedProducts[category] ===
                               product.product_id
@@ -1570,6 +2041,22 @@ const Reservation = () => {
                   .filter((item) => item !== null) // Filter out null items (archived ones)
                   .map((item, index) => (
                     <div key={index} className="additional-item">
+                      {/* Additional item image */}
+                      {item.images && item.images.length > 0 && (
+                        <div className="additional-item-image">
+                          <img
+                            src={
+                              item.images.find((img) => img.is_primary)?.url ||
+                              item.images[0].url
+                            }
+                            alt={item.product_name}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "/images/placeholder-food.png";
+                            }}
+                          />
+                        </div>
+                      )}
                       <span>{item.product_name}</span>
                       <button
                         type="button"
@@ -1582,6 +2069,113 @@ const Reservation = () => {
                   ))}
               </div>
             </div>
+
+            {/* Additional Item Modal */}
+            {showAdditionalItemModal && (
+              <div className="modal-overlay">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h3>Select Additional Items</h3>
+                    <button
+                      className="close-modal"
+                      onClick={() => setShowAdditionalItemModal(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="modal-body">
+                    {/* Category tabs for additional items */}
+                    <div className="category-tabs">
+                      {Object.keys(menuItems).map((category) => (
+                        <div
+                          key={category}
+                          className={`category-tab ${
+                            additionalItemCategory === category ? "active" : ""
+                          }`}
+                          onClick={() => setAdditionalItemCategory(category)}
+                        >
+                          <div className="icon-container">
+                            {getCategoryIcon(category)}
+                          </div>
+                          <span>{category}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Display products for each category in modal */}
+                    {Object.entries(menuItems).map(([category, products]) => (
+                      <div
+                        key={category}
+                        className={`category-section ${
+                          additionalItemCategory === category ? "active" : ""
+                        }`}
+                      >
+                        <div className="additional-product-list">
+                          {products.map((product) => (
+                            <div
+                              key={product.product_id}
+                              className={`additional-product-item ${
+                                selectedAdditionalItems.includes(
+                                  product.product_id
+                                )
+                                  ? "selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleAdditionalItemSelect(product.product_id)
+                              }
+                            >
+                              {/* Product Image in modal */}
+                              <div className="additional-product-image">
+                                {product.images && product.images.length > 0 ? (
+                                  <img
+                                    src={
+                                      product.images.find(
+                                        (img) => img.is_primary
+                                      )?.url || product.images[0].url
+                                    }
+                                    alt={product.product_name}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src =
+                                        "/images/placeholder-food.png";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="no-image">
+                                    <span>No Image</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="additional-product-content">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAdditionalItems.includes(
+                                    product.product_id
+                                  )}
+                                  onChange={() => {}}
+                                />
+                                <span className="additional-product-name">
+                                  {product.product_name}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      className="btn-primary"
+                      onClick={() => setShowAdditionalItemModal(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="pricing-breakdown">
               <h3>Pricing Breakdown</h3>
