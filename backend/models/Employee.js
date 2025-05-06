@@ -25,7 +25,6 @@ const employeeSchema = new mongoose.Schema({
   lastName: {
     type: String,
     required: true,
-    default: "",
   },
   username: {
     type: String,
@@ -44,7 +43,6 @@ const employeeSchema = new mongoose.Schema({
   address: {
     type: String,
     required: true,
-    default: "",
   },
   email: {
     type: String,

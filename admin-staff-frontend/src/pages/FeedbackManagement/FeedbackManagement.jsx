@@ -237,9 +237,10 @@ const FeedbackManagement = () => {
             <div key={feedback._id} className="feedback-item">
               <div className="feedback-header">
                 <div className="feedback-user">
-                  <strong>User:</strong> {feedback.userId?.name || "Unknown"} (
-                  {feedback.userId?.email || "No email"})
+                  <strong>User:</strong>{" "}
+                  {feedback.userId?.username || "No username"}
                 </div>
+
                 <div className="feedback-rating">
                   Rating: {"⭐".repeat(feedback.rating)}
                 </div>

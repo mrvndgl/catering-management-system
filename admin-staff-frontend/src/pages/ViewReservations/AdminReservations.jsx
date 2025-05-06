@@ -310,7 +310,8 @@ const AdminReservations = () => {
               const customerData = await customerResponse.json();
               return {
                 ...reservation,
-                customerName: `${customerData.data.firstName} ${customerData.data.lastName}`, // Added .data to match the API response
+                customerName: `${customerData.data.firstName} ${customerData.data.lastName}`,
+                contactNumber: customerData.data.contactNumber,
               };
             }
             return reservation;
@@ -573,7 +574,7 @@ const AdminReservations = () => {
                   </p>
                   <p>
                     <strong>Phone Number:</strong>{" "}
-                    {selectedReservation.phoneNumber}
+                    {selectedReservation.contactNumber || "N/A"}
                   </p>
                   <p>
                     <strong>Date:</strong>{" "}
@@ -593,8 +594,52 @@ const AdminReservations = () => {
                 </div>
                 <div className="details-right">
                   <p>
-                    <strong>Venue:</strong> {selectedReservation.venue}
+                    <strong>Venue:</strong>
                   </p>
+                  <ul>
+                    <li>
+                      <strong>Street Address:</strong>{" "}
+                      {selectedReservation.venue?.streetAddress || "N/A"}
+                    </li>
+                    <li>
+                      <strong>Barangay:</strong>{" "}
+                      {selectedReservation.venue?.barangay || "N/A"}
+                    </li>
+                    <li>
+                      <strong>Municipality:</strong>{" "}
+                      {selectedReservation.venue?.municipality || "N/A"}
+                    </li>
+                    {selectedReservation.venue?.lotNumber && (
+                      <li>
+                        <strong>Lot No.:</strong>{" "}
+                        {selectedReservation.venue.lotNumber}
+                      </li>
+                    )}
+                    {selectedReservation.venue?.blockNumber && (
+                      <li>
+                        <strong>Block No.:</strong>{" "}
+                        {selectedReservation.venue.blockNumber}
+                      </li>
+                    )}
+                    {selectedReservation.venue?.landmark && (
+                      <li>
+                        <strong>Landmark:</strong>{" "}
+                        {selectedReservation.venue.landmark}
+                      </li>
+                    )}
+                    {selectedReservation.venue?.postalCode && (
+                      <li>
+                        <strong>Postal Code:</strong>{" "}
+                        {selectedReservation.venue.postalCode}
+                      </li>
+                    )}
+                    {selectedReservation.venue?.additionalInfo && (
+                      <li>
+                        <strong>Additional Info:</strong>{" "}
+                        {selectedReservation.venue.additionalInfo}
+                      </li>
+                    )}
+                  </ul>
                   <p>
                     <strong>Payment Mode:</strong>{" "}
                     {selectedReservation.paymentMode}
@@ -610,6 +655,13 @@ const AdminReservations = () => {
                     >
                       {selectedReservation.reservation_status}
                     </span>
+                  </p>
+                  <p>
+                    <strong>Payment Status:</strong>{" "}
+                    {getPaymentStatusDisplay(
+                      selectedReservation.reservation_id,
+                      selectedReservation.paymentMode
+                    )}
                   </p>
                   {selectedReservation.decline_reason && (
                     <p>
@@ -651,7 +703,7 @@ const AdminReservations = () => {
               )}
 
               {selectedReservation.specialNotes && (
-                <p>
+                <p className="special-notes">
                   <strong>Special Notes:</strong>{" "}
                   {selectedReservation.specialNotes}
                 </p>

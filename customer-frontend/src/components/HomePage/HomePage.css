@@ -20,6 +20,28 @@
   gap: 10px;
 }
 
+.welcome-message {
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 20px;
+  color: #ffffff;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reservation-button {
+  background: none;
+  color: #007bff;
+  padding: 5px 5px;
+  text-decoration: underline;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+
 .login-button, .signup-button {
   padding: 10px 24px;
   border-radius: 50px;

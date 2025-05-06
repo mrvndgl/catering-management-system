@@ -3,14 +3,11 @@ import Feedback from "../models/Feedback.js";
 //Create Feedback
 export const createFeedback = async (req, res) => {
   try {
-    // Use the standardized userId from auth middleware
-    const userId = req.user.userId;
+    const userId = req.user._id || req.user.userId;
 
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
-
-    console.log("Creating feedback for user ID:", userId);
 
     const feedback = new Feedback({
       message: req.body.message,
@@ -19,7 +16,6 @@ export const createFeedback = async (req, res) => {
     });
 
     await feedback.save();
-    console.log("Feedback created:", feedback._id);
     res.status(201).json(feedback);
   } catch (error) {
     console.error("Feedback creation error:", error);
@@ -51,7 +47,7 @@ export const getUserFeedback = async (req, res) => {
 export const getAllFeedback = async (req, res) => {
   try {
     const feedback = await Feedback.find()
-      .populate("userId", "name email")
+      .populate("userId", "firstName lastName username")
       .sort({ createdAt: -1 });
     res.json(feedback);
   } catch (error) {

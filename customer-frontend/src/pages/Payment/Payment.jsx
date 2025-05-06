@@ -284,7 +284,8 @@ const Payment = () => {
         return acc;
       }, {});
 
-      setProductsLookup(lookup);
+      setProductsLookup(lookup); // required for getProductName to work
+      setProducts(lookup);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -298,7 +299,6 @@ const Payment = () => {
 
     const product = productsLookup[productId];
 
-    // Debug logging
     if (!product) {
       console.warn(
         `Product ID ${productId} not found in lookup`,
@@ -317,7 +317,7 @@ const Payment = () => {
         throw new Error("No authentication token found");
       }
 
-      // Fix for the 404 error - add the /api prefix to match your routes
+      // Fetch reservations
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/reservations/my-accepted`,
         {
@@ -341,7 +341,69 @@ const Payment = () => {
 
       const data = await response.json();
       const reservationsArray = Array.isArray(data) ? data : [];
-      setAcceptedReservations(reservationsArray);
+
+      // Fetch customer details for each reservation
+      const reservationsWithCustomerDetails = await Promise.all(
+        reservationsArray.map(async (reservation) => {
+          try {
+            // Adjust the API endpoint to match your backend structure
+            const customerResponse = await fetch(
+              `${import.meta.env.VITE_API_URL || ""}/api/customers/${
+                reservation.customer_id
+              }`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                credentials: "include",
+              }
+            );
+
+            if (customerResponse.ok) {
+              const customerData = await customerResponse.json();
+              console.log("Customer data received:", customerData); // Debugging
+
+              // Ensure we use the correct path to customer data
+              return {
+                ...reservation,
+                customerName:
+                  customerData.firstName && customerData.lastName
+                    ? `${customerData.firstName} ${customerData.lastName}`
+                    : customerData.data?.firstName &&
+                      customerData.data?.lastName
+                    ? `${customerData.data.firstName} ${customerData.data.lastName}`
+                    : "Not available",
+                phoneNumber:
+                  customerData.contactNumber ||
+                  customerData.data?.contactNumber ||
+                  reservation.phoneNumber ||
+                  "Not available",
+              };
+            } else {
+              console.error(
+                "Failed to fetch customer data:",
+                await customerResponse.text()
+              );
+              return reservation;
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching customer details for reservation ${
+                reservation.id || reservation._id
+              }:`,
+              error
+            );
+            return reservation;
+          }
+        })
+      );
+
+      console.log(
+        "Reservations with customer details:",
+        reservationsWithCustomerDetails
+      );
+      setAcceptedReservations(reservationsWithCustomerDetails);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching reservations:", error);
@@ -690,7 +752,7 @@ const Payment = () => {
                   <div className="reservation-details">
                     <p>
                       <span className="label">Customer Name:</span>{" "}
-                      {reservation.name}
+                      {reservation.customerName || "Not available"}
                     </p>
                     <p>
                       <span className="label">Phone Number:</span>{" "}
@@ -711,8 +773,46 @@ const Payment = () => {
                       ).toLocaleDateString()}
                     </p>
                     <p>
-                      <span className="label">Venue:</span> {reservation.venue}
+                      <strong>Municipality:</strong>{" "}
+                      {reservation.venue?.municipality || "Not available"}
                     </p>
+                    <p>
+                      <strong>Street Address:</strong>{" "}
+                      {reservation.venue?.streetAddress || "Not available"}
+                    </p>
+                    <p>
+                      <strong>Barangay:</strong>{" "}
+                      {reservation.venue?.barangay || "Not available"}
+                    </p>
+                    {reservation.venue?.lotNumber && (
+                      <p>
+                        <strong>Lot No.:</strong> {reservation.venue.lotNumber}
+                      </p>
+                    )}
+                    {reservation.venue?.blockNumber && (
+                      <p>
+                        <strong>Block No.:</strong>{" "}
+                        {reservation.venue.blockNumber}
+                      </p>
+                    )}
+                    {reservation.venue?.landmark && (
+                      <p>
+                        <strong>Landmark:</strong> {reservation.venue.landmark}
+                      </p>
+                    )}
+                    {reservation.venue?.postalCode && (
+                      <p>
+                        <strong>Postal Code:</strong>{" "}
+                        {reservation.venue.postalCode}
+                      </p>
+                    )}
+                    {reservation.venue?.additionalInfo && (
+                      <p>
+                        <strong>Additional Info:</strong>{" "}
+                        {reservation.venue.additionalInfo}
+                      </p>
+                    )}
+
                     <p>
                       <span className="label">Payment Mode:</span>{" "}
                       {reservation.paymentMode}
@@ -734,15 +834,36 @@ const Payment = () => {
                       {isLoading ? (
                         <p>Loading products...</p>
                       ) : reservation && reservation.selectedProducts ? (
-                        <ul>
-                          {Object.entries(reservation.selectedProducts).map(
-                            ([category, productId]) => (
-                              <li key={category}>
-                                {category}: {getProductName(productId)}
-                              </li>
-                            )
-                          )}
-                        </ul>
+                        Object.keys(reservation.selectedProducts).length > 0 ? (
+                          <ul>
+                            {Object.entries(reservation.selectedProducts).map(
+                              ([category, product]) => {
+                                let productName = "";
+
+                                if (typeof product === "string") {
+                                  productName = getProductName(product);
+                                } else if (
+                                  typeof product === "object" &&
+                                  product !== null &&
+                                  (product.name || product.product_name)
+                                ) {
+                                  productName =
+                                    product.name || product.product_name;
+                                } else {
+                                  productName = "Invalid Product";
+                                }
+
+                                return (
+                                  <li key={category}>
+                                    {category}: {productName}
+                                  </li>
+                                );
+                              }
+                            )}
+                          </ul>
+                        ) : (
+                          <p>No items selected</p>
+                        )
                       ) : (
                         <p>No items selected</p>
                       )}

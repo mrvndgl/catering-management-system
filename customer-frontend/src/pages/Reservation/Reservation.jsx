@@ -911,13 +911,15 @@ const Reservation = () => {
 
                 if (userResponse.ok) {
                   const userData = await userResponse.json();
-                  // Return reservation with user data attached
+                  const customer = userData.data;
+
                   return {
                     ...reservation,
-                    userName: userData.name,
-                    userPhoneNumber: userData.phoneNumber,
+                    userName: `${customer.firstName} ${customer.lastName}`,
+                    userPhoneNumber: customer.contactNumber,
                   };
                 }
+
                 return reservation; // Return original if fetch fails
               } catch (error) {
                 console.error(
@@ -1485,15 +1487,12 @@ const Reservation = () => {
         </div>
 
         <div className="reservation-details">
-          {/* Display the name and phone number fetched from the user data */}
           <p>
             <strong>Name:</strong> {reservation.userName || "Not available"}
           </p>
           <p>
             <strong>Phone Number:</strong>{" "}
-            {reservation.userPhoneNumber ||
-              reservation.phoneNumber ||
-              "Not available"}
+            {reservation.userPhoneNumber || "Not available"}
           </p>
           <p>
             <strong>Date:</strong>{" "}
@@ -1865,24 +1864,6 @@ const Reservation = () => {
               <h3 className="section-title">Select Menu Items</h3>
               {/* Category tabs */}
               <div className="category-tabs">
-                {Object.keys(menuItems).map((category) => (
-                  <div
-                    key={category}
-                    className={`category-tab ${
-                      activeCategory === category ? "active" : ""
-                    }`}
-                    onClick={() => setActiveCategory(category)}
-                  >
-                    <div className="icon-container">
-                      {getCategoryIcon(category)}
-                    </div>
-                    <span>{category}</span>
-                  </div>
-                ))}
-              </div>
-              222
-              {/* Category tabs */}
-              <div className="category-tabs">
                 {menuItemOrganized.map((category) => (
                   <div
                     key={category?.category_id}
@@ -1963,64 +1944,6 @@ const Reservation = () => {
                   </div>
                 );
               })}
-              {Object.entries(menuItems).map(([category, products]) => (
-                <div
-                  key={category}
-                  className={`category-section ${
-                    activeCategory === category ? "active" : ""
-                  }`}
-                >
-                  <div className="product-list">
-                    {products.map((product) => (
-                      <div
-                        key={product.product_id}
-                        className={`product-item ${
-                          formData.selectedProducts[category] ===
-                          product.product_id
-                            ? "selected"
-                            : ""
-                        }`}
-                        onClick={() => handleProductSelect(category, product)}
-                      >
-                        {/* Product Image Display */}
-                        <div className="product-image">
-                          {product.images && product.images.length > 0 ? (
-                            <img
-                              src={
-                                product.images.find((img) => img.is_primary)
-                                  ?.url || product.images[0].url
-                              }
-                              alt={product.product_name}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "/images/placeholder-food.png"; // Fallback image
-                              }}
-                            />
-                          ) : (
-                            <div className="no-image">
-                              <span>No Image</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="product-content">
-                          <input
-                            type="radio"
-                            name={`product-${category}_`}
-                            checked={
-                              formData.selectedProducts[category] ===
-                              product.product_id
-                            }
-                            onChange={() => {}}
-                          />
-                          <span className="product-name">
-                            {product.product_name}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
             </div>
 
             <div className="additional-items-section">
