@@ -833,37 +833,19 @@ const Payment = () => {
                       <h4>Selected Products:</h4>
                       {isLoading ? (
                         <p>Loading products...</p>
-                      ) : reservation && reservation.selectedProducts ? (
+                      ) : reservation &&
+                        reservation.selectedProducts &&
                         Object.keys(reservation.selectedProducts).length > 0 ? (
-                          <ul>
-                            {Object.entries(reservation.selectedProducts).map(
-                              ([category, product]) => {
-                                let productName = "";
-
-                                if (typeof product === "string") {
-                                  productName = getProductName(product);
-                                } else if (
-                                  typeof product === "object" &&
-                                  product !== null &&
-                                  (product.name || product.product_name)
-                                ) {
-                                  productName =
-                                    product.name || product.product_name;
-                                } else {
-                                  productName = "Invalid Product";
-                                }
-
-                                return (
-                                  <li key={category}>
-                                    {category}: {productName}
-                                  </li>
-                                );
-                              }
-                            )}
-                          </ul>
-                        ) : (
-                          <p>No items selected</p>
-                        )
+                        <div className="selected-products">
+                          {Object.entries(reservation.selectedProducts).map(
+                            ([category, productId]) => (
+                              <div key={category} className="menu-item">
+                                <strong>{category}:</strong>{" "}
+                                {getProductName(productId)}
+                              </div>
+                            )
+                          )}
+                        </div>
                       ) : (
                         <p>No items selected</p>
                       )}
