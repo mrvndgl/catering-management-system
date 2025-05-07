@@ -272,6 +272,21 @@ export const createReservation = async (req, res) => {
       });
     }
 
+    const reservationCount = await Reservation.countDocuments({
+      reservation_date: {
+        $gte: reservationDate,
+        $lt: new Date(reservationDate.getTime() + 24 * 60 * 60 * 1000),
+      },
+    });
+
+    if (reservationCount >= 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Only 2 reservations are allowed per day. Please choose another date.",
+      });
+    }
+
     // Check if the date and time slot are already taken (regardless of status)
     const existingReservation = await Reservation.findOne({
       reservation_date: {
