@@ -13,6 +13,7 @@ const EditReservationModal = ({
   availableTimeSlots,
   productsLookup,
   isSubmitting,
+  menuItemOrganized,
 }) => {
   const [formData, setFormData] = useState({
     numberOfPax: "",
@@ -240,25 +241,81 @@ const EditReservationModal = ({
 
             {/* Category tabs */}
             <div className="category-tabs">
-              {menuItems &&
-                Object.keys(menuItems).map((category) => (
-                  <div
-                    key={category}
-                    className={`category-tab ${
-                      activeCategory === category ? "active" : ""
-                    }`}
-                    onClick={() => setActiveCategory(category)}
-                  >
-                    <div className="icon-container">
-                      {getCategoryIcon(category)}
-                    </div>
-                    <span>{category}</span>
+              {menuItemOrganized?.map((category) => (
+                <div
+                  key={`menu-item-organized-${category?.category_name}`}
+                  className={`category-tab ${
+                    activeCategory === category?.category_name ? "active" : ""
+                  }`}
+                  onClick={() => setActiveCategory(category?.category_name)}
+                >
+                  <div className="icon-container">
+                    {getCategoryIcon(category?.category_name)}
                   </div>
-                ))}
+                  <span>{category?.category_name}</span>
+                </div>
+              ))}
             </div>
 
             {/* Display products for each category */}
-            {menuItems &&
+            {menuItemOrganized?.map((category) => {
+              return (
+                <div
+                  key={`menu-item-products-${category?.category_name}`}
+                  className={`category-section ${
+                    activeCategory === category?.category_name ? "active" : ""
+                  }`}
+                >
+                  <div
+                    className="product-list"
+                    style={{ display: "flex", flexWrap: "wrap" }}
+                  >
+                    {category?.items?.map((product) => (
+                      <div
+                        key={product.product_id}
+                        className={`product-item ${
+                          formData.selectedProducts[category] ===
+                          product.product_id
+                            ? "selected"
+                            : ""
+                        }`}
+                        onClick={() => handleProductSelect(category, product)}
+                        style={{ width: "calc(33% - 10px)", padding: 0 }}
+                      >
+                        <div
+                          className="product-content"
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <div
+                            className="product-image"
+                            style={{ width: "100%" }}
+                          >
+                            <img
+                              src={`http://localhost:4000${product?.primary_image}`}
+                            />
+                          </div>
+                          <span>
+                            <input
+                              type="radio"
+                              name={`product-${category}`}
+                              checked={
+                                formData.selectedProducts[category] ===
+                                product.product_id
+                              }
+                              onChange={() => {}}
+                            />
+                            <span className="product-name">
+                              {product.product_name}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {/* {menuItems &&
               Object.entries(menuItems).map(([category, products]) => (
                 <div
                   key={category}
@@ -296,7 +353,7 @@ const EditReservationModal = ({
                     ))}
                   </div>
                 </div>
-              ))}
+              ))} */}
           </div>
 
           <div className="additional-items-section">
