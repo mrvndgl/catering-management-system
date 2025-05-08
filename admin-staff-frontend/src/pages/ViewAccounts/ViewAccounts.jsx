@@ -87,48 +87,153 @@ const ViewAccounts = () => {
     }
   };
 
-  // Add these validation functions near the top of the component, after the state declarations
-  const validatePassword = (password) => {
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
+  // Validation functions
+  const validateName = (name) => {
+    // Check if name contains numbers or special characters
+    if (!/^[A-Za-z\s]+$/.test(name)) {
+      return "Name should not contain numbers or special characters";
+    }
+    return null;
+  };
 
-    if (!hasUpperCase) {
-      return "Password must contain at least one uppercase letter";
+  const validateEmail = (email) => {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
     }
-    if (!hasLowerCase) {
-      return "Password must contain at least one lowercase letter";
+    return null;
+  };
+
+  const validateUsername = (username) => {
+    // Username validation - alphanumeric characters, underscores, hyphens
+    if (!/^[A-Za-z0-9_-]+$/.test(username)) {
+      return "Username should only contain letters, numbers, underscores, and hyphens";
     }
-    if (!hasNumber) {
-      return "Password must contain at least one number";
+    return null;
+  };
+
+  const validatePassword = (password) => {
+    // Password validation with detailed error messages
+    const errors = [];
+
+    if (!password) {
+      return "Password is required";
     }
-    return "";
+
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters long");
+    }
+
+    if (!/[A-Za-z]/.test(password)) {
+      errors.push("Password must contain at least one letter");
+    }
+
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push("Password must contain at least one special character");
+    }
+
+    if (errors.length > 0) {
+      // Show SweetAlert2 notification for password errors
+      Swal.fire({
+        title: "Password Requirements",
+        html: `
+          <div style="text-align: left;">
+            <p>Your password must have:</p>
+            <ul style="padding-left: 20px; margin-top: 5px;">
+              ${errors.map((error) => `<li>${error}</li>`).join("")}
+            </ul>
+          </div>
+        `,
+        icon: "warning",
+        confirmButtonColor: "#3085d6",
+      });
+
+      return errors.join("<br>");
+    }
+
+    // If no errors, return null to indicate password is valid
+    return null;
   };
 
   const validateContactNumber = (number) => {
+    // Phone number validation for Philippines format (09XXXXXXXXX)
     const phoneRegex = /^09\d{9}$/;
-    return phoneRegex.test(number);
+    if (!phoneRegex.test(number)) {
+      return "Contact number must be in the format 09XXXXXXXXX (11 digits starting with 09)";
+    }
+    return null;
   };
 
   // Modify the handleInputChange function to include contact number validation
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "contactNumber") {
-      // Only allow digits
-      const sanitizedValue = value.replace(/[^\d]/g, "");
-      // Limit to 11 digits
-      const truncatedValue = sanitizedValue.slice(0, 11);
-      setNewAccount((prev) => ({
-        ...prev,
-        [name]: truncatedValue,
-      }));
-    } else {
-      setNewAccount((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    // Store the original value to be validated
+    let newValue = value;
+    let errorMessage = null;
+
+    // Specific validations for each field type
+    switch (name) {
+      case "firstName":
+      case "lastName":
+        // Check for numbers and special characters in real-time
+        if (value && !/^[A-Za-z\s]*$/.test(value)) {
+          errorMessage = `${
+            name === "firstName" ? "First" : "Last"
+          } name should not contain numbers or special characters`;
+          // Don't update the state with invalid characters
+          newValue = newAccount[name];
+
+          // Show immediate feedback
+          Swal.fire({
+            title: "Invalid Input",
+            text: errorMessage,
+            icon: "warning",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+        break;
+
+      case "contactNumber":
+        // Only allow digits and limit to 11
+        newValue = value.replace(/[^\d]/g, "").slice(0, 11);
+        break;
+
+      case "username":
+        // Only allow valid username characters
+        if (value && !/^[A-Za-z0-9_-]*$/.test(value)) {
+          errorMessage =
+            "Username should only contain letters, numbers, underscores, and hyphens";
+          newValue = newAccount[name];
+
+          Swal.fire({
+            title: "Invalid Input",
+            text: errorMessage,
+            icon: "warning",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+        break;
     }
+
+    // Update state with validated value
+    setNewAccount((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
   };
 
   // Update the handleSubmit/handleAddAccount function to include validations
@@ -137,22 +242,10 @@ const ViewAccounts = () => {
     setLoading(true);
 
     try {
-      // Validate contact number
-      if (!validateContactNumber(newAccount.contactNumber)) {
-        throw new Error(
-          "Please enter a valid Philippine mobile number (11 digits starting with '09')"
-        );
-      }
+      // Array to collect all validation errors
+      const errors = [];
 
-      // Validate password if it's provided (for new accounts or password changes)
-      if (newAccount.password) {
-        const passwordError = validatePassword(newAccount.password);
-        if (passwordError) {
-          throw new Error(passwordError);
-        }
-      }
-
-      // Check if required fields are present
+      // Validate all required fields
       const requiredFields = [
         "firstName",
         "lastName",
@@ -160,27 +253,69 @@ const ViewAccounts = () => {
         "contactNumber",
         "address",
         "email",
+        "password",
       ];
+
       for (const field of requiredFields) {
         if (!newAccount[field]) {
-          throw new Error(
-            `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+          errors.push(
+            `${
+              field.charAt(0).toUpperCase() +
+              field.slice(1).replace(/([A-Z])/g, " $1")
+            } is required`
           );
         }
       }
 
+      // Field-specific validations
+      const firstNameError = validateName(newAccount.firstName);
+      if (firstNameError) errors.push(firstNameError);
+
+      const lastNameError = validateName(newAccount.lastName);
+      if (lastNameError) errors.push(lastNameError);
+
+      const usernameError = validateUsername(newAccount.username);
+      if (usernameError) errors.push(usernameError);
+
+      const emailError = validateEmail(newAccount.email);
+      if (emailError) errors.push(emailError);
+
+      const contactNumberError = validateContactNumber(
+        newAccount.contactNumber
+      );
+      if (contactNumberError) errors.push(contactNumberError);
+
+      const passwordError = validatePassword(newAccount.password);
+      if (passwordError) errors.push(passwordError);
+
+      // If there are validation errors, throw them
+      if (errors.length > 0) {
+        throw new Error(errors.join("<br>"));
+      }
+
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/employees/staff/create", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...newAccount,
-          employeeType: "staff",
-        }),
+
+      // Log the data being sent to help with debugging
+      console.log("Sending account data:", {
+        ...newAccount,
+        employeeType: "staff",
+        password: "********", // Don't log actual password
       });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/employees/staff/create`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...newAccount,
+            employeeType: "staff",
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -211,7 +346,7 @@ const ViewAccounts = () => {
     } catch (err) {
       Swal.fire({
         title: "Error!",
-        text: err.message,
+        html: err.message, // Using html to support line breaks from <br>
         icon: "error",
         confirmButtonColor: "#dc3545",
       });
