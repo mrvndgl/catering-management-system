@@ -1492,13 +1492,6 @@ const Reservation = () => {
 
         <div className="reservation-details">
           <p>
-            <strong>Name:</strong> {reservation.userName || "Not available"}
-          </p>
-          <p>
-            <strong>Phone Number:</strong>{" "}
-            {reservation.userPhoneNumber || "Not available"}
-          </p>
-          <p>
             <strong>Date:</strong>{" "}
             {new Date(reservation.reservation_date).toLocaleDateString()}
           </p>

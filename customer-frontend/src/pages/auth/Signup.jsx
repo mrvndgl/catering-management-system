@@ -26,7 +26,40 @@ const Signup = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "contactNumber") {
+    // Input validation based on field type
+    if (name === "firstName" || name === "lastName") {
+      // Only allow letters and spaces for names
+      if (value && !/^[A-Za-z\s]*$/.test(value)) {
+        Swal.fire({
+          icon: "warning",
+          title: "Invalid Input",
+          text: `${
+            name === "firstName" ? "First" : "Last"
+          } name should only contain letters and spaces`,
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return; // Don't update the state with invalid input
+      }
+    } else if (name === "username") {
+      // For username, allow only letters, numbers, underscores, and hyphens
+      if (value && !/^[A-Za-z0-9_-]*$/.test(value)) {
+        Swal.fire({
+          icon: "warning",
+          title: "Invalid Input",
+          text: "Username should only contain letters, numbers, underscores, and hyphens",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return; // Don't update the state with invalid input
+      }
+    } else if (name === "contactNumber") {
       // Only allow digits
       const sanitizedValue = value.replace(/[^\d]/g, "");
       // Limit to 11 digits
@@ -35,31 +68,56 @@ const Signup = () => {
         ...formData,
         [name]: truncatedValue,
       });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
-
-    if (name === "password" || name === "confirmPassword") {
+      return; // Early return since we've already updated the state
+    } else if (name === "password" || name === "confirmPassword") {
       setPasswordError("");
     }
+
+    // Update state for all other fields or valid inputs
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const validateName = (name, fieldName) => {
+    if (!/^[A-Za-z\s]+$/.test(name)) {
+      return `${fieldName} should only contain letters and spaces`;
+    }
+    return null;
+  };
+
+  const validateUsername = (username) => {
+    // Allow only letters, numbers, underscores, and hyphens
+    if (!/^[A-Za-z0-9_-]+$/.test(username)) {
+      return "Username should only contain letters, numbers, underscores, and hyphens";
+    }
+    return null;
   };
 
   const validatePassword = (password) => {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    const errors = [];
 
     if (!hasUpperCase) {
-      return "Password must contain at least one uppercase letter";
+      errors.push("Password must contain at least one uppercase letter");
     }
     if (!hasLowerCase) {
-      return "Password must contain at least one lowercase letter";
+      errors.push("Password must contain at least one lowercase letter");
     }
     if (!hasNumber) {
-      return "Password must contain at least one number";
+      errors.push("Password must contain at least one number");
+    }
+    if (!hasSpecialChar) {
+      errors.push("Password must contain at least one special character");
+    }
+
+    if (errors.length > 0) {
+      return errors.join("<br>");
     }
     return "";
   };
@@ -75,35 +133,46 @@ const Signup = () => {
     setSuccess("");
     setPasswordError("");
 
+    // Collect all validation errors
+    const errors = [];
+
+    // Validate names
+    const firstNameError = validateName(formData.firstName, "First name");
+    if (firstNameError) errors.push(firstNameError);
+
+    const lastNameError = validateName(formData.lastName, "Last name");
+    if (lastNameError) errors.push(lastNameError);
+
+    // Validate username
+    const usernameError = validateUsername(formData.username);
+    if (usernameError) errors.push(usernameError);
+
     // Validate contact number
     if (!validateContactNumber(formData.contactNumber)) {
-      Swal.fire({
-        icon: "error",
-        title: "Invalid Contact Number",
-        text: "Please enter a valid Philippine mobile number (11 digits starting with '09')",
-      });
-      return;
+      errors.push(
+        "Please enter a valid Philippine mobile number (11 digits starting with '09')"
+      );
     }
 
     // Validate password format
     const passwordValidationError = validatePassword(formData.password);
     if (passwordValidationError) {
+      errors.push(passwordValidationError);
       setPasswordError(passwordValidationError);
-      Swal.fire({
-        icon: "error",
-        title: "Password Error",
-        text: passwordValidationError,
-      });
-      return;
     }
 
     // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
+      errors.push("Passwords do not match");
       setPasswordError("Passwords do not match");
+    }
+
+    // If there are validation errors, show them and return
+    if (errors.length > 0) {
       Swal.fire({
         icon: "error",
-        title: "Signup Failed",
-        text: "Passwords do not match",
+        title: "Validation Error",
+        html: errors.join("<br>"),
       });
       return;
     }
@@ -274,7 +343,7 @@ const Signup = () => {
                 <input
                   type="password"
                   name="password"
-                  placeholder="Password (A-Z, a-z, 0-9)"
+                  placeholder="Password (A-Z, a-z, 0-9, !@#$)"
                   value={formData.password}
                   onChange={handleChange}
                   required
